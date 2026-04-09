@@ -1,0 +1,184 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { CheckCircle, AlertCircle, FileText, ArrowRight, PlayCircle, User, ChevronRight } from "lucide-react";
+import { createClient } from "@/utils/supabase/server";
+import CertificateUpload from "./certificate-upload";
+
+export default async function CandidateDashboard({ profile: initialProfile }: { profile?: any }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  let profile = initialProfile;
+  if (!profile && user) {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+    profile = data;
+  }
+
+  if (!profile) {
+    return <div>Loading profile...</div>;
+  }
+  
+  // Fetch candidate specifics
+  const { data: candidate } = await supabase
+    .from("candidates")
+    .select("*")
+    .eq("user_id", user?.id)
+    .single();
+
+    // Fetch certificate status if failed
+  const { data: certificate } = await supabase
+    .from("certificates")
+    .select("status")
+    .eq("user_id", user?.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+
+  const isVerified = profile.role === "candidate_mvp";
+  const hasFailed = profile.role === "candidate_onhold" && candidate?.pass_status === "fail";
+
+  return (
+    <div className="min-h-screen bg-zinc-50 dark:bg-black pt-28 pb-16 px-6">
+      <div className="max-w-4xl mx-auto space-y-8">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Welcome, {profile.name}</h1>
+            <p className="text-zinc-500 mt-1">Track your progress and validate your L&D skills.</p>
+          </div>
+          {isVerified && (
+             <div className="px-4 py-2 bg-green-100 text-green-800 rounded-full font-medium inline-flex items-center gap-2">
+               <CheckCircle className="w-5 h-5" /> Verified MVP
+             </div>
+          )}
+        </div>
+
+        {/* Progression Journey */}
+        <div className="bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-2xl p-6">
+          <h2 className="text-lg font-semibold mb-4">Your Journey</h2>
+          <div className="flex flex-col sm:flex-row justify-between items-center sm:items-start gap-4">
+            <Step active={true} label="Register" icon={<CheckCircle className="w-8 h-8 text-green-500"/>} />
+            <div className="flex-1 h-1 bg-brand-100 dark:bg-zinc-800 sm:mt-4 hidden sm:block"></div>
+            <Step active={Boolean(candidate?.exam_status !== 'not_started')} label="Test" icon={candidate?.exam_status === 'completed' ? <CheckCircle className="w-8 h-8 text-green-500"/> : <PlayCircle className="w-8 h-8 text-brand-500"/>} />
+            <div className="flex-1 h-1 bg-brand-100 dark:bg-zinc-800 sm:mt-4 hidden sm:block"></div>
+            <Step active={isVerified} label="Verified" icon={isVerified || certificate?.status === 'approved' ? <CheckCircle className="w-8 h-8 text-green-500"/> : <CheckCircle className="w-8 h-8 text-zinc-300"/>} />
+            <div className="flex-1 h-1 bg-brand-100 dark:bg-zinc-800 sm:mt-4 hidden sm:block"></div>
+            <Step active={false} label="Hired" icon={<CheckCircle className="w-8 h-8 text-zinc-300"/>} />
+          </div>
+        </div>
+
+        {/* Action Area */}
+        <div className="grid md:grid-cols-2 gap-6">
+          
+          {/* Exam Status */}
+          <div className="bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-2xl p-6">
+            <h3 className="text-xl font-semibold flex items-center gap-2 mb-4">
+              <FileText className="w-6 h-6 text-brand-600" />
+              Skill Validation Exam
+            </h3>
+            
+            {candidate?.pass_status === 'fail' ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-orange-50 border border-orange-200 text-orange-800 rounded-xl">
+                  <p className="font-medium flex items-center gap-2"><AlertCircle className="w-5 h-5"/> Learning Path Required</p>
+                  <p className="text-sm mt-1">You scored {candidate.latest_score}%. To unlock a reattempt, please submit a course completion certificate.</p>
+                </div>
+                
+                {certificate?.status === 'pending' ? (
+                  <div className="p-4 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-center">
+                    <p className="text-sm font-medium">Certificate under review...</p>
+                    <p className="text-[10px] text-zinc-500 mt-1 uppercase tracking-wider">Reattempt will be enabled once approved</p>
+                  </div>
+                ) : candidate.reattempt_allowed ? (
+                  <Link href="/dashboard/candidate/exam" className="w-full inline-flex justify-center items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-medium">
+                    Reattempt Exam
+                  </Link>
+                ) : (
+                  <CertificateUpload userId={user.id} />
+                )}
+
+                <Link href="/dashboard/candidate/scorecard" className="w-full inline-flex justify-center items-center gap-2 border border-zinc-200 dark:border-zinc-800 py-2.5 rounded-lg text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+                  View Scorecard & Learning Path
+                </Link>
+              </div>
+            ) : isVerified ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl">
+                  <p className="font-medium flex items-center gap-2"><CheckCircle className="w-5 h-5"/> Exam Passed</p>
+                  <p className="text-sm mt-1">You scored {candidate?.latest_score}%. Your profile is now visible to top employers.</p>
+                </div>
+                <Link href="/dashboard/candidate/scorecard" className="w-full inline-flex justify-center items-center gap-2 border border-zinc-200 dark:border-zinc-800 py-2.5 rounded-lg text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+                  View Your Scorecard
+                </Link>
+              </div>
+            ) : (
+               <div className="space-y-4">
+                 <p className="text-zinc-600 dark:text-zinc-400">Prove your expertise. Our 30-question assessment will determine your MVP Candidate status.</p>
+                 <Link href="/dashboard/candidate/exam" className="flex items-center justify-center gap-2 bg-brand-600 text-white py-2.5 px-4 rounded-lg hover:bg-brand-700 transition">
+                   Start Exam <ArrowRight className="w-4 h-4" />
+                 </Link>
+               </div>
+            )}
+          </div>
+
+          {/* Job Board Access */}
+          <div className="bg-gradient-to-br from-brand-600 to-accent-600 rounded-2xl p-6 text-white relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-8 opacity-10">
+                <ArrowRight className="w-32 h-32" />
+             </div>
+             <h3 className="text-xl font-semibold mb-2 relative z-10">Job Opportunities</h3>
+             {isVerified ? (
+               <div className="relative z-10 space-y-4">
+                 <p className="opacity-90">Browse premium, deduplicated requests from Jooble, Adzuna, and Employers.</p>
+                 <Link href="/dashboard/jobs" className="inline-block bg-white text-brand-700 font-medium px-6 py-2.5 rounded-lg shadow hover:shadow-lg transition">
+                   View Job Board
+                 </Link>
+               </div>
+             ) : (
+               <div className="relative z-10 space-y-4">
+                  <p className="opacity-90">You must pass the validation exam to browse and apply to roles.</p>
+                  <button disabled className="bg-white/20 text-white font-medium px-6 py-2.5 rounded-lg cursor-not-allowed">
+                    Locked
+                  </button>
+               </div>
+             )}
+          </div>
+
+          {/* Professional Profile */}
+          <Link 
+            href="/dashboard/candidate/profile"
+            className="p-6 bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-3xl hover:shadow-xl hover:shadow-brand-500/10 transition-all group"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 bg-brand-50 dark:bg-brand-900/20 rounded-xl flex items-center justify-center text-brand-600">
+                <User className="w-5 h-5" />
+              </div>
+              <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:translate-x-1 transition-transform" />
+            </div>
+            <h3 className="font-bold mb-1">Professional Profile</h3>
+            <p className="text-zinc-500 text-sm">Update your bio, skills, and resume for employers.</p>
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Step({ active, label, icon }: { active: boolean, label: string, icon: React.ReactNode }) {
+  return (
+    <div className={`flex flex-col items-center gap-2 ${active ? "" : "opacity-50 grayscale"}`}>
+      {icon}
+      <span className="text-sm font-medium">{label}</span>
+    </div>
+  )
+}
+

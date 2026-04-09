@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+@theme {
+  /* LXD Guild Brand Colors - Deep Navy + Purple */
+  --color-brand-50:  #f0eeff;
+  --color-brand-100: #e0ddff;
+  --color-brand-200: #c4beff;
+  --color-brand-400: #7c6fff;
+  --color-brand-500: #5b4fcf;
+  --color-brand-600: #4338ca;
+  --color-brand-700: #3730a3;
+  --color-brand-800: #2e27a8;
+  --color-brand-900: #1e1b72;
+
+  /* Accent - Teal/Cyan for contrast highlights */
+  --color-accent-400: #22d3ee;
+  --color-accent-500: #06b6d4;
+  --color-accent-600: #0891b2;
+
+  /* Gold for premium/verified badges */
+  --color-gold-400: #fbbf24;
+  --color-gold-500: #f59e0b;
+
+  /* Dark surfaces */
+  --color-background-dark: #0b0c1e;
+  --color-surface-dark:    #12142a;
+  --color-border-dark:     #1f2148;
+
+  /* Fonts */
+  --font-sans: var(--font-outfit), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  --background:       #f8f9ff;
+  --foreground:       #0b0c1e;
+  --card:             #ffffff;
+  --card-foreground:  #0b0c1e;
+  --border:           #e0ddff;
+  --muted:            #6b7280;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background:      #0b0c1e;
+    --foreground:      #f0eeff;
+    --card:            #12142a;
+    --card-foreground: #f0eeff;
+    --border:          #1f2148;
+    --muted:           #8b8fa8;
+  }
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #5b4fcf, #06b6d4);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Premium glow effect */
+.glow-brand {
+  box-shadow: 0 0 30px rgba(67, 56, 202, 0.25);
+}
+
+/* Animated gradient border */
+@keyframes border-spin {
+  from { background-position: 0% 50%; }
+  to   { background-position: 100% 50%; }
+}
+
+.animate-gradient-border {
+  background-size: 200% 200%;
+  animation: border-spin 3s linear infinite;
+}
