@@ -1,9 +1,11 @@
 import { createClient } from "@/utils/supabase/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { notFound, redirect } from "next/navigation";
 import { Briefcase, MapPin, Building, Calendar, ArrowLeft, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import ApplyButtonWithModal from "./ApplyButtonWithModal";
+import ApplicationReviewActions from "./ApplicationReviewActions";
 
 export default async function JobDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
@@ -22,9 +24,6 @@ export default async function JobDetailPage({ params }: { params: { id: string }
 
   const isJobOwner = user.id === job.user_id;
   const { canAccessJobBoard } = await getJobBoardAccessForUser(supabase, user.id);
-  if (!isJobOwner && !canAccessJobBoard) {
-    redirect("/dashboard/jobs");
-  }
 
   // Fetch Profile and Resumes
   const { data: profile } = await supabase
@@ -34,6 +33,9 @@ export default async function JobDetailPage({ params }: { params: { id: string }
     .single();
 
   const isMvpCandidate = profile?.role === "candidate_mvp";
+  const isEmployerViewer = profile?.role?.startsWith("employer");
+  const isCandidateViewer = profile?.role?.startsWith("candidate");
+  const canApplyToJob = isCandidateViewer && !isJobOwner && canAccessJobBoard;
 
   const { data: resumes } = await supabase
     .from("resumes")
@@ -51,10 +53,27 @@ export default async function JobDetailPage({ params }: { params: { id: string }
   const { data: applicants } = isJobOwner
     ? await supabase
         .from("job_applications")
-        .select("id, status, resume_url, created_at, user_id, profiles(id, name, headline, email)")
+        .select("id, status, resume_url, created_at, user_id")
         .eq("job_id", id)
         .order("created_at", { ascending: false })
     : { data: null };
+
+  const applicantUserIds = (applicants || []).map((app: any) => app.user_id).filter(Boolean);
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const adminSupabase =
+    serviceRoleKey && supabaseUrl
+      ? createSupabaseClient(supabaseUrl, serviceRoleKey)
+      : null;
+  const profileReader = isJobOwner && adminSupabase ? adminSupabase : supabase;
+  const { data: applicantProfiles } = applicantUserIds.length
+    ? await profileReader
+        .from("profiles")
+        .select("id, name, headline, email")
+        .in("id", applicantUserIds)
+    : { data: [] as any[] };
+
+  const applicantProfilesById = new Map((applicantProfiles || []).map((p: any) => [p.id, p]));
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black pt-28 pb-16 px-6">
@@ -88,16 +107,25 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 min-w-[200px]">
-                 <ApplyButtonWithModal 
-                   job={job} 
-                   user={user} 
-                   profile={profile} 
-                   resumes={resumes || []} 
-                   alreadyApplied={!!application} 
-                 />
-                 <p className="text-[10px] text-center text-zinc-400 uppercase tracking-widest font-bold">Applications managed by LXD Guild</p>
-              </div>
+              {isCandidateViewer ? (
+                <div className="flex flex-col gap-3 min-w-[200px]">
+                  <ApplyButtonWithModal
+                    job={job}
+                    user={user}
+                    profile={profile}
+                    resumes={resumes || []}
+                    alreadyApplied={!!application}
+                    canApply={canApplyToJob}
+                    lockReason="Write the assessment to unlock job applications."
+                  />
+                  <p className="text-[10px] text-center text-zinc-400 uppercase tracking-widest font-bold">Applications managed by LXD Guild</p>
+                </div>
+              ) : (
+                <div className="min-w-[220px] rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-4">
+                  <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">Employer view</p>
+                  <p className="text-xs mt-1 text-zinc-500">Application controls are available in the applicants list below.</p>
+                </div>
+              )}
             </div>
 
             <div className="mt-12 grid md:grid-cols-3 gap-12">
@@ -119,17 +147,20 @@ export default async function JobDetailPage({ params }: { params: { id: string }
 
                       {applicants?.length ? (
                         <ul className="space-y-4">
-                          {applicants.map((app: any) => (
+                          {applicants.map((app: any) => {
+                            const applicantProfile = applicantProfilesById.get(app.user_id);
+                            return (
                             <li key={app.id} className="p-4 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
                               <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
                                 <div>
-                                  <p className="font-semibold text-zinc-900 dark:text-white">{app.profiles?.name || app.user_id}</p>
-                                  <p className="text-sm text-zinc-500">{app.profiles?.headline || app.profiles?.email || 'Candidate application'}</p>
+                                  <p className="font-semibold text-zinc-900 dark:text-white">{applicantProfile?.name || "Candidate"}</p>
+                                  <p className="text-sm text-zinc-500">{applicantProfile?.headline || applicantProfile?.email || 'Candidate application'}</p>
                                 </div>
-                                <span className="text-xs uppercase tracking-widest px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                                <span className={`text-xs uppercase tracking-widest px-2.5 py-1 rounded-full border ${getStatusPillClasses(app.status)}`}>
                                   {app.status}
                                 </span>
                               </div>
+                              <ApplicationReviewActions applicationId={app.id} currentStatus={app.status} />
                               {app.resume_url && (
                                 <a href={app.resume_url} target="_blank" rel="noreferrer" className="text-sm text-brand-600 hover:underline mt-3 block">
                                   View resume
@@ -137,7 +168,8 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                               )}
                               <p className="text-xs text-zinc-400 mt-3">Applied on {new Date(app.created_at).toLocaleDateString()}</p>
                             </li>
-                          ))}
+                            );
+                          })}
                         </ul>
                       ) : (
                         <div className="rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800 p-6 text-zinc-500 dark:text-zinc-400">
@@ -179,7 +211,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                            ? "You are browsing with admin access."
                            : isMvpCandidate
                              ? "Your MVP status gives you priority access to this role."
-                             : "Your approved course certificate unlocks applications for this role."}
+                            : "Complete the assessment to unlock applications for this role."}
                      </p>
                   </div>
                </div>
@@ -189,4 +221,10 @@ export default async function JobDetailPage({ params }: { params: { id: string }
       </div>
     </div>
   );
+}
+
+function getStatusPillClasses(status: string) {
+  if (status === "accepted") return "bg-green-50 text-green-700 border-green-200";
+  if (status === "rejected") return "bg-red-50 text-red-700 border-red-200";
+  return "bg-amber-50 text-amber-700 border-amber-200";
 }

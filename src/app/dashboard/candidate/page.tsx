@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CheckCircle, AlertCircle, FileText, ArrowRight, PlayCircle, User, ChevronRight } from "lucide-react";
+import { CheckCircle, AlertCircle, FileText, ArrowRight, PlayCircle, User, ChevronRight, Briefcase } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import CertificateUpload from "./certificate-upload";
@@ -42,6 +42,12 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
     .order("created_at", { ascending: false })
     .limit(1)
     .single();
+  const { data: recentApplications } = await supabase
+    .from("job_applications")
+    .select("id, status, created_at")
+    .eq("user_id", user?.id)
+    .order("created_at", { ascending: false })
+    .limit(3);
 
   const isVerified = profile.role === "candidate_mvp";
   const { canAccessJobBoard } = await getJobBoardAccessForUser(supabase, user.id);
@@ -168,6 +174,24 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
             </div>
             <h3 className="font-bold mb-1">Professional Profile</h3>
             <p className="text-zinc-500 text-sm">Update your bio, skills, and resume for employers.</p>
+          </Link>
+
+          <Link
+            href="/dashboard/candidate/applications"
+            className="p-6 bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-3xl hover:shadow-xl hover:shadow-brand-500/10 transition-all group"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 bg-brand-50 dark:bg-brand-900/20 rounded-xl flex items-center justify-center text-brand-600">
+                <Briefcase className="w-5 h-5" />
+              </div>
+              <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:translate-x-1 transition-transform" />
+            </div>
+            <h3 className="font-bold mb-1">My Applications</h3>
+            <p className="text-zinc-500 text-sm">
+              {recentApplications?.length
+                ? `Track ${recentApplications.length} recent application update${recentApplications.length > 1 ? "s" : ""}.`
+                : "See all roles you applied to and current status."}
+            </p>
           </Link>
         </div>
       </div>

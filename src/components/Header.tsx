@@ -14,7 +14,6 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
-  const [hasApprovedCertificate, setHasApprovedCertificate] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -34,17 +33,6 @@ export default function Header() {
       if (user) {
         const { data } = await supabase.from("profiles").select("name, role, verification_status").eq("id", user.id).single();
         setProfile(data);
-        if (data?.role?.startsWith("candidate") && data.role !== "candidate_mvp") {
-          const { data: certs } = await supabase
-            .from("certificates")
-            .select("id")
-            .eq("user_id", user.id)
-            .eq("status", "approved")
-            .limit(1);
-          setHasApprovedCertificate(!!(certs && certs.length > 0));
-        } else {
-          setHasApprovedCertificate(false);
-        }
       }
     };
     fetchUser();
@@ -80,8 +68,7 @@ export default function Header() {
   const isCandidate = profile?.role?.startsWith("candidate");
   const isVerifiedMVP = profile?.role === "candidate_mvp";
   const isAdmin = profile?.role === "admin";
-  const canAccessJobBoard =
-    isVerifiedMVP || isAdmin || (profile?.role?.startsWith("candidate") && hasApprovedCertificate);
+  const canAccessJobBoard = isVerifiedMVP || isAdmin;
 
   const dashboardLinks = user ? [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -90,6 +77,7 @@ export default function Header() {
     ] : []),
     ...(isCandidate ? [
       { href: "/dashboard/candidate/profile", label: "My Profile", icon: User },
+      { href: "/dashboard/candidate/applications", label: "My Applications", icon: Briefcase },
     ] : []),
     ...(canAccessJobBoard ? [
       { href: "/dashboard/jobs", label: "Job Board", icon: Briefcase },
@@ -214,6 +202,11 @@ export default function Header() {
                     {isCandidate && (
                       <Link href="/dashboard/candidate/profile" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
                         <User className="w-4 h-4 text-brand-400" /> My Profile
+                      </Link>
+                    )}
+                    {isCandidate && (
+                      <Link href="/dashboard/candidate/applications" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
+                        <Briefcase className="w-4 h-4 text-brand-400" /> My Applications
                       </Link>
                     )}
                     {canAccessJobBoard && (

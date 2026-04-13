@@ -1,8 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 /**
- * Job board is available to MVP candidates, admins, and candidates whose
- * course certificate has been approved (path A: certificate without exam pass).
+ * Job board access is role-driven. candidate_onhold remains locked.
  */
 export async function getJobBoardAccessForUser(
   supabase: SupabaseClient,
@@ -18,16 +17,5 @@ export async function getJobBoardAccessForUser(
     return { canAccessJobBoard: false }
   }
 
-  if (profile.role === 'admin' || profile.role === 'candidate_mvp') {
-    return { canAccessJobBoard: true }
-  }
-
-  const { data: rows } = await supabase
-    .from('certificates')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('status', 'approved')
-    .limit(1)
-
-  return { canAccessJobBoard: !!(rows && rows.length > 0) }
+  return { canAccessJobBoard: profile.role === 'admin' || profile.role === 'candidate_mvp' }
 }

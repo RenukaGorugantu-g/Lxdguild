@@ -47,6 +47,15 @@ export async function POST(req: Request) {
     if (candError) {
       console.error('Failed to unlock candidate reattempt:', candError.message);
     }
+
+    const { error: roleError } = await supabase
+      .from('profiles')
+      .update({ role: 'candidate_mvp' })
+      .eq('id', userId);
+
+    if (roleError) {
+      console.error('Failed to promote candidate role after certificate approval:', roleError.message);
+    }
   }
 
   await notifyUser(userId, 'certificate_reviewed', 'Certificate review completed', `Your certificate has been ${action}.`, {

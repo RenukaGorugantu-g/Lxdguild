@@ -1,38 +1,21 @@
 import { createClient } from "@/utils/supabase/server";
 import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { redirect } from "next/navigation";
-import { Briefcase, MapPin, Building, ExternalLink, RefreshCw } from "lucide-react";
+import { Briefcase, MapPin, Building, Lock, RefreshCw } from "lucide-react";
 import Link from "next/link";
 
 export default async function JobsDashboard({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; appStatus?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const { category } = await searchParams;
+  const { category, appStatus } = await searchParams;
 
   if (!user) redirect("/login");
 
   const { canAccessJobBoard } = await getJobBoardAccessForUser(supabase, user.id);
-
-  if (!canAccessJobBoard) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black p-6 pt-28">
-        <div className="max-w-md text-center bg-white dark:bg-surface-dark p-8 rounded-2xl border shadow-sm">
-          <Briefcase className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-          <p className="text-zinc-500 mb-6">
-            The job board is for MVP candidates and for candidates who have completed the learning path and had an approved course certificate. Pass the skill validation exam or submit your certificate from the candidate dashboard to unlock access.
-          </p>
-          <Link href="/dashboard/candidate" className="inline-block bg-brand-600 text-white px-6 py-2 rounded-lg font-medium">
-            Go to Candidate Dashboard
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -50,6 +33,22 @@ export default async function JobsDashboard({
   }
 
   const { data: jobsList } = await query;
+  let appQuery = supabase
+    .from("job_applications")
+    .select("id, status, created_at, jobs(id, title, company)")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  const appStatusFilter = ["applied", "accepted", "rejected"].includes(appStatus || "")
+    ? appStatus
+    : "all";
+
+  if (appStatusFilter !== "all") {
+    appQuery = appQuery.eq("status", appStatusFilter);
+  }
+
+  const { data: myApplications } = await appQuery;
 
   // Simple client-side categorization for filtering
   const categories = [
@@ -85,6 +84,70 @@ export default async function JobsDashboard({
 
            {/* Main Content */}
            <div className="flex-1 space-y-4">
+              {!canAccessJobBoard && (
+                <div className="p-4 bg-amber-50 border border-amber-200 dark:bg-amber-900/10 dark:border-amber-900/20 rounded-xl text-amber-900 dark:text-amber-300 text-sm flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-4 h-4" />
+                    <span>Jobs are visible, but applying is locked. Complete the assessment to unlock applications.</span>
+                  </div>
+                  <Link href="/dashboard/candidate/exam" className="px-3 py-1 bg-amber-600 text-white rounded-md text-xs font-bold whitespace-nowrap">
+                    Write Assessment
+                  </Link>
+                </div>
+              )}
+
+              {profile?.role?.startsWith("candidate") && (
+                <div className="p-5 bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-2xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">My Applications</h3>
+                    <span className="text-xs text-zinc-500">Latest 10</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs">
+                    {["all", "applied", "accepted", "rejected"].map((status) => (
+                      <Link
+                        key={status}
+                        href={status === "all" ? "/dashboard/jobs" : `/dashboard/jobs?appStatus=${status}`}
+                        className={`px-2.5 py-1 rounded-full border transition-colors ${
+                          appStatusFilter === status
+                            ? "bg-brand-600 text-white border-brand-600"
+                            : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100"
+                        }`}
+                      >
+                        {status}
+                      </Link>
+                    ))}
+                    <Link href="/dashboard/candidate/applications" className="ml-auto text-brand-600 hover:underline">
+                      Full history
+                    </Link>
+                  </div>
+                  {myApplications && myApplications.length > 0 ? (
+                    <ul className="space-y-2">
+                      {myApplications.map((application: any) => {
+                        const job = Array.isArray(application.jobs) ? application.jobs[0] : application.jobs;
+                        return (
+                          <li key={application.id} className="flex items-center justify-between gap-3 text-sm">
+                            <div>
+                              <p className="font-medium text-zinc-800 dark:text-zinc-200">
+                                {job?.title || "Job"}
+                                {job?.company ? ` · ${job.company}` : ""}
+                              </p>
+                              <p className="text-xs text-zinc-500">
+                                Applied on {new Date(application.created_at).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <span className={`text-xs px-2.5 py-1 rounded-full border ${getStatusPillClasses(application.status)}`}>
+                              {application.status}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-zinc-500">No applications yet. Apply to a role to see updates here.</p>
+                  )}
+                </div>
+              )}
+
               {(!jobsList || jobsList.length <= 3) && profile?.role === 'admin' && (
                 <div className="p-4 bg-blue-50 border border-blue-100 dark:bg-blue-900/10 dark:border-blue-900/20 rounded-xl text-blue-800 dark:text-blue-300 text-sm flex items-center justify-between gap-4">
                    <div className="flex items-center gap-2">
@@ -97,7 +160,7 @@ export default async function JobsDashboard({
 
               <div className="grid gap-4">
                 {jobsList?.map((job) => (
-                  <JobCard key={job.id} job={job} />
+                  <JobCard key={job.id} job={job} canAccessJobBoard={canAccessJobBoard} />
                 ))}
 
                 {(!jobsList || jobsList.length === 0) && (
@@ -115,7 +178,7 @@ export default async function JobsDashboard({
   );
 }
 
-function JobCard({ job }: { job: any }) {
+function JobCard({ job, canAccessJobBoard }: { job: any; canAccessJobBoard: boolean }) {
   return (
     <div className="bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border p-6 rounded-2xl hover:shadow-md transition-shadow">
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
@@ -139,11 +202,17 @@ function JobCard({ job }: { job: any }) {
           href={`/dashboard/jobs/${job.id}`}
           className="px-6 py-2 border border-zinc-200 dark:border-border rounded-xl font-medium text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-sm whitespace-nowrap"
         >
-          View Details
+          {canAccessJobBoard ? "View Details" : "View (Locked)"}
         </Link>
       </div>
     </div>
   );
+}
+
+function getStatusPillClasses(status: string) {
+  if (status === "accepted") return "bg-green-50 text-green-700 border-green-200";
+  if (status === "rejected") return "bg-red-50 text-red-700 border-red-200";
+  return "bg-amber-50 text-amber-700 border-amber-200";
 }
 
 import JobSidebar from "./JobSidebar";
