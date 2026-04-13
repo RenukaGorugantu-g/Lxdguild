@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 export async function GET(req: Request) {
+  let imported = 0;
   try {
     const supabase = await createClient();
     
@@ -22,8 +23,6 @@ export async function GET(req: Request) {
     const ADZUNA_APP_ID = process.env.ADZUNA_APP_ID || '38c5d4ef';
     const ADZUNA_APP_KEY = process.env.ADZUNA_APP_KEY || '456857cd33fb800c9e17dfc068c108b5';
     const JOOBLE_API_KEY = process.env.JOOBLE_API_KEY;
-
-    let imported = 0;
 
     // 1. Import from Adzuna
     const adzunaKeywords = ['Instructional Designer', 'eLearning Developer', 'Learning Experience Designer', 'Curriculum Developer'];
