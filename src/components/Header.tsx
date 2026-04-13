@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { 
   Briefcase, User, LayoutDashboard, BookOpen, Menu, X, 
-  ChevronDown, LogOut, BadgeCheck, Settings
+  ChevronDown, LogOut, BadgeCheck, Settings, Bell
 } from "lucide-react";
 
 export default function Header() {
@@ -14,6 +14,9 @@ export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [hasApprovedCertificate, setHasApprovedCertificate] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const pathname = usePathname();
   const supabase = createClient();
@@ -31,10 +34,32 @@ export default function Header() {
       if (user) {
         const { data } = await supabase.from("profiles").select("name, role, verification_status").eq("id", user.id).single();
         setProfile(data);
+        if (data?.role?.startsWith("candidate") && data.role !== "candidate_mvp") {
+          const { data: certs } = await supabase
+            .from("certificates")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("status", "approved")
+            .limit(1);
+          setHasApprovedCertificate(!!(certs && certs.length > 0));
+        } else {
+          setHasApprovedCertificate(false);
+        }
       }
     };
     fetchUser();
   }, [pathname]);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!user?.id) return;
+      const response = await fetch('/api/notifications');
+      if (!response.ok) return;
+      const result = await response.json();
+      setNotifications(result.notifications || []);
+    };
+    fetchNotifications();
+  }, [user]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -51,13 +76,25 @@ export default function Header() {
     { href: "https://lxdguild.com/contact.html", label: "CONTACT", external: true },
   ];
 
+  const isEmployer = profile?.role?.startsWith("employer");
+  const isCandidate = profile?.role?.startsWith("candidate");
+  const isVerifiedMVP = profile?.role === "candidate_mvp";
+  const isAdmin = profile?.role === "admin";
+  const canAccessJobBoard =
+    isVerifiedMVP || isAdmin || (profile?.role?.startsWith("candidate") && hasApprovedCertificate);
+
   const dashboardLinks = user ? [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { href: "/dashboard/jobs", label: "Job Board", icon: Briefcase },
-    { href: "/dashboard/candidate/profile", label: "My Profile", icon: User },
+    ...(isEmployer ? [
+      { href: "/dashboard/employer", label: "Employer Hub", icon: Briefcase },
+    ] : []),
+    ...(isCandidate ? [
+      { href: "/dashboard/candidate/profile", label: "My Profile", icon: User },
+    ] : []),
+    ...(canAccessJobBoard ? [
+      { href: "/dashboard/jobs", label: "Job Board", icon: Briefcase },
+    ] : []),
   ] : [];
-
-  const isVerifiedMVP = profile?.role === "candidate_mvp";
 
   return (
     <header
@@ -113,6 +150,38 @@ export default function Header() {
 
         {/* Right Side */}
         <div className="flex items-center gap-3">
+          {user && (
+            <div className="relative">
+              <button
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                className="relative inline-flex items-center justify-center p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/80"
+              >
+                <Bell className="w-5 h-5" />
+                {notifications.filter((notification) => !notification.is_read).length > 0 && (
+                  <span className="absolute right-0 top-0 h-2.5 w-2.5 rounded-full bg-rose-500 border border-black" />
+                )}
+              </button>
+
+              {isNotificationsOpen && (
+                <div className="absolute right-0 top-full mt-2 w-80 bg-[#12142a] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="p-3 border-b border-white/5 text-sm font-semibold text-white">Notifications</div>
+                  <div className="max-h-72 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="p-4 text-sm text-zinc-400">No notifications yet.</div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <div key={notification.id} className="p-3 border-b border-white/5 bg-white/5">
+                          <p className="text-sm font-semibold text-white">{notification.title}</p>
+                          <p className="text-xs text-zinc-400 mt-1">{notification.message}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {user ? (
             <div className="relative">
               <button
@@ -142,12 +211,31 @@ export default function Header() {
                     <Link href="/dashboard" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
                       <LayoutDashboard className="w-4 h-4 text-brand-400" /> Dashboard
                     </Link>
-                    <Link href="/dashboard/candidate/profile" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
-                      <User className="w-4 h-4 text-brand-400" /> My Profile
-                    </Link>
-                    <Link href="/dashboard/jobs" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
-                      <Briefcase className="w-4 h-4 text-brand-400" /> Job Board
-                    </Link>
+                    {isCandidate && (
+                      <Link href="/dashboard/candidate/profile" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
+                        <User className="w-4 h-4 text-brand-400" /> My Profile
+                      </Link>
+                    )}
+                    {canAccessJobBoard && (
+                      <Link href="/dashboard/jobs" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
+                        <Briefcase className="w-4 h-4 text-brand-400" /> Job Board
+                      </Link>
+                    )}
+                    {isEmployer && (
+                      <Link href="/dashboard/employer" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
+                        <Briefcase className="w-4 h-4 text-brand-400" /> Employer Hub
+                      </Link>
+                    )}
+                    {isEmployer && (
+                      <Link href="/dashboard/employer/post-job" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
+                        <Briefcase className="w-4 h-4 text-brand-400" /> Post Job
+                      </Link>
+                    )}
+                    {isEmployer && profile?.role === "employer_free" && (
+                      <Link href="/dashboard/employer/upgrade" onClick={() => setIsUserMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-white/70 hover:text-white hover:bg-white/5 rounded-xl transition-colors">
+                        <Settings className="w-4 h-4 text-brand-400" /> Upgrade Plan
+                      </Link>
+                    )}
                   </div>
                   <div className="border-t border-white/5 p-2">
                     <button

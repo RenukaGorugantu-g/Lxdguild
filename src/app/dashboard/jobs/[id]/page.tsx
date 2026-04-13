@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { notFound, redirect } from "next/navigation";
 import { Briefcase, MapPin, Building, Calendar, ArrowLeft, CheckCircle } from "lucide-react";
 import Link from "next/link";
@@ -19,12 +20,20 @@ export default async function JobDetailPage({ params }: { params: { id: string }
 
   if (!job) notFound();
 
+  const isJobOwner = user.id === job.user_id;
+  const { canAccessJobBoard } = await getJobBoardAccessForUser(supabase, user.id);
+  if (!isJobOwner && !canAccessJobBoard) {
+    redirect("/dashboard/jobs");
+  }
+
   // Fetch Profile and Resumes
   const { data: profile } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
     .single();
+
+  const isMvpCandidate = profile?.role === "candidate_mvp";
 
   const { data: resumes } = await supabase
     .from("resumes")
@@ -38,6 +47,14 @@ export default async function JobDetailPage({ params }: { params: { id: string }
     .eq("job_id", id)
     .eq("user_id", user.id)
     .single();
+
+  const { data: applicants } = isJobOwner
+    ? await supabase
+        .from("job_applications")
+        .select("id, status, resume_url, created_at, user_id, profiles(id, name, headline, email)")
+        .eq("job_id", id)
+        .order("created_at", { ascending: false })
+    : { data: null };
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black pt-28 pb-16 px-6">
@@ -92,6 +109,43 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                       dangerouslySetInnerHTML={{ __html: job.description }}
                     />
                   </section>
+
+                  {isJobOwner && (
+                    <section>
+                      <div className="flex items-center justify-between mb-4 gap-4">
+                        <h3 className="text-xl font-bold">Applicants</h3>
+                        <span className="text-sm text-zinc-500">{applicants?.length ?? 0} total</span>
+                      </div>
+
+                      {applicants?.length ? (
+                        <ul className="space-y-4">
+                          {applicants.map((app: any) => (
+                            <li key={app.id} className="p-4 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
+                              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                                <div>
+                                  <p className="font-semibold text-zinc-900 dark:text-white">{app.profiles?.name || app.user_id}</p>
+                                  <p className="text-sm text-zinc-500">{app.profiles?.headline || app.profiles?.email || 'Candidate application'}</p>
+                                </div>
+                                <span className="text-xs uppercase tracking-widest px-2.5 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                                  {app.status}
+                                </span>
+                              </div>
+                              {app.resume_url && (
+                                <a href={app.resume_url} target="_blank" rel="noreferrer" className="text-sm text-brand-600 hover:underline mt-3 block">
+                                  View resume
+                                </a>
+                              )}
+                              <p className="text-xs text-zinc-400 mt-3">Applied on {new Date(app.created_at).toLocaleDateString()}</p>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800 p-6 text-zinc-500 dark:text-zinc-400">
+                          No applications have been submitted for this job yet.
+                        </div>
+                      )}
+                    </section>
+                  )}
                </div>
 
                <div className="space-y-6">
@@ -117,8 +171,16 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                      <div className="absolute top-0 right-0 p-4 opacity-10">
                         <CheckCircle className="w-16 h-16" />
                      </div>
-                     <p className="text-sm font-bold mb-1">Verify First</p>
-                     <p className="text-xs opacity-90 leading-relaxed">Your MVP status gives you priority access to this role.</p>
+                     <p className="text-sm font-bold mb-1">Verified access</p>
+                     <p className="text-xs opacity-90 leading-relaxed">
+                       {isJobOwner
+                         ? "You posted this listing. Review applicants below."
+                         : profile?.role === "admin"
+                           ? "You are browsing with admin access."
+                           : isMvpCandidate
+                             ? "Your MVP status gives you priority access to this role."
+                             : "Your approved course certificate unlocks applications for this role."}
+                     </p>
                   </div>
                </div>
             </div>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { createClient } from "@/utils/supabase/client";
 import { ExternalLink, CheckCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -18,7 +17,6 @@ export default function ApplyButton({
 }) {
   const [isApplying, setIsApplying] = useState(false);
   const [applied, setApplied] = useState(alreadyApplied);
-  const supabase = createClient();
   const router = useRouter();
 
   const handleApply = async () => {
@@ -29,23 +27,21 @@ export default function ApplyButton({
 
     setIsApplying(true);
     try {
-      // 1. Record application in LXD platform
-      const { error } = await supabase.from("job_applications").insert({
-        job_id: jobId,
-        user_id: userId,
-        status: "applied"
+      const response = await fetch('/api/notifications/job-application', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId, resumeUrl: null }),
       });
 
-      if (error && error.code !== '23505') { // Ignore unique constraint violation if they somehow applied twice
-        console.error("Error recording application:", error);
+      const result = await response.json();
+      if (!response.ok) {
+        console.error('Error recording application:', result.error || result);
       } else {
         setApplied(true);
       }
 
-      // 2. Open external job link
       window.open(externalUrl, "_blank", "noopener,noreferrer");
-      
-      router.refresh(); // Refresh to update server components if needed
+      router.refresh();
     } catch (err) {
       console.error("Application failed:", err);
     } finally {

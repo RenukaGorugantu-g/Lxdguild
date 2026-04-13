@@ -29,16 +29,18 @@ export default function ApplyModal({
   const handleApply = async () => {
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from("job_applications")
-        .insert({
-          job_id: job.id,
-          user_id: user.id,
-          status: 'applied',
-          resume_id: selectedResumeId // Assuming we add this column or just record it
-        });
+      const selectedResume = resumes.find((r) => r.id === selectedResumeId);
+      const resumeUrl = selectedResume?.file_url || null;
 
-      if (error) throw error;
+      const response = await fetch('/api/notifications/job-application', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId: job.id, resumeUrl }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Unable to submit application.');
+
       onSuccess();
       router.refresh();
     } catch (err: any) {

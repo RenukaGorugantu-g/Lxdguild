@@ -47,6 +47,17 @@ export default function RegisterPage() {
       return
     }
 
+    await fetch('/api/notifications/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        name,
+        role: selectedRole,
+        userId: data?.user?.id,
+      }),
+    })
+
     setSuccess(true)
     setLoading(false)
   }

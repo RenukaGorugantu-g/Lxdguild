@@ -35,8 +35,21 @@ CREATE POLICY "Anyone can view jobs" ON jobs
     FOR SELECT USING (true);
 
 -- Resumes Policies
-CREATE POLICY "Users can view and upload their own resume" ON resumes
-    FOR ALL USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can view their own resume" ON resumes;
+CREATE POLICY "Users can view their own resume" ON resumes
+    FOR SELECT USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can insert their own resume" ON resumes;
+CREATE POLICY "Users can insert their own resume" ON resumes
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can update their own resume" ON resumes;
+CREATE POLICY "Users can update their own resume" ON resumes
+    FOR UPDATE USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Users can delete their own resume" ON resumes;
+CREATE POLICY "Users can delete their own resume" ON resumes
+    FOR DELETE USING (auth.uid() = user_id);
 
 -- Resources Policies
 CREATE POLICY "Pro members viewing" ON resources

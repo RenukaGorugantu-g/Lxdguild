@@ -13,22 +13,15 @@ export default function CertificateReviewList({ certificates }: { certificates: 
   const handleReview = async (certId: string, userId: string, action: 'approved' | 'rejected') => {
     setProcessing(certId);
     try {
-      // 1. Update Certificate Status
-      const { error: certError } = await supabase
-        .from('certificates')
-        .update({ status: action })
-        .eq('id', certId);
+      const response = await fetch('/api/notifications/certificate-review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ certId, userId, action }),
+      });
 
-      if (certError) throw certError;
-
-      // 2. If approved, unlock reattempt for candidate
-      if (action === 'approved') {
-        const { error: candError } = await supabase
-          .from('candidates')
-          .update({ reattempt_allowed: true })
-          .eq('user_id', userId);
-        
-        if (candError) throw candError;
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to process certificate review.');
       }
 
       router.refresh();

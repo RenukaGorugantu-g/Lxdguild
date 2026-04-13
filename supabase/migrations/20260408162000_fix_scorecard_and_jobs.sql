@@ -84,6 +84,17 @@ DROP POLICY IF EXISTS "Users can insert their own applications" ON job_applicati
 CREATE POLICY "Users can insert their own applications" ON job_applications
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Job owners can view applications for their jobs" ON job_applications;
+CREATE POLICY "Job owners can view applications for their jobs" ON job_applications
+    FOR SELECT USING (
+        auth.uid() = user_id OR
+        EXISTS (
+            SELECT 1 FROM jobs
+            WHERE jobs.id = job_applications.job_id
+              AND jobs.user_id = auth.uid()
+        )
+    );
+
 DROP POLICY IF EXISTS "Admins can view all applications" ON job_applications;
 CREATE POLICY "Admins can view all applications" ON job_applications
     FOR SELECT USING (

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CheckCircle, AlertCircle, FileText, ArrowRight, PlayCircle, User, ChevronRight } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
+import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import CertificateUpload from "./certificate-upload";
 
 export default async function CandidateDashboard({ profile: initialProfile }: { profile?: any }) {
@@ -43,6 +44,7 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
     .single();
 
   const isVerified = profile.role === "candidate_mvp";
+  const { canAccessJobBoard } = await getJobBoardAccessForUser(supabase, user.id);
   const hasFailed = profile.role === "candidate_onhold" && candidate?.pass_status === "fail";
 
   return (
@@ -136,7 +138,7 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
                 <ArrowRight className="w-32 h-32" />
              </div>
              <h3 className="text-xl font-semibold mb-2 relative z-10">Job Opportunities</h3>
-             {isVerified ? (
+             {canAccessJobBoard ? (
                <div className="relative z-10 space-y-4">
                  <p className="opacity-90">Browse premium, deduplicated requests from Jooble, Adzuna, and Employers.</p>
                  <Link href="/dashboard/jobs" className="inline-block bg-white text-brand-700 font-medium px-6 py-2.5 rounded-lg shadow hover:shadow-lg transition">
@@ -145,7 +147,7 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
                </div>
              ) : (
                <div className="relative z-10 space-y-4">
-                  <p className="opacity-90">You must pass the validation exam to browse and apply to roles.</p>
+                  <p className="opacity-90">Pass the validation exam or get your course certificate approved to browse and apply to roles.</p>
                   <button disabled className="bg-white/20 text-white font-medium px-6 py-2.5 rounded-lg cursor-not-allowed">
                     Locked
                   </button>

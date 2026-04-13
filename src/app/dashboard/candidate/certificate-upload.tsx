@@ -8,6 +8,7 @@ export default function CertificateUpload({ userId }: { userId: string }) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [submitOutcome, setSubmitOutcome] = useState<'pending_review' | 'approved'>('pending_review');
   const supabase = createClient();
 
   const handleUpload = async () => {
@@ -32,15 +33,18 @@ export default function CertificateUpload({ userId }: { userId: string }) {
         .from('certificates')
         .getPublicUrl(filePath);
 
-      // 3. Insert into certificates table
-      const { error: dbError } = await supabase.from('certificates').insert({
-        user_id: userId,
-        certificate_url: publicUrl,
-        status: 'pending'
+      const response = await fetch('/api/notifications/certificate-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, certificateUrl: publicUrl }),
       });
 
-      if (dbError) throw dbError;
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || 'Unable to submit certificate.');
+      }
 
+      setSubmitOutcome(result.status === 'approved' ? 'approved' : 'pending_review');
       setStatus('success');
     } catch (err) {
       console.error(err);
@@ -58,7 +62,11 @@ export default function CertificateUpload({ userId }: { userId: string }) {
         </div>
         <div>
           <h4 className="font-bold text-green-900 dark:text-green-400">Certificate Uploaded</h4>
-          <p className="text-sm text-green-700 dark:text-green-500">Our team will review your certificate within 24-48 hours.</p>
+          <p className="text-sm text-green-700 dark:text-green-500">
+            {submitOutcome === 'approved'
+              ? 'Your certificate is approved. You can browse and apply to jobs from the Job Board.'
+              : 'Our team will review your certificate within 24-48 hours.'}
+          </p>
         </div>
       </div>
     );

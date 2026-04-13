@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { redirect } from "next/navigation";
 import { Briefcase, MapPin, Building, ExternalLink, RefreshCw } from "lucide-react";
 import Link from "next/link";
@@ -14,21 +15,17 @@ export default async function JobsDashboard({
 
   if (!user) redirect("/login");
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
+  const { canAccessJobBoard } = await getJobBoardAccessForUser(supabase, user.id);
 
-  const isVerified = profile?.role === "candidate_mvp" || profile?.role === "admin";
-
-  if (!isVerified) {
+  if (!canAccessJobBoard) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black p-6 pt-28">
         <div className="max-w-md text-center bg-white dark:bg-surface-dark p-8 rounded-2xl border shadow-sm">
           <Briefcase className="w-12 h-12 text-zinc-300 mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-          <p className="text-zinc-500 mb-6">Only verified MVP candidates can access the exclusive job board. Please pass the skill validation exam to unlock this feature.</p>
+          <p className="text-zinc-500 mb-6">
+            The job board is for MVP candidates and for candidates who have completed the learning path and had an approved course certificate. Pass the skill validation exam or submit your certificate from the candidate dashboard to unlock access.
+          </p>
           <Link href="/dashboard/candidate" className="inline-block bg-brand-600 text-white px-6 py-2 rounded-lg font-medium">
             Go to Candidate Dashboard
           </Link>
@@ -36,6 +33,12 @@ export default async function JobsDashboard({
       </div>
     );
   }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single();
 
   let query = supabase
     .from("jobs")
