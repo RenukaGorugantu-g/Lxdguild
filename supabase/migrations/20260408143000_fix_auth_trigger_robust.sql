@@ -11,7 +11,7 @@ AS $$
 DECLARE
     role_val text;
     parsed_role public.user_role;
-BEGINsss
+BEGIN
     role_val := new.raw_user_meta_data->>'role';
     
     -- Safely attempt to parse the role

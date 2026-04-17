@@ -49,11 +49,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
 
-  const candidateMessage = `Your application for ${job.title} at ${job.company} has been recorded. We have notified the employer and admin.`;
+  const candidateMessage = `We saved your application intent for ${job.title} at ${job.company}. Complete the application on the employer's official page to finish applying.`;
   await notifyUser(user.id, 'job_application', 'Application submitted', candidateMessage, {
     job_id: jobId,
     company: job.company,
     title: job.title,
+    apply_url: job.apply_url,
   });
 
   if (job.user_id) {
@@ -73,5 +74,9 @@ export async function POST(req: Request) {
     }
   );
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({
+    success: true,
+    applyUrl: job.apply_url,
+    alreadyApplied: insertError?.code === '23505',
+  });
 }

@@ -1,11 +1,35 @@
 import { createClient } from "@/utils/supabase/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { getJobBoardAccessForUser } from "@/lib/job-board-access";
+import { deriveRoleKeyword, scoreSimilarJob } from "@/lib/job-preferences";
 import { notFound, redirect } from "next/navigation";
-import { Briefcase, MapPin, Building, Calendar, ArrowLeft, CheckCircle } from "lucide-react";
+import { MapPin, Building, Calendar, ArrowLeft, CheckCircle, Clock3 } from "lucide-react";
 import Link from "next/link";
 import ApplyButtonWithModal from "./ApplyButtonWithModal";
 import ApplicationReviewActions from "./ApplicationReviewActions";
+
+type ApplicantRow = {
+  id: string;
+  status: string;
+  resume_url: string | null;
+  created_at: string;
+  user_id: string;
+};
+
+type ApplicantProfile = {
+  id: string;
+  name: string | null;
+  headline: string | null;
+  email: string | null;
+};
+
+type SuggestedJob = {
+  id: string;
+  title: string;
+  company: string | null;
+  location: string | null;
+  expires_at: string | null;
+};
 
 export default async function JobDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
@@ -33,9 +57,9 @@ export default async function JobDetailPage({ params }: { params: { id: string }
     .single();
 
   const isMvpCandidate = profile?.role === "candidate_mvp";
-  const isEmployerViewer = profile?.role?.startsWith("employer");
   const isCandidateViewer = profile?.role?.startsWith("candidate");
   const canApplyToJob = isCandidateViewer && !isJobOwner && canAccessJobBoard;
+  const roleKeyword = deriveRoleKeyword(job.title);
 
   const { data: resumes } = await supabase
     .from("resumes")
@@ -50,6 +74,24 @@ export default async function JobDetailPage({ params }: { params: { id: string }
     .eq("user_id", user.id)
     .single();
 
+  const { data: savedCompany } = !isJobOwner
+    ? await supabase
+        .from("saved_companies")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("company_name", job.company)
+        .maybeSingle()
+    : { data: null };
+
+  const { data: followedRole } = !isJobOwner
+    ? await supabase
+        .from("followed_job_roles")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("keyword", roleKeyword)
+        .maybeSingle()
+    : { data: null };
+
   const { data: applicants } = isJobOwner
     ? await supabase
         .from("job_applications")
@@ -58,7 +100,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
         .order("created_at", { ascending: false })
     : { data: null };
 
-  const applicantUserIds = (applicants || []).map((app: any) => app.user_id).filter(Boolean);
+  const applicantUserIds = ((applicants || []) as ApplicantRow[]).map((app) => app.user_id).filter(Boolean);
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const adminSupabase =
@@ -71,9 +113,43 @@ export default async function JobDetailPage({ params }: { params: { id: string }
         .from("profiles")
         .select("id, name, headline, email")
         .in("id", applicantUserIds)
-    : { data: [] as any[] };
+    : { data: [] as ApplicantProfile[] };
 
-  const applicantProfilesById = new Map((applicantProfiles || []).map((p: any) => [p.id, p]));
+  const applicantProfilesById = new Map((applicantProfiles || []).map((p) => [p.id, p]));
+  const recommendationQuery = supabase
+    .from("jobs")
+    .select("id, title, company, location, expires_at, created_at, is_active")
+    .eq("is_active", true)
+    .gt("expires_at", new Date().toISOString())
+    .neq("id", id)
+    .order("external_posted_at", { ascending: false, nullsFirst: false })
+    .order("imported_at", { ascending: false })
+    .limit(40);
+  const recommendationResult = await recommendationQuery;
+  let recommendationPool = recommendationResult.data;
+  const recommendationError = recommendationResult.error;
+
+  if (recommendationError?.code === "42703") {
+    const fallbackRecommendations = await supabase
+      .from("jobs")
+      .select("id, title, company, location, created_at")
+      .neq("id", id)
+      .order("created_at", { ascending: false })
+      .limit(40);
+
+    recommendationPool = fallbackRecommendations.data;
+  }
+
+  const similarJobs = ((recommendationPool || []) as SuggestedJob[])
+    .map((item) => ({
+      ...item,
+      score: scoreSimilarJob(job.title, item.title, item.company === job.company),
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 4);
+
+  const postedDate = new Date(job.external_posted_at || job.imported_at || job.created_at).toLocaleDateString();
+  const expiryDate = job.expires_at ? new Date(job.expires_at).toLocaleDateString() : null;
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black pt-28 pb-16 px-6">
@@ -102,7 +178,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                     <MapPin className="w-5 h-5 text-brand-600" /> {job.location}
                   </div>
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-brand-600" /> {new Date(job.created_at).toLocaleDateString()}
+                    <Calendar className="w-5 h-5 text-brand-600" /> {postedDate}
                   </div>
                 </div>
               </div>
@@ -111,14 +187,17 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                 <div className="flex flex-col gap-3 min-w-[200px]">
                   <ApplyButtonWithModal
                     job={job}
-                    user={user}
                     profile={profile}
                     resumes={resumes || []}
                     alreadyApplied={!!application}
                     canApply={canApplyToJob}
+                    roleKeyword={roleKeyword}
+                    similarJobs={similarJobs}
+                    isCompanySaved={!!savedCompany}
+                    isRoleFollowed={!!followedRole}
                     lockReason="Write the assessment to unlock job applications."
                   />
-                  <p className="text-[10px] text-center text-zinc-400 uppercase tracking-widest font-bold">Applications managed by LXD Guild</p>
+                  <p className="text-[10px] text-center text-zinc-400 uppercase tracking-widest font-bold">We track your application here, then send you to the official apply page</p>
                 </div>
               ) : (
                 <div className="min-w-[220px] rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-4">
@@ -147,7 +226,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
 
                       {applicants?.length ? (
                         <ul className="space-y-4">
-                          {applicants.map((app: any) => {
+                          {(applicants as ApplicantRow[]).map((app) => {
                             const applicantProfile = applicantProfilesById.get(app.user_id);
                             return (
                             <li key={app.id} className="p-4 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
@@ -197,6 +276,20 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                            <span className="text-zinc-400">Direct Interview with {job.company}</span>
                         </li>
                      </ul>
+                  </div>
+
+                  <div className="p-6 bg-white dark:bg-zinc-900/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 space-y-3">
+                     <h4 className="font-bold text-sm uppercase tracking-wider text-zinc-400">Listing Freshness</h4>
+                     <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
+                       <Clock3 className="w-4 h-4 text-brand-600" />
+                       <span>Posted or refreshed on {postedDate}</span>
+                     </div>
+                     {expiryDate && (
+                       <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
+                         <Clock3 className="w-4 h-4" />
+                         <span>Expected to expire on {expiryDate}</span>
+                       </div>
+                     )}
                   </div>
 
                   <div className="p-6 bg-brand-600 text-white rounded-2xl shadow-lg relative overflow-hidden">

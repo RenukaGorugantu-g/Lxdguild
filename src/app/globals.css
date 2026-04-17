@@ -1,53 +1,56 @@
 @import "tailwindcss";
 
 @theme {
-  /* LXD Guild Brand Colors - Deep Navy + Purple */
-  --color-brand-50:  #f0eeff;
-  --color-brand-100: #e0ddff;
-  --color-brand-200: #c4beff;
-  --color-brand-400: #7c6fff;
-  --color-brand-500: #5b4fcf;
-  --color-brand-600: #4338ca;
-  --color-brand-700: #3730a3;
-  --color-brand-800: #2e27a8;
-  --color-brand-900: #1e1b72;
+  --color-brand-50: #e4f6e2;
+  --color-brand-100: #ccefc9;
+  --color-brand-200: #9ee39b;
+  --color-brand-400: #55d14f;
+  --color-brand-500: #34cd2f;
+  --color-brand-600: #23b61f;
+  --color-brand-700: #1c9219;
+  --color-brand-800: #176f14;
+  --color-brand-900: #124f10;
 
-  /* Accent - Teal/Cyan for contrast highlights */
-  --color-accent-400: #22d3ee;
-  --color-accent-500: #06b6d4;
-  --color-accent-600: #0891b2;
+  --color-accent-400: #8be9ff;
+  --color-accent-500: #5fd5ff;
+  --color-accent-600: #3baed5;
 
-  /* Gold for premium/verified badges */
   --color-gold-400: #fbbf24;
   --color-gold-500: #f59e0b;
 
-  /* Dark surfaces */
-  --color-background-dark: #0b0c1e;
-  --color-surface-dark:    #12142a;
-  --color-border-dark:     #1f2148;
+  --color-background-dark: #091737;
+  --color-surface-dark: #102148;
+  --color-border-dark: #29416f;
 
-  /* Fonts */
-  --font-sans: var(--font-outfit), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-montserrat), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 :root {
-  --background:       #f8f9ff;
-  --foreground:       #0b0c1e;
-  --card:             #ffffff;
-  --card-foreground:  #0b0c1e;
-  --border:           #e0ddff;
-  --muted:            #6b7280;
+  --bg-dark: #091737;
+  --text-light: #ffffff;
+  --text-muted: #cde3e1;
+  --accent: #34cd2f;
+  --background: #091737;
+  --foreground: #ffffff;
+  --card: rgba(255, 255, 255, 0.08);
+  --card-foreground: #ffffff;
+  --border: rgba(205, 227, 225, 0.16);
+  --muted: #cde3e1;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background:      #0b0c1e;
-    --foreground:      #f0eeff;
-    --card:            #12142a;
-    --card-foreground: #f0eeff;
-    --border:          #1f2148;
-    --muted:           #8b8fa8;
+    --background: #091737;
+    --foreground: #ffffff;
+    --card: rgba(255, 255, 255, 0.08);
+    --card-foreground: #ffffff;
+    --border: rgba(205, 227, 225, 0.16);
+    --muted: #cde3e1;
   }
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
@@ -55,33 +58,39 @@ body {
   color: var(--foreground);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-image:
+    radial-gradient(circle at top left, rgba(52, 205, 47, 0.16), transparent 26%),
+    radial-gradient(circle at top right, rgba(95, 213, 255, 0.12), transparent 24%),
+    linear-gradient(180deg, #0c1b3e 0%, #091737 45%, #08122a 100%);
 }
 
-/* Glassmorphism utility */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.06));
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border: 1px solid rgba(205, 227, 225, 0.18);
+  box-shadow: 0 24px 80px rgba(3, 10, 26, 0.35);
 }
 
-/* Gradient text */
 .gradient-text {
-  background: linear-gradient(135deg, #5b4fcf, #06b6d4);
+  background: linear-gradient(135deg, #ffffff, #34cd2f 70%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Premium glow effect */
 .glow-brand {
-  box-shadow: 0 0 30px rgba(67, 56, 202, 0.25);
+  box-shadow: 0 0 36px rgba(52, 205, 47, 0.24);
 }
 
-/* Animated gradient border */
 @keyframes border-spin {
-  from { background-position: 0% 50%; }
-  to   { background-position: 100% 50%; }
+  from {
+    background-position: 0% 50%;
+  }
+
+  to {
+    background-position: 100% 50%;
+  }
 }
 
 .animate-gradient-border {

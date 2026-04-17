@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Outfit, Inter } from "next/font/google";
+import { Inter, Montserrat } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-const outfit = Outfit({
-  variable: "--font-outfit",
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const inter = Inter({
@@ -16,10 +16,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "LXD Guild — Skill-First Verified Talent Marketplace",
-  description: "The premier verified talent marketplace for Learning & Development professionals. Validate your skills, access exclusive jobs, and connect with top L&D employers.",
+  title: "LXD Guild - Skill-First Verified Talent Marketplace",
+  description:
+    "The premier verified talent marketplace for Learning & Development professionals. Validate your skills, access exclusive jobs, and connect with top L&D employers.",
   openGraph: {
-    title: "LXD Guild — Skill-First Verified Talent Marketplace",
+    title: "LXD Guild - Skill-First Verified Talent Marketplace",
     description: "Discover verified Learning & Development professionals through skill exams.",
     siteName: "LXD Guild",
   },
@@ -31,12 +32,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${outfit.variable} ${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-[#f8f9ff]">
+    <html lang="en" className={`${montserrat.variable} ${inter.variable} h-full antialiased`}>
+      <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)]">
         <Header />
-        <main className="flex-1">
-          {children}
-        </main>
+        <main className="flex-1">{children}</main>
         <Footer />
       </body>
     </html>

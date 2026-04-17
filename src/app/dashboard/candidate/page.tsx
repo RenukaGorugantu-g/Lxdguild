@@ -3,9 +3,20 @@ import { redirect } from "next/navigation";
 import { CheckCircle, AlertCircle, FileText, ArrowRight, PlayCircle, User, ChevronRight, Briefcase } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getJobBoardAccessForUser } from "@/lib/job-board-access";
+import { getMembershipState } from "@/lib/membership";
+import { isVerifiedCandidateRole } from "@/lib/profile-role";
 import CertificateUpload from "./certificate-upload";
 
-export default async function CandidateDashboard({ profile: initialProfile }: { profile?: any }) {
+type CandidateDashboardProfile = {
+  name?: string | null;
+  role?: string | null;
+  membership_status?: string | null;
+  membership_plan?: string | null;
+  membership_expires_at?: string | null;
+  [key: string]: unknown;
+};
+
+export default async function CandidateDashboard({ profile: initialProfile }: { profile?: CandidateDashboardProfile | null }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -49,10 +60,9 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
     .order("created_at", { ascending: false })
     .limit(3);
 
-  const isVerified = profile.role === "candidate_mvp";
+  const isVerified = isVerifiedCandidateRole(profile.role);
+  const membership = getMembershipState(profile);
   const { canAccessJobBoard } = await getJobBoardAccessForUser(supabase, user.id);
-  const hasFailed = profile.role === "candidate_onhold" && candidate?.pass_status === "fail";
-
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black pt-28 pb-16 px-6">
       <div className="max-w-4xl mx-auto space-y-8">
@@ -193,6 +203,24 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
                 : "See all roles you applied to and current status."}
             </p>
           </Link>
+
+          <Link
+            href={membership.active ? "/dashboard/resources" : "/dashboard/membership"}
+            className="p-6 bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-3xl hover:shadow-xl hover:shadow-brand-500/10 transition-all group md:col-span-2"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-10 h-10 bg-brand-50 dark:bg-brand-900/20 rounded-xl flex items-center justify-center text-brand-600">
+                <FileText className="w-5 h-5" />
+              </div>
+              <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:translate-x-1 transition-transform" />
+            </div>
+            <h3 className="font-bold mb-1">Tools & Resources Membership</h3>
+            <p className="text-zinc-500 text-sm">
+              {membership.active
+                ? "Your annual membership is active. Open the full resource library."
+                : "Download the free resources now and unlock the full library with annual membership."}
+            </p>
+          </Link>
         </div>
       </div>
     </div>
@@ -207,4 +235,3 @@ function Step({ active, label, icon }: { active: boolean, label: string, icon: R
     </div>
   )
 }
-

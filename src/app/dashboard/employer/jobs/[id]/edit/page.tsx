@@ -2,8 +2,13 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import JobEditForm from "./JobEditForm";
 
-export default async function EditJobPage({ params }: { params: { id: string } }) {
+export default async function EditJobPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const supabase = await createClient();
+  const { id } = await params;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
@@ -20,7 +25,7 @@ export default async function EditJobPage({ params }: { params: { id: string } }
   const { data: job } = await supabase
     .from("jobs")
     .select("id, title, company, location, apply_url, description, user_id")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   if (!job) notFound();

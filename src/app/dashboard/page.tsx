@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import CandidateDashboard from "./candidate/page";
 import EmployerDashboard from "./employer/page";
 import AdminDashboard from "./admin/page";
+import { getBaseRole } from "@/lib/profile-role";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -22,15 +23,17 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  if (profile.role.startsWith("candidate")) {
+  const baseRole = getBaseRole(profile);
+
+  if (baseRole === "candidate") {
     return <CandidateDashboard profile={profile} />;
   }
 
-  if (profile.role.startsWith("employer") || profile.role === "pro_member") {
+  if (baseRole === "employer") {
     return <EmployerDashboard profile={profile} />;
   }
 
-  if (profile.role === "admin") {
+  if (baseRole === "admin") {
     return <AdminDashboard profile={profile} />;
   }
 

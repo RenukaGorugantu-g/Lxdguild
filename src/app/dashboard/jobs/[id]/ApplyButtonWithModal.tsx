@@ -1,34 +1,71 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle, Lock, Send } from "lucide-react";
+import { CheckCircle, ExternalLink, Lock, Send } from "lucide-react";
 import ApplyModal from "./ApplyModal";
+
+type ApplyJob = {
+  id?: string;
+  title?: string | null;
+  company?: string | null;
+  apply_url?: string | null;
+};
+
+type CandidateProfile = {
+  name?: string | null;
+  headline?: string | null;
+  skills?: string[] | null;
+};
+
+type ResumeOption = {
+  id: string;
+  file_url?: string | null;
+  file_name?: string | null;
+};
+
+type SimilarJob = {
+  id: string;
+  title: string;
+  company: string | null;
+  location: string | null;
+  expires_at: string | null;
+  score: number;
+};
 
 export default function ApplyButtonWithModal({ 
   job, 
-  user, 
   profile, 
   resumes, 
   alreadyApplied,
+  roleKeyword,
+  similarJobs,
+  isCompanySaved,
+  isRoleFollowed,
   canApply = true,
   lockReason = "Write the assessment to unlock job applications."
 }: { 
-  job: any, 
-  user: any, 
-  profile: any, 
-  resumes: any[], 
+  job: ApplyJob, 
+  profile: CandidateProfile, 
+  resumes: ResumeOption[], 
   alreadyApplied: boolean,
+  roleKeyword: string,
+  similarJobs: SimilarJob[],
+  isCompanySaved: boolean,
+  isRoleFollowed: boolean,
   canApply?: boolean,
   lockReason?: string
 }) {
   const [showModal, setShowModal] = useState(false);
   const [applied, setApplied] = useState(alreadyApplied);
 
-  if (applied) {
+  if (applied && !showModal) {
     return (
-      <div className="flex items-center justify-center gap-2 py-4 px-8 bg-green-50 text-green-700 rounded-2xl font-bold border border-green-100 shadow-sm">
-        <CheckCircle className="w-5 h-5" /> Already Applied
-      </div>
+      <button
+        onClick={() => setShowModal(true)}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-green-100 bg-green-50 px-8 py-4 font-bold text-green-700 shadow-sm transition-colors hover:bg-green-100"
+      >
+        <CheckCircle className="w-5 h-5" /> Resume Employer Application <ExternalLink className="w-4 h-4" />
+      </button>
     );
   }
 
@@ -56,13 +93,16 @@ export default function ApplyButtonWithModal({
       {showModal && (
         <ApplyModal 
           job={job} 
-          user={user} 
           profile={profile} 
           resumes={resumes} 
+          roleKeyword={roleKeyword}
+          similarJobs={similarJobs}
+          isCompanySaved={isCompanySaved}
+          isRoleFollowed={isRoleFollowed}
+          alreadyApplied={applied}
           onClose={() => setShowModal(false)}
           onSuccess={() => {
             setApplied(true);
-            setShowModal(false);
           }}
         />
       )}

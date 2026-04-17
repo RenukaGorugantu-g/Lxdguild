@@ -6,6 +6,8 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { title, company, location, apply_url, description } = body;
+    const nowIso = new Date().toISOString();
+    const expiresAt = new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString();
 
     if (!title || !company || !location || !apply_url || !description) {
       return NextResponse.json({ error: "All fields are required." }, { status: 400 });
@@ -44,6 +46,11 @@ export async function POST(req: Request) {
       source: "employer",
       apply_url,
       user_id: user.id,
+      is_active: true,
+      imported_at: nowIso,
+      last_seen_at: nowIso,
+      external_posted_at: nowIso,
+      expires_at: expiresAt,
     }).select('id, title, company');
 
     if (insertError) {
@@ -56,6 +63,11 @@ export async function POST(req: Request) {
           description,
           source: "employer",
           apply_url,
+          is_active: true,
+          imported_at: nowIso,
+          last_seen_at: nowIso,
+          external_posted_at: nowIso,
+          expires_at: expiresAt,
         }).select('id, title, company');
 
         if (fallbackError) {

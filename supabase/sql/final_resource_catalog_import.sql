@@ -1,0 +1,377 @@
+-- Final resource catalog import
+-- Generated from migrations:
+-- 20260417103000_resource_category_map_sync.sql
+-- 20260417120000_import_resources_from_membership_html.sql
+
+ALTER TABLE resources
+ADD COLUMN IF NOT EXISTS category_slug TEXT;
+
+ALTER TABLE resources
+ADD COLUMN IF NOT EXISTS source_file_link TEXT;
+
+CREATE UNIQUE INDEX IF NOT EXISTS resources_file_link_unique_idx
+ON public.resources (file_link);
+
+CREATE TABLE IF NOT EXISTS resource_category_map (
+  file_url TEXT PRIMARY KEY,
+  category TEXT NOT NULL,
+  category_slug TEXT NOT NULL,
+  updated_file_url TEXT
+);
+
+CREATE OR REPLACE FUNCTION public.resource_title_from_url(resource_url TEXT)
+RETURNS TEXT
+LANGUAGE sql
+IMMUTABLE
+AS $$
+  SELECT trim(
+    regexp_replace(
+      regexp_replace(
+        replace(
+          replace(
+            replace(
+              regexp_replace(split_part(resource_url, '/', array_length(string_to_array(resource_url, '/'), 1)), '\?.*$', ''),
+              '_',
+              ' '
+            ),
+            '%20',
+            ' '
+          ),
+          '-',
+          ' '
+        ),
+        '\.(docx|pptx|xlsx|pdf)(\.(docx|pptx|xlsx|pdf))*$',
+        '',
+        'i'
+      ),
+      '\s+',
+      ' ',
+      'g'
+    )
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION public.resource_member_url_from_url(resource_url TEXT)
+RETURNS TEXT
+LANGUAGE sql
+IMMUTABLE
+AS $$
+  SELECT 'https://lxdguild.com/members/resources/' ||
+    split_part(resource_url, '/', array_length(string_to_array(resource_url, '/'), 1));
+$$;
+
+INSERT INTO public.resource_category_map (file_url, category, category_slug)
+VALUES
+-- Talent Strategy and Management
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/To-Source-In-House-or-Out-of-House_.docx.pdf', 'Talent Strategy and Management', 'talent-strategy-and-management'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Information-to-Include-in-an-RFP.docx.pdf', 'Talent Strategy and Management', 'talent-strategy-and-management'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Moderated-Remote-Usability-Script-Guidance.docx.pdf', 'Talent Strategy and Management', 'talent-strategy-and-management'),
+
+-- Learning Sciences
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/creating-engaged-employees-advance-organizer-templates-and-tools-final.docx-1.pdf', 'Learning Sciences', 'learning-sciences'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/learning-action-plan-template.docx.pdf', 'Learning Sciences', 'learning-sciences'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/learning-design-checklist.docx.pdf', 'Learning Sciences', 'learning-sciences'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/designing-for-attention-and-learning-templates-and-tools-final.docx.pdf', 'Learning Sciences', 'learning-sciences'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/training-for-expertise-job-aid-final.docx.pdf', 'Learning Sciences', 'learning-sciences'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/writing-better-learning-objectives-templates-and-tools-final.docx.pdf', 'Learning Sciences', 'learning-sciences'),
+
+-- Organization Development and Culture
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/staff-engagement-survey-templates-and-tools-final.docx.pdf', 'Organization Development and Culture', 'organization-development-and-culture'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/positive-performance-checklist-job-aid-final.docx.pdf', 'Organization Development and Culture', 'organization-development-and-culture'),
+
+-- Communication & Evaluating Impact
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/persuasion-preparation-worksheet.docx.pdf', 'Communication & Evaluating Impact', 'communication-evaluating-impact'),
+
+-- Collaboration,Leadership & Business Insight
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Three-bold-steps.docx.pdf', 'Collaboration,Leadership & Business Insight', 'collaboration-leadership-business-insight'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/measuring-internal-leadership-team-effectiveness-job-aid-final.pptx-1.pdf', 'Collaboration,Leadership & Business Insight', 'collaboration-leadership-business-insight'),
+
+-- Instructional Design
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Thinking-of-Prototyping_.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-the-six-steps-of-needs-assessment.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-the-ropes-in-action.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-the-3-cs.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-more-about-blooms-taxonomy.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-kirkpatricks-four-levels-of-evaluation.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-influential-learning-models.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-implementation-plan-components.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-guide-to-designing-assessments.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-evaluating-existing-content.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-design-thinking-tools.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-data-collection-methods.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/training-needs-analysis-job-aid-002.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/skills-gap-action-plan-checklist.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Business-Benefits-to-Using-Social-Media.docx-1.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/rating-scale-template.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/population-analysis-matrix.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/data-collection-plan.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/audit-questions.docx-1.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/training-stakeholder-analysis.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/course-maintenance-plan-template.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Using-ADDIE-for-Face-to-Face-Virtual-and-Online-Learning.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/template-for-design-document.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Is-It-Knowledge-a-Skill-or-an-Attitude_.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/instructional-design-models.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/guidelines-for-designing-learning-materials.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/how-creative-is-your-training.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/guide-learning-design-final.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/sample-design-meeting-agenda-final.docx.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/CREATE-AN-ACTIONABLE-E-LEARNING-STORYBOARD.docx-1.pdf', 'Instructional Design', 'instructional-design'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/E-Learning-Project-Kickoff-Meeting-Checklist.docx.pdf', 'Instructional Design', 'instructional-design'),
+
+-- Technology Application
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Learning-Technology-Needs-Assessment.docx-2.pdf', 'Technology Application', 'technology-application'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Checklist-for-Leveraging-Social-Media-For-Learning.docx.pdf', 'Technology Application', 'technology-application'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Checklist-for-Methods-and-Techniques-for-Testing-Learning-Technologies.docx.pdf', 'Technology Application', 'technology-application'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Considerations-for-Creating-a-Data-Governance-Practice.docx.pdf', 'Technology Application', 'technology-application'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Guiding-Questions-for-Using-Social-Media.docx.pdf', 'Technology Application', 'technology-application'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Identifying-and-Articulating-Technology-System-Requirements.docx.pdf', 'Technology Application', 'technology-application'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Improve-Formal-Learning-Checklist.docx.pdf', 'Technology Application', 'technology-application'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/UI_UX-Design-Best-Practices.docx.pdf', 'Technology Application', 'technology-application'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Tips-for-Creating-Accessible-Learning-Experiences.docx.pdf', 'Technology Application', 'technology-application'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Getting-Started-With-AI-and-MR.docx.pdf', 'Technology Application', 'technology-application'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Checklist-for-Evaluating-and-Selecting-E-Learning-Software-Tools-By-ATD-Staff.docx.pdf', 'Technology Application', 'technology-application'),
+('https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Checklist-for-Administering-a-Learning-Technology-Ecosystem.docx.pdf', 'Technology Application', 'technology-application')
+ON CONFLICT (file_url) DO UPDATE
+SET category = EXCLUDED.category,
+    category_slug = EXCLUDED.category_slug,
+    updated_file_url = EXCLUDED.updated_file_url;
+
+UPDATE public.resources AS r
+SET category = m.category,
+    category_slug = m.category_slug,
+    source_file_link = COALESCE(r.source_file_link, COALESCE(m.updated_file_url, m.file_url), r.file_link),
+    file_link = public.resource_member_url_from_url(COALESCE(m.updated_file_url, m.file_url))
+FROM public.resource_category_map AS m
+WHERE r.file_link = m.file_url
+   OR r.file_link = COALESCE(m.updated_file_url, m.file_url)
+   OR r.source_file_link = m.file_url
+   OR r.source_file_link = COALESCE(m.updated_file_url, m.file_url);
+
+UPDATE public.resources
+SET source_file_link = COALESCE(source_file_link, file_link),
+    file_link = public.resource_member_url_from_url(COALESCE(source_file_link, file_link))
+WHERE file_link NOT LIKE 'https://lxdguild.com/members/resources/%';
+
+INSERT INTO public.resources (category, category_slug, title, file_link, source_file_link, premium_only)
+SELECT
+  m.category,
+  m.category_slug,
+  initcap(public.resource_title_from_url(COALESCE(m.updated_file_url, m.file_url))),
+  public.resource_member_url_from_url(COALESCE(m.updated_file_url, m.file_url)),
+  COALESCE(m.updated_file_url, m.file_url),
+  true
+FROM public.resource_category_map AS m
+ON CONFLICT (file_link) DO UPDATE
+SET category = EXCLUDED.category,
+    category_slug = EXCLUDED.category_slug,
+    source_file_link = EXCLUDED.source_file_link;
+
+
+WITH raw_resources AS (
+  SELECT *
+  FROM (
+    VALUES
+      ('Free Resource', 'free-resource', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/06/lxd-the-f-o-i-d-model.pdf', false),
+      ('Free Resource', 'free-resource', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/06/lxd-learning-frameworks-reference-guide.pdf', false),
+      ('Free Resource', 'free-resource', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/06/Learning-Technology-Needs-Assessment.pdf', false),
+      ('Free Resource', 'free-resource', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/06/Comparison-of-Learning-on-the-Job-Formats.pdf', false),
+
+      ('Talent Strategy and Management', 'talent-strategy-and-management', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/06/how-to-collaborate-with-clients-job-aid-final.pdf', true),
+      ('Talent Strategy and Management', 'talent-strategy-and-management', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/08/sample-individual-development-plan-final.docx-1.pdf', true),
+      ('Talent Strategy and Management', 'talent-strategy-and-management', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/08/10-steps-to-successful-mentoring-book-summary-final-2021-03-01.docx.pdf', true),
+      ('Talent Strategy and Management', 'talent-strategy-and-management', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/08/finding-the-right-coach-for-your-career-growth-templates-and-tools-final.pdf', true),
+      ('Talent Strategy and Management', 'talent-strategy-and-management', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/08/perceptions-of-talent-development-survey-templates-and-tools-final.pdf', true),
+      ('Talent Strategy and Management', 'talent-strategy-and-management', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Information-to-Include-in-an-RFP.docx.pdf', true),
+      ('Talent Strategy and Management', 'talent-strategy-and-management', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Moderated-Remote-Usability-Script-Guidance.docx.pdf', true),
+      ('Talent Strategy and Management', 'talent-strategy-and-management', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/To-Source-In-House-or-Out-of-House_.docx.pdf', true),
+
+      ('My Career', 'my-career', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/08/find-your-career-path.docx.pdf', true),
+      ('My Career', 'my-career', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/08/managing-down-meeting-preparation-questionnaire.docx.pdf', true),
+      ('My Career', 'my-career', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/08/top-ten-tips-to-prepare-for-a-job-interview-templates-and-tools-final-1.docx.pdf', true),
+      ('My Career', 'my-career', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/08/finding-the-right-coach-for-your-career-growth-templates-and-tools-final.docx-1.pdf', true),
+
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/08/Learning-Technology-Needs-Assessment.docx.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/icebreaker-success-questionnaire.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/5-step-model-for-structuring-and-conducting-know-how-training-final.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-techniques-to-encourage-discussion.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-virtual-vs-face-to-face-meetings.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-meeting-communication-norms.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-learning-delivery-strategies.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-frameworks-for-identifying-learning-options.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-formal-and-informal-learning-at-a-glance.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Face-to-Face-Room-Set-Up-Options.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-encourage-participation.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Elements-of-an-Effective-Self-development-Plan.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Delivery-Methods-for-Learning-Events.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-conflict-management-techniques.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Comparison-of-Learning-on-the-Job-Formats.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-choosing-methods-based-on-class-size.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-checklist-to-create-safe-supportive-learning-environment.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-ask-the-right-questions.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Checklist-for-Planning-and-Preparation.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-before-during-and-after-the-learning-event.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-after-the-meeting.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-adult-learning-principles.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/how-creative-is-your-training.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/assessment-for-facilitation-final.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Tips-for-Debriefing-Round-Robin.docx-1.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Setting-Group-Commitments.docx-1.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/08/four-corners-technique-templates-and-tools-final.docx.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/08/Make-Software-Training-Interactive.pptx.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/08/Use-ADDIE-to-Create-Webinars_-5-Steps-to-Effective-Presentations.pptx.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/08/learning-frameworks-reference-guide.docx.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/08/lxd-guild-set-up-an-online-learning-community.docx.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/08/Guidelines-for-Creating-a-Blended-Learning-Experience.docx.pdf', true),
+      ('Training Delivery and Facilitation', 'training-delivery-and-facilitation', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/08/lxd-guild-emotional-intelligence-and-learning.docx.pdf', true),
+
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Sample-Design-Standards-Checklist-for-Virtual-Training.docx.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Virtual-Classroom-Icebreakers.docx.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/The-Extra-Prepared-Virtual-Facilitator-and-Producer-Checklist.docx.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Business-Benefits-to-Using-Social-Media.docx.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Use-ADDIE-to-Create-Webinars_-5-Steps-to-Effective-Presentations.pptx.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Tips-to-Unleash-Your-Inner-Design-Artist.pptx.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Accessibility-Considerations-for-User-Interface-UI-Design.docx.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Learning-Technology-Needs-Assessment.docx-2.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Checklist-for-Leveraging-Social-Media-For-Learning.docx.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Checklist-for-Methods-and-Techniques-for-Testing-Learning-Technologies.docx.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Considerations-for-Creating-a-Data-Governance-Practice.docx.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Guiding-Questions-for-Using-Social-Media.docx.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Identifying-and-Articulating-Technology-System-Requirements.docx.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Improve-Formal-Learning-Checklist.docx.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/UI_UX-Design-Best-Practices.docx.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Tips-for-Creating-Accessible-Learning-Experiences.docx.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Getting-Started-With-AI-and-MR.docx.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Checklist-for-Evaluating-and-Selecting-E-Learning-Software-Tools-By-ATD-Staff.docx.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Checklist-for-Administering-a-Learning-Technology-Ecosystem.docx.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Learning-Technology-Needs-Assessment.docx-1.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/BUILDS-Framework-for-Evaluating-Emerging-Technologies-for-Learning.docx.pdf', true),
+      ('Technology Application', 'technology-application', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/key-questions-to-design-and-implement-a-mobile-learning-strategy.docx.pdf', true),
+
+      ('Managing the Learning Function', 'managing-the-learning-function', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/discussion-guides-final.docx-1.pdf', true),
+      ('Managing the Learning Function', 'managing-the-learning-function', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Starting-a-Talent-Development-Program-Book-Summary.docx.pdf', true),
+      ('Managing the Learning Function', 'managing-the-learning-function', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/perceptions-of-talent-development-survey-templates-and-tools-final.docx.pdf', true),
+
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Thinking-of-Prototyping_.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-the-six-steps-of-needs-assessment.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-the-ropes-in-action.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-the-3-cs.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-more-about-blooms-taxonomy.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-kirkpatricks-four-levels-of-evaluation.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-influential-learning-models.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-implementation-plan-components.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-guide-to-designing-assessments.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-evaluating-existing-content.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-design-thinking-tools.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/atd-data-collection-methods.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/training-needs-analysis-job-aid-002.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/skills-gap-action-plan-checklist.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Business-Benefits-to-Using-Social-Media.docx-1.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/rating-scale-template.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/population-analysis-matrix.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/data-collection-plan.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/audit-questions.docx-1.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/training-stakeholder-analysis.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/course-maintenance-plan-template.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Using-ADDIE-for-Face-to-Face-Virtual-and-Online-Learning.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/template-for-design-document.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Is-It-Knowledge-a-Skill-or-an-Attitude_.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/instructional-design-models.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/guidelines-for-designing-learning-materials.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/how-creative-is-your-training.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/guide-learning-design-final.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/sample-design-meeting-agenda-final.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/CREATE-AN-ACTIONABLE-E-LEARNING-STORYBOARD.docx-1.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/E-Learning-Project-Kickoff-Meeting-Checklist.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/science-of-learning-glossary-job-aid-final.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/training-instructional-design-curriculum-development.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/needs-assessment-client-interview-form.docx.pdf', true),
+      ('Instructional Design', 'instructional-design', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/job-analysis-results.docx.pdf', true),
+
+      ('Career and Leadership Development', 'career-and-leadership-development', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/leadership-development-program-discussion-guide-for-managers.docx.pdf', true),
+      ('Career and Leadership Development', 'career-and-leadership-development', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/team-engagement-checklist-for-mentors.docx.pdf', true),
+      ('Career and Leadership Development', 'career-and-leadership-development', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/stakeholder-discovery-questionnaire.docx.pdf', true),
+      ('Career and Leadership Development', 'career-and-leadership-development', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/BUILDS-Framework-for-Evaluating-Emerging-Technologies-for-Learning.docx-1.pdf', true),
+      ('Career and Leadership Development', 'career-and-leadership-development', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/four-step-process-of-executive-coaching-templates-and-tools-final.docx-1.pdf', true),
+      ('Career and Leadership Development', 'career-and-leadership-development', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/personal-development-action-plan-job-aid-final.docx-1.pdf', true),
+      ('Career and Leadership Development', 'career-and-leadership-development', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/top-ten-tips-to-prepare-for-a-job-interview-templates-and-tools-final-1.docx-1.pdf', true),
+
+      ('Sales Enablement', 'sales-enablement', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/maximizing-the-effectiveness-of-sales-training-job-aid-final.docx.pdf', true),
+      ('Sales Enablement', 'sales-enablement', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/account-mapping-and-team-alignments-job-aid-final.xlsx-Directions.pdf', true),
+      ('Sales Enablement', 'sales-enablement', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/annual-sales-enablement-plan-template-job-aid-final.xlsx-Report-Card-1.pdf', true),
+      ('Sales Enablement', 'sales-enablement', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/The-6-Components-of-a-Solid-Account-Plan.docx.pdf', true),
+      ('Sales Enablement', 'sales-enablement', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/forecasting-worksheet-and-pipeline-action-plan-templates-and-tools-final.docx-1.pdf', true),
+      ('Sales Enablement', 'sales-enablement', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/5-steps-for-conducting-a-sales-training-needs-analysis-templates-and-tools-final.docx.pdf', true),
+      ('Sales Enablement', 'sales-enablement', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/sales-coaching-process-job-aid-final.docx.pdf', true),
+      ('Sales Enablement', 'sales-enablement', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/sequencing-social-media-selling-job-aid-final.pptx.pdf', true),
+
+      ('Organization Development and Culture', 'organization-development-and-culture', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/staff-engagement-survey-templates-and-tools-final.docx.pdf', true),
+      ('Organization Development and Culture', 'organization-development-and-culture', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/positive-performance-checklist-job-aid-final.docx.pdf', true),
+
+      ('Learning Sciences', 'learning-sciences', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/creating-engaged-employees-advance-organizer-templates-and-tools-final.docx-1.pdf', true),
+      ('Learning Sciences', 'learning-sciences', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/learning-action-plan-template.docx.pdf', true),
+      ('Learning Sciences', 'learning-sciences', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/learning-design-checklist.docx.pdf', true),
+      ('Learning Sciences', 'learning-sciences', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/designing-for-attention-and-learning-templates-and-tools-final.docx.pdf', true),
+      ('Learning Sciences', 'learning-sciences', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/training-for-expertise-job-aid-final.docx.pdf', true),
+      ('Learning Sciences', 'learning-sciences', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/writing-better-learning-objectives-templates-and-tools-final.docx.pdf', true),
+
+      ('Management Development', 'management-development', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/managing-down-meeting-preparation-questionnaire.docx-1.pdf', true),
+      ('Management Development', 'management-development', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/managing-up-meeting-template.docx.pdf', true),
+      ('Management Development', 'management-development', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/The-Unashamed-Guide-to-Virtual-Management-Book-Summary.docx.pdf', true),
+      ('Management Development', 'management-development', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/questions-to-ask-after-the-feedback-meeting-job-aid-final.docx.pdf', true),
+      ('Management Development', 'management-development', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/question-to-ask-a-prospective-client-job-aid-final.docx.pdf', true),
+      ('Management Development', 'management-development', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/planning-your-development-job-aid-final.docx.pdf', true),
+      ('Management Development', 'management-development', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/multigenerational-leadership-job-aid-final.docx.pdf', true),
+      ('Management Development', 'management-development', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/manager-onboarding-checklist-job-aid-final.docx.pdf', true),
+
+      ('Cultural Awareness and Inclusion', 'cultural-awareness-and-inclusion', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/workplace-inclusion-strategic-plan-template.docx.pdf', true),
+      ('Cultural Awareness and Inclusion', 'cultural-awareness-and-inclusion', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/dei-business-plan-template.docx.pdf', true),
+      ('Cultural Awareness and Inclusion', 'cultural-awareness-and-inclusion', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Cross-Cultural-Training-for-Expats.docx.pdf', true),
+      ('Cultural Awareness and Inclusion', 'cultural-awareness-and-inclusion', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/diversity-inclusion-action-planner-templates-and-tools-final.docx.pdf', true),
+
+      ('Communication & Evaluating Impact', 'communication-evaluating-impact', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/persuasion-preparation-worksheet.docx.pdf', true),
+      ('Communication & Evaluating Impact', 'communication-evaluating-impact', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/collaborating-with-naysayers-checklist.docx.pdf', true),
+      ('Communication & Evaluating Impact', 'communication-evaluating-impact', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/the-5-whys-analysis.pptx.pdf', true),
+      ('Communication & Evaluating Impact', 'communication-evaluating-impact', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/audit-questions.docx.pdf', true),
+
+      ('Collaboration,Leadership & Business Insight', 'collaboration-leadership-business-insight', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Three-bold-steps.docx.pdf', true),
+      ('Collaboration,Leadership & Business Insight', 'collaboration-leadership-business-insight', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/measuring-internal-leadership-team-effectiveness-job-aid-final.pptx-1.pdf', true),
+      ('Collaboration,Leadership & Business Insight', 'collaboration-leadership-business-insight', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/action-list-template-final.docx.pdf', true),
+
+      ('Coaching', 'coaching', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/sample-agenda-for-first-peer-coaching-session-templates-and-tools-final.docx.pdf', true),
+      ('Coaching', 'coaching', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/group-mentoring-topics-template-and-tool-final.docx-1.pdf', true),
+      ('Coaching', 'coaching', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/coaching-plan-for-business-impact-templates-and-tools-final.pptx-1.pdf', true),
+
+      ('Performance Improvement', 'performance-improvement', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/sample-individual-development-plan-final.docx-2-1.pdf', true),
+      ('Performance Improvement', 'performance-improvement', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Mentoring-Program-Outline_Planner.docx.pdf', true),
+
+      ('Consulting and Business Partnering', 'consulting-and-business-partnering', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/learning-contract-final.docx.pdf', true),
+      ('Consulting and Business Partnering', 'consulting-and-business-partnering', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/training-intake-request-form-job-aid-final.docx.pdf', true),
+      ('Consulting and Business Partnering', 'consulting-and-business-partnering', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/Learning-Game-Design-Worksheet.docx-1.pdf', true),
+      ('Consulting and Business Partnering', 'consulting-and-business-partnering', 'https://oldlxd.lxdguild.com/wp-content/uploads/2024/09/questions-to-ask-after-the-feedback-meeting-job-aid-final.docx-1.pdf', true)
+  ) AS t(category, category_slug, source_file_link, premium_only)
+),
+deduped AS (
+  SELECT DISTINCT ON (public.resource_member_url_from_url(source_file_link))
+    category,
+    category_slug,
+    source_file_link,
+    premium_only
+  FROM raw_resources
+  ORDER BY public.resource_member_url_from_url(source_file_link), premium_only ASC, category, source_file_link
+)
+INSERT INTO public.resources (category, category_slug, title, file_link, source_file_link, premium_only)
+SELECT
+  d.category,
+  d.category_slug,
+  initcap(public.resource_title_from_url(d.source_file_link)),
+  public.resource_member_url_from_url(d.source_file_link),
+  d.source_file_link,
+  d.premium_only
+FROM deduped AS d
+ON CONFLICT (file_link) DO UPDATE
+SET category = EXCLUDED.category,
+    category_slug = EXCLUDED.category_slug,
+    title = EXCLUDED.title,
+    source_file_link = EXCLUDED.source_file_link,
+    premium_only = EXCLUDED.premium_only;

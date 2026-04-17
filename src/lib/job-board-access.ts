@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { canAccessJobBoardRole } from "@/lib/profile-role";
 
 /**
  * Job board access is role-driven. candidate_onhold remains locked.
@@ -17,5 +18,5 @@ export async function getJobBoardAccessForUser(
     return { canAccessJobBoard: false }
   }
 
-  return { canAccessJobBoard: profile.role === 'admin' || profile.role === 'candidate_mvp' }
+  return { canAccessJobBoard: canAccessJobBoardRole(profile.role) }
 }

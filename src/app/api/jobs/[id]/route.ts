@@ -58,6 +58,8 @@ export async function PUT(
     const { id } = await context.params;
     const body = await req.json();
     const { title, company, location, apply_url, description } = body;
+    const nowIso = new Date().toISOString();
+    const expiresAt = new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString();
 
     if (!title || !company || !location || !apply_url || !description) {
       return NextResponse.json({ error: "All fields are required." }, { status: 400 });
@@ -95,7 +97,18 @@ export async function PUT(
 
     const { error } = await supabase
       .from("jobs")
-      .update({ title, company, location, apply_url, description })
+      .update({
+        title,
+        company,
+        location,
+        apply_url,
+        description,
+        is_active: true,
+        imported_at: nowIso,
+        last_seen_at: nowIso,
+        external_posted_at: nowIso,
+        expires_at: expiresAt,
+      })
       .eq("id", id);
 
     if (error) {

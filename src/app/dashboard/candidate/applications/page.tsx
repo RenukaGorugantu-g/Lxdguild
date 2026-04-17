@@ -1,7 +1,22 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Briefcase } from "lucide-react";
+import { ArrowLeft, Briefcase, ExternalLink } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
+
+type ApplicationJob = {
+  id?: string;
+  title?: string | null;
+  company?: string | null;
+  location?: string | null;
+  apply_url?: string | null;
+};
+
+type ApplicationRow = {
+  id: string;
+  status: string;
+  created_at: string;
+  jobs: ApplicationJob | ApplicationJob[] | null;
+};
 
 export default async function CandidateApplicationsPage({
   searchParams,
@@ -19,7 +34,7 @@ export default async function CandidateApplicationsPage({
 
   let query = supabase
     .from("job_applications")
-    .select("id, status, created_at, jobs(id, title, company, location)")
+    .select("id, status, created_at, jobs(id, title, company, location, apply_url)")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -59,7 +74,7 @@ export default async function CandidateApplicationsPage({
         <div className="bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-2xl p-6">
           {applications && applications.length > 0 ? (
             <ul className="space-y-4">
-              {applications.map((application: any) => {
+              {applications.map((application: ApplicationRow) => {
                 const job = Array.isArray(application.jobs) ? application.jobs[0] : application.jobs;
                 return (
                   <li key={application.id} className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4">
@@ -70,7 +85,7 @@ export default async function CandidateApplicationsPage({
                           <p className="font-semibold">{job?.title || "Job listing"}</p>
                         </div>
                         <p className="text-sm text-zinc-500">
-                          {[job?.company, job?.location].filter(Boolean).join(" · ") || "Company details unavailable"}
+                          {[job?.company, job?.location].filter(Boolean).join(" | ") || "Company details unavailable"}
                         </p>
                         <p className="text-xs text-zinc-400">
                           Applied on {new Date(application.created_at).toLocaleDateString()}
@@ -79,6 +94,26 @@ export default async function CandidateApplicationsPage({
                       <span className={`text-xs uppercase tracking-wider px-3 py-1 rounded-full border ${getStatusPillClasses(application.status)}`}>
                         {application.status}
                       </span>
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-3">
+                      {job?.id && (
+                        <Link
+                          href={`/dashboard/jobs/${job.id}`}
+                          className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+                        >
+                          View Job
+                        </Link>
+                      )}
+                      {job?.apply_url && (
+                        <a
+                          href={job.apply_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700"
+                        >
+                          Continue Official Apply <ExternalLink className="h-4 w-4" />
+                        </a>
+                      )}
                     </div>
                   </li>
                 );
@@ -100,3 +135,4 @@ function getStatusPillClasses(status: string) {
   if (status === "rejected") return "bg-red-50 text-red-700 border-red-200";
   return "bg-amber-50 text-amber-700 border-amber-200";
 }
+

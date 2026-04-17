@@ -1,17 +1,73 @@
 import { createClient } from "@/utils/supabase/server";
 import { getJobBoardAccessForUser } from "@/lib/job-board-access";
+import { syncJobFeedIfStale } from "@/lib/job-feed";
+import { isAdminRole } from "@/lib/profile-role";
 import { redirect } from "next/navigation";
-import { Briefcase, MapPin, Building, Lock, RefreshCw } from "lucide-react";
+import { MapPin, Building, Lock, RefreshCw, Clock3, BriefcaseBusiness, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
+
+type JobListItem = {
+  id: string;
+  title: string;
+  description: string | null;
+  company: string | null;
+  location: string | null;
+  work_mode?: string | null;
+  employment_type?: string | null;
+  expires_at: string | null;
+  external_posted_at: string | null;
+  imported_at: string | null;
+  created_at?: string | null;
+  is_active?: boolean | null;
+  source?: string | null;
+  job_kind?: string | null;
+};
+
+function normalizeJobText(...values: Array<string | null | undefined>) {
+  return values.filter(Boolean).join(" ").toLowerCase();
+}
+
+function matchesRemoteFilter(job: JobListItem, remote?: string) {
+  if (remote !== "remote") return true;
+  if (job.work_mode) return job.work_mode === "remote";
+  const text = normalizeJobText(job.location, job.title, job.description);
+  return text.includes("remote") || text.includes("work from home") || text.includes("wfh");
+}
+
+function matchesScheduleFilter(job: JobListItem, schedule?: string) {
+  if (!schedule || schedule === "all") return true;
+  if (schedule === "full-time" && job.employment_type) return job.employment_type === "full_time";
+  if (schedule === "part-time" && job.employment_type) return job.employment_type === "part_time";
+
+  const text = normalizeJobText(job.title, job.description, job.location);
+
+  if (schedule === "full-time") {
+    return (
+      text.includes("full time") ||
+      text.includes("full-time") ||
+      text.includes("fulltime")
+    );
+  }
+
+  if (schedule === "part-time") {
+    return (
+      text.includes("part time") ||
+      text.includes("part-time") ||
+      text.includes("parttime")
+    );
+  }
+
+  return true;
+}
 
 export default async function JobsDashboard({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; appStatus?: string }>;
+  searchParams: Promise<{ category?: string; view?: string; remote?: string; schedule?: string; page?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const { category, appStatus } = await searchParams;
+  const { category, view, remote, schedule, page } = await searchParams;
 
   if (!user) redirect("/login");
 
@@ -22,33 +78,112 @@ export default async function JobsDashboard({
     .select("role")
     .eq("id", user.id)
     .single();
+  const pageSize = 12;
 
   let query = supabase
     .from("jobs")
     .select("*")
-    .order("created_at", { ascending: false });
+    .order("external_posted_at", { ascending: false, nullsFirst: false })
+    .order("imported_at", { ascending: false });
 
   if (category) {
     query = query.ilike("title", `%${category}%`);
   }
 
-  const { data: jobsList } = await query;
-  let appQuery = supabase
-    .from("job_applications")
-    .select("id, status, created_at, jobs(id, title, company)")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(10);
-
-  const appStatusFilter = ["applied", "accepted", "rejected"].includes(appStatus || "")
-    ? appStatus
-    : "all";
-
-  if (appStatusFilter !== "all") {
-    appQuery = appQuery.eq("status", appStatusFilter);
+  if (view === "freelance" || view === "standard") {
+    query = query.eq("job_kind", view);
+  }
+  if (remote === "remote") {
+    query = query.eq("work_mode", "remote");
+  }
+  if (schedule === "full-time") {
+    query = query.eq("employment_type", "full_time");
+  }
+  if (schedule === "part-time") {
+    query = query.eq("employment_type", "part_time");
   }
 
-  const { data: myApplications } = await appQuery;
+  let { data: rawJobsList, error: jobsError } = await query;
+
+  if (jobsError?.code === "42703") {
+    let fallbackQuery = supabase.from("jobs").select("*").order("created_at", { ascending: false });
+    if (category) {
+      fallbackQuery = fallbackQuery.ilike("title", `%${category}%`);
+    }
+    if (view === "freelance" || view === "standard") {
+      fallbackQuery = fallbackQuery.eq("job_kind", view);
+    }
+    if (remote === "remote") {
+      fallbackQuery = fallbackQuery.eq("work_mode", "remote");
+    }
+    if (schedule === "full-time") {
+      fallbackQuery = fallbackQuery.eq("employment_type", "full_time");
+    }
+    if (schedule === "part-time") {
+      fallbackQuery = fallbackQuery.eq("employment_type", "part_time");
+    }
+
+    const fallback = await fallbackQuery;
+    rawJobsList = fallback.data;
+    jobsError = fallback.error;
+  }
+
+  let jobsList = (rawJobsList || []).filter((job) => job.is_active !== false);
+
+  if ((!jobsList || jobsList.length === 0) && !jobsError) {
+    await syncJobFeedIfStale();
+
+    let refreshQuery = supabase
+      .from("jobs")
+      .select("*")
+      .order("external_posted_at", { ascending: false, nullsFirst: false })
+      .order("imported_at", { ascending: false });
+
+    if (category) {
+      refreshQuery = refreshQuery.ilike("title", `%${category}%`);
+    }
+    if (view === "freelance" || view === "standard") {
+      refreshQuery = refreshQuery.eq("job_kind", view);
+    }
+    if (remote === "remote") {
+      refreshQuery = refreshQuery.eq("work_mode", "remote");
+    }
+    if (schedule === "full-time") {
+      refreshQuery = refreshQuery.eq("employment_type", "full_time");
+    }
+    if (schedule === "part-time") {
+      refreshQuery = refreshQuery.eq("employment_type", "part_time");
+    }
+
+    const refreshed = await refreshQuery;
+
+    if (refreshed.error?.code === "42703") {
+      let legacyRefreshQuery = supabase.from("jobs").select("*").order("created_at", { ascending: false });
+      if (category) {
+        legacyRefreshQuery = legacyRefreshQuery.ilike("title", `%${category}%`);
+      }
+      if (view === "freelance" || view === "standard") {
+        legacyRefreshQuery = legacyRefreshQuery.eq("job_kind", view);
+      }
+      if (remote === "remote") {
+        legacyRefreshQuery = legacyRefreshQuery.eq("work_mode", "remote");
+      }
+      if (schedule === "full-time") {
+        legacyRefreshQuery = legacyRefreshQuery.eq("employment_type", "full_time");
+      }
+      if (schedule === "part-time") {
+        legacyRefreshQuery = legacyRefreshQuery.eq("employment_type", "part_time");
+      }
+
+      const legacyRefreshed = await legacyRefreshQuery;
+      jobsList = (legacyRefreshed.data || []).filter((job) => job.is_active !== false);
+    } else {
+      jobsList = (refreshed.data || []).filter((job) => job.is_active !== false);
+    }
+  }
+
+  jobsList = jobsList.filter((job) => matchesRemoteFilter(job, remote));
+  jobsList = jobsList.filter((job) => matchesScheduleFilter(job, schedule));
 
   // Simple client-side categorization for filtering
   const categories = [
@@ -58,6 +193,40 @@ export default async function JobsDashboard({
     "L&D Manager",
     "Curriculum Developer"
   ];
+  const freelanceJobs = jobsList.filter((job) => job.job_kind === "freelance").slice(0, 4);
+  const featuredFreelanceIds = new Set(freelanceJobs.map((job) => job.id));
+  const jobsToRender =
+    view === "freelance"
+      ? jobsList
+      : jobsList.filter((job) => !featuredFreelanceIds.has(job.id));
+  const totalJobs = jobsToRender.length;
+  const totalPages = Math.max(1, Math.ceil(totalJobs / pageSize));
+  const parsedPage = Number(page || "1");
+  const currentPage = Number.isFinite(parsedPage)
+    ? Math.min(Math.max(1, Math.trunc(parsedPage)), totalPages)
+    : 1;
+  const paginatedJobs = jobsToRender.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const pageTitle =
+    view === "freelance" ? "Freelance L&D Jobs" : view === "standard" ? "Standard L&D Jobs" : "L&D Job Board";
+  const pageDescription =
+    view === "freelance"
+      ? "Short-term, contract, and freelance-friendly L&D opportunities."
+      : "Exclusive roles for verified LXD Guild professionals.";
+  const activeFilterChips = [
+    remote === "remote" ? "Remote" : null,
+    schedule === "full-time" ? "Full-time" : null,
+    schedule === "part-time" ? "Part-time" : null,
+  ].filter(Boolean);
+
+  const buildJobsHref = (nextPage: number) => {
+    const params = new URLSearchParams();
+    if (category) params.set("category", category);
+    if (view && view !== "all") params.set("view", view);
+    if (remote && remote !== "all") params.set("remote", remote);
+    if (schedule && schedule !== "all") params.set("schedule", schedule);
+    if (nextPage > 1) params.set("page", String(nextPage));
+    return `/dashboard/jobs${params.toString() ? `?${params.toString()}` : ""}`;
+  };
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black pt-28 pb-16 px-6">
@@ -65,10 +234,22 @@ export default async function JobsDashboard({
         
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">L&D Job Board</h1>
-            <p className="text-zinc-500 mt-1">Exclusive roles for verified LXD Guild professionals.</p>
+            <h1 className="text-3xl font-bold">{pageTitle}</h1>
+            <p className="text-zinc-500 mt-1">{pageDescription}</p>
+            {activeFilterChips.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {activeFilterChips.map((chip) => (
+                  <span
+                    key={chip}
+                    className="rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700"
+                  >
+                    {chip}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
-          {profile?.role === 'admin' && (
+          {isAdminRole(profile?.role) && (
              <Link 
                href="/api/jobs/import" 
                className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors shadow-sm"
@@ -84,6 +265,33 @@ export default async function JobsDashboard({
 
            {/* Main Content */}
            <div className="flex-1 space-y-4">
+              {view !== "freelance" && freelanceJobs.length > 0 && (
+                <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 text-sm font-semibold text-zinc-900">
+                        <BriefcaseBusiness className="w-4 h-4 text-brand-600" />
+                        Freelance Jobs
+                      </div>
+                      <p className="mt-1 text-sm text-zinc-500">
+                        Contract and consulting work sourced separately for freelance-focused members.
+                      </p>
+                    </div>
+                    <Link
+                      href="/dashboard/jobs?view=freelance"
+                      className="rounded-xl border border-zinc-200 px-4 py-2 text-sm font-medium hover:bg-zinc-50"
+                    >
+                      View all freelance jobs
+                    </Link>
+                  </div>
+                  <div className="mt-4 grid gap-3">
+                    {freelanceJobs.map((job) => (
+                      <JobCard key={job.id} job={job} canAccessJobBoard={canAccessJobBoard} compact />
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {!canAccessJobBoard && (
                 <div className="p-4 bg-amber-50 border border-amber-200 dark:bg-amber-900/10 dark:border-amber-900/20 rounded-xl text-amber-900 dark:text-amber-300 text-sm flex items-center justify-between gap-4">
                   <div className="flex items-center gap-2">
@@ -96,59 +304,7 @@ export default async function JobsDashboard({
                 </div>
               )}
 
-              {profile?.role?.startsWith("candidate") && (
-                <div className="p-5 bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-2xl space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold">My Applications</h3>
-                    <span className="text-xs text-zinc-500">Latest 10</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs">
-                    {["all", "applied", "accepted", "rejected"].map((status) => (
-                      <Link
-                        key={status}
-                        href={status === "all" ? "/dashboard/jobs" : `/dashboard/jobs?appStatus=${status}`}
-                        className={`px-2.5 py-1 rounded-full border transition-colors ${
-                          appStatusFilter === status
-                            ? "bg-brand-600 text-white border-brand-600"
-                            : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100"
-                        }`}
-                      >
-                        {status}
-                      </Link>
-                    ))}
-                    <Link href="/dashboard/candidate/applications" className="ml-auto text-brand-600 hover:underline">
-                      Full history
-                    </Link>
-                  </div>
-                  {myApplications && myApplications.length > 0 ? (
-                    <ul className="space-y-2">
-                      {myApplications.map((application: any) => {
-                        const job = Array.isArray(application.jobs) ? application.jobs[0] : application.jobs;
-                        return (
-                          <li key={application.id} className="flex items-center justify-between gap-3 text-sm">
-                            <div>
-                              <p className="font-medium text-zinc-800 dark:text-zinc-200">
-                                {job?.title || "Job"}
-                                {job?.company ? ` · ${job.company}` : ""}
-                              </p>
-                              <p className="text-xs text-zinc-500">
-                                Applied on {new Date(application.created_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                            <span className={`text-xs px-2.5 py-1 rounded-full border ${getStatusPillClasses(application.status)}`}>
-                              {application.status}
-                            </span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-zinc-500">No applications yet. Apply to a role to see updates here.</p>
-                  )}
-                </div>
-              )}
-
-              {(!jobsList || jobsList.length <= 3) && profile?.role === 'admin' && (
+              {(!jobsList || jobsList.length <= 3) && isAdminRole(profile?.role) && (
                 <div className="p-4 bg-blue-50 border border-blue-100 dark:bg-blue-900/10 dark:border-blue-900/20 rounded-xl text-blue-800 dark:text-blue-300 text-sm flex items-center justify-between gap-4">
                    <div className="flex items-center gap-2">
                       <RefreshCw className="w-4 h-4 animate-spin-slow" />
@@ -159,7 +315,7 @@ export default async function JobsDashboard({
               )}
 
               <div className="grid gap-4">
-                {jobsList?.map((job) => (
+                {paginatedJobs?.map((job) => (
                   <JobCard key={job.id} job={job} canAccessJobBoard={canAccessJobBoard} />
                 ))}
 
@@ -170,6 +326,45 @@ export default async function JobsDashboard({
                   </div>
                 )}
               </div>
+
+              {totalJobs > 0 && totalPages > 1 && (
+                <div className="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
+                  <p className="text-sm text-zinc-500">
+                    Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, totalJobs)} of {totalJobs} jobs
+                  </p>
+                  <div className="flex items-center gap-2">
+                    {currentPage > 1 ? (
+                      <Link
+                        href={buildJobsHref(currentPage - 1)}
+                        className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+                      >
+                        <ChevronLeft className="h-4 w-4" /> Previous
+                      </Link>
+                    ) : (
+                      <span className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-400">
+                        <ChevronLeft className="h-4 w-4" /> Previous
+                      </span>
+                    )}
+
+                    <span className="rounded-xl bg-zinc-950 px-4 py-2 text-sm font-semibold text-white">
+                      Page {currentPage} of {totalPages}
+                    </span>
+
+                    {currentPage < totalPages ? (
+                      <Link
+                        href={buildJobsHref(currentPage + 1)}
+                        className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50"
+                      >
+                        Next <ChevronRight className="h-4 w-4" />
+                      </Link>
+                    ) : (
+                      <span className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-400">
+                        Next <ChevronRight className="h-4 w-4" />
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
            </div>
         </div>
 
@@ -178,13 +373,31 @@ export default async function JobsDashboard({
   );
 }
 
-function JobCard({ job, canAccessJobBoard }: { job: any; canAccessJobBoard: boolean }) {
+function JobCard({
+  job,
+  canAccessJobBoard,
+  compact = false,
+}: {
+  job: JobListItem;
+  canAccessJobBoard: boolean;
+  compact?: boolean;
+}) {
+  const expiryDate = job.expires_at ? new Date(job.expires_at).toLocaleDateString() : null;
+  const freshnessDate = new Date(
+    job.external_posted_at || job.imported_at || job.created_at || new Date().toISOString()
+  ).toLocaleDateString();
+
   return (
-    <div className="bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border p-6 rounded-2xl hover:shadow-md transition-shadow">
+    <div className={`bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border ${compact ? "p-4 rounded-xl" : "p-6 rounded-2xl"} hover:shadow-md transition-shadow`}>
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold">{job.title}</h2>
+            <h2 className={`${compact ? "text-base" : "text-xl"} font-bold`}>{job.title}</h2>
+            {job.job_kind === "freelance" && (
+              <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-800">
+                Freelance
+              </span>
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-4 text-sm text-zinc-500">
             <div className="flex items-center gap-1.5">
@@ -193,9 +406,34 @@ function JobCard({ job, canAccessJobBoard }: { job: any; canAccessJobBoard: bool
             <div className="flex items-center gap-1.5">
               <MapPin className="w-4 h-4" /> {job.location}
             </div>
+            {job.work_mode === "remote" && (
+              <div className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700">
+                Remote
+              </div>
+            )}
+            {job.employment_type === "full_time" && (
+              <div className="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-semibold text-zinc-700">
+                Full-time
+              </div>
+            )}
+            {job.employment_type === "part_time" && (
+              <div className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                Part-time
+              </div>
+            )}
+            <div className="flex items-center gap-1.5">
+              <Clock3 className="w-4 h-4" /> Posted {freshnessDate}
+            </div>
+            {expiryDate && (
+              <div className="flex items-center gap-1.5 text-amber-700">
+                <Clock3 className="w-4 h-4" /> Expires {expiryDate}
+              </div>
+            )}
           </div>
-          <p className="text-zinc-600 dark:text-zinc-400 text-sm line-clamp-2 mt-2 leading-relaxed" 
-             dangerouslySetInnerHTML={{ __html: job.description }} />
+          {!compact && (
+            <p className="text-zinc-600 dark:text-zinc-400 text-sm line-clamp-2 mt-2 leading-relaxed" 
+              dangerouslySetInnerHTML={{ __html: job.description || "" }} />
+          )}
         </div>
         
         <Link 
@@ -209,11 +447,4 @@ function JobCard({ job, canAccessJobBoard }: { job: any; canAccessJobBoard: bool
   );
 }
 
-function getStatusPillClasses(status: string) {
-  if (status === "accepted") return "bg-green-50 text-green-700 border-green-200";
-  if (status === "rejected") return "bg-red-50 text-red-700 border-red-200";
-  return "bg-amber-50 text-amber-700 border-amber-200";
-}
-
 import JobSidebar from "./JobSidebar";
-
