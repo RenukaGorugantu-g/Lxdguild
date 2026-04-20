@@ -38,11 +38,14 @@ const SocialFacebook = () => (
 
 const footerLinks = {
   Platform: [
+    { label: "Candidate Landing", href: "/candidate" },
+    { label: "Employer Landing", href: "/employer" },
     { label: "Job Board", href: "/dashboard/jobs" },
     { label: "Candidate Dashboard", href: "/dashboard/candidate" },
     { label: "Professional Profile", href: "/dashboard/candidate/profile" },
   ],
   Membership: [
+    { label: "Membership Benefits", href: "/membership" },
     { label: "Resources", href: "/dashboard/resources" },
     { label: "Membership", href: "/dashboard/membership" },
     { label: "Skill Validation Exam", href: "/dashboard/candidate/exam" },

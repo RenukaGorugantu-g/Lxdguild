@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Crown, Download, Filter, Lock, Search } from "lucide-react";
+import { Crown, Download, Filter, Lock, Search, Sparkles } from "lucide-react";
 
 type ResourceItem = {
   id: string;
@@ -48,25 +48,25 @@ export default function ResourcesCatalog({ resources, hasMembership }: Resources
 
   return (
     <div className="grid gap-8 lg:grid-cols-[300px_minmax(0,1fr)]">
-      <aside className="rounded-[28px] border border-zinc-200 bg-white p-5 shadow-sm h-fit lg:sticky lg:top-28">
-        <div className="flex items-center gap-2 text-sm font-semibold text-zinc-900">
-          <Filter className="h-4 w-4 text-brand-600" />
+      <aside className="premium-card-light h-fit p-5 lg:sticky lg:top-28">
+        <div className="flex items-center gap-2 text-sm font-semibold text-zinc-950">
+          <Filter className="h-4 w-4 text-[#34cd2f]" />
           Filter by category
         </div>
 
-        <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2">
+        <div className="mt-4 rounded-2xl border border-zinc-200 bg-white px-3 py-2">
           <div className="flex items-center gap-2">
             <Search className="h-4 w-4 text-zinc-400" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search resources"
-              className="w-full bg-transparent text-sm outline-none placeholder:text-zinc-400"
+              className="w-full bg-transparent text-sm text-zinc-900 outline-none placeholder:text-zinc-400"
             />
           </div>
         </div>
 
-        <div className="mt-5 space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+        <div className="mt-5 max-h-[60vh] space-y-2 overflow-y-auto pr-1">
           {categories.map(([category, count]) => {
             const active = selectedCategories.includes(category);
             return (
@@ -88,11 +88,15 @@ export default function ResourcesCatalog({ resources, hasMembership }: Resources
       </aside>
 
       <section className="space-y-6">
-        <div className="rounded-[28px] border border-zinc-200 bg-white p-6 shadow-sm">
+        <div className="premium-hero p-6 sm:p-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-zinc-950">LXD Guild resources</h1>
-              <p className="mt-2 text-sm text-zinc-600">
+              <div className="premium-badge">
+                <Sparkles className="h-3.5 w-3.5 text-[#34cd2f]" />
+                Premium library
+              </div>
+              <h1 className="mt-4 text-3xl font-bold tracking-tight text-white">LXD Guild resources</h1>
+              <p className="premium-copy mt-2 text-sm">
                 Download free resources now. Member-only resources unlock for one year after membership purchase.
               </p>
             </div>
@@ -112,7 +116,7 @@ export default function ResourcesCatalog({ resources, hasMembership }: Resources
           {filteredResources.map((resource) => {
             const locked = resource.premiumOnly && !hasMembership;
             return (
-              <article key={resource.id} className="rounded-[28px] border border-zinc-200 bg-white p-6 shadow-sm">
+              <article key={resource.id} className="premium-card-light p-6">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div className="space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
@@ -150,7 +154,7 @@ export default function ResourcesCatalog({ resources, hasMembership }: Resources
           })}
 
           {filteredResources.length === 0 && (
-            <div className="rounded-[28px] border border-dashed border-zinc-300 bg-white px-6 py-16 text-center text-sm text-zinc-500">
+            <div className="premium-card-light border-dashed px-6 py-16 text-center text-sm text-zinc-500">
               No resources matched your current filters.
             </div>
           )}

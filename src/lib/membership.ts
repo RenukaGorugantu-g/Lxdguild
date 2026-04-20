@@ -21,6 +21,7 @@ function parseExpiryFromStatus(value?: string | null) {
 export function hasActiveMembership(profile: MembershipProfile | null | undefined) {
   if (!profile) return false;
   if (profile.role === "admin" || profile.role === "pro_member") return true;
+  if (profile.membership_status === "active") return true;
 
   const expiresAt = profile.membership_expires_at
     ? new Date(profile.membership_expires_at)

@@ -1,65 +1,164 @@
 import Link from "next/link";
-import { ArrowRight, ShieldCheck, TrendingUp, Users } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, Crown, ShieldCheck, Sparkles, Users } from "lucide-react";
+import { redirect } from "next/navigation";
+import { createClient } from "@/utils/supabase/server";
+import { getBaseRole } from "@/lib/profile-role";
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    const baseRole = getBaseRole(profile);
+
+    if (baseRole === "candidate") {
+      redirect("/candidate");
+    }
+
+    if (baseRole === "employer") {
+      redirect("/employer");
+    }
+
+    if (baseRole === "admin") {
+      redirect("/dashboard");
+    }
+  }
+
+  const roleCards = [
+    {
+      icon: ShieldCheck,
+      title: "Candidates",
+      copy: "Validate your skill, build trust faster, unlock job access, and use premium resources without losing your candidate role.",
+      href: "/candidate",
+      cta: "Explore Candidate Path",
+    },
+    {
+      icon: BriefcaseBusiness,
+      title: "Employers",
+      copy: "Post roles, discover more qualified L&D talent, and manage hiring through a more focused premium workflow.",
+      href: "/employer",
+      cta: "Explore Employer Path",
+    },
+    {
+      icon: Crown,
+      title: "Membership",
+      copy: "Add premium benefits on top of candidate or employer access with templates, guides, tools, and stronger support.",
+      href: "/membership",
+      cta: "Explore Membership",
+    },
+  ];
+
   return (
-    <div className="flex min-h-screen flex-col">
-      <main className="flex-1 pt-28">
-        <section className="relative overflow-hidden py-24 sm:py-32">
-          <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(52,205,47,0.14),transparent_28%),radial-gradient(circle_at_right,rgba(95,213,255,0.12),transparent_24%)]" />
-          <div className="container mx-auto px-6 text-center">
-            <div className="glass-panel mb-8 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium text-[#cde3e1]">
-              <span className="flex h-2 w-2 rounded-full bg-[#34cd2f]"></span>
-              Skill-First Talent Marketplace
-            </div>
-            <h1 className="mb-8 text-5xl font-bold tracking-tight sm:text-7xl">
-              Hire <span className="gradient-text">Verified</span> <br className="hidden sm:block" />
-              L&D Professionals.
-            </h1>
-            <p className="mx-auto mb-10 max-w-2xl text-lg text-[#cde3e1]">
-              Stop guessing. We validate Instructional Designers, eLearning Developers, and Learning Consultants through rigorous skill exams before they can apply to your roles.
-            </p>
-            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link
-                href="/register?role=employer"
-                className="flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] px-8 py-3.5 text-base font-semibold text-[#091737] shadow-[0_18px_40px_rgba(52,205,47,0.24)] transition-all hover:translate-y-[-1px]"
-              >
-                Hire Talent
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/register?role=candidate"
-                className="glass-panel flex items-center gap-2 rounded-full px-8 py-3.5 text-base font-semibold text-white transition-all hover:bg-white/12"
-              >
-                Validate My Skills
-              </Link>
+    <div className="premium-shell">
+      <main className="premium-content pt-28">
+        <section className="px-6 py-14 sm:py-20">
+          <div className="premium-container">
+            <div className="premium-hero px-7 py-10 sm:px-10 sm:py-14">
+              <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+                <div>
+                  <div className="premium-badge">
+                    <Sparkles className="h-3.5 w-3.5 text-[#34cd2f]" />
+                    Skill-first talent marketplace
+                  </div>
+                  <h1 className="premium-title mt-6 text-5xl sm:text-7xl">
+                    One premium platform for <span className="gradient-text">candidates</span>,{" "}
+                    <span className="gradient-text">employers</span>, and <span className="gradient-text">members</span>.
+                  </h1>
+                  <p className="premium-copy mt-6 max-w-2xl text-lg leading-8">
+                    LXD Guild gives each audience a clearer home: candidates prove readiness, employers hire with more
+                    trust, and membership adds premium value on top of both journeys.
+                  </p>
+                  <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+                    <Link href="/candidate" className="premium-button premium-button-primary">
+                      I&apos;m a Candidate
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                    <Link href="/employer" className="premium-button premium-button-secondary">
+                      I&apos;m an Employer
+                    </Link>
+                    <Link href="/membership" className="premium-button premium-button-secondary">
+                      Membership Benefits
+                    </Link>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="premium-metric sm:col-span-2">
+                    <p className="premium-kicker">How the flow works</p>
+                    <p className="mt-3 text-2xl font-bold text-white">Logged-out users see the full marketplace story. Logged-in users go straight to their role home.</p>
+                    <p className="premium-copy mt-2 text-sm leading-6">
+                      That keeps the public experience clear while making the signed-in experience faster and more relevant.
+                    </p>
+                  </div>
+                  {[
+                    ["Candidate home", "Assessment, profile growth, job readiness, and premium resource support."],
+                    ["Employer home", "Hiring workflow, talent discovery, plan clarity, and team support."],
+                    ["Membership layer", "Shared premium value for both candidates and employers."],
+                    ["Better UX", "One public landing page, separate role homes after login."],
+                  ].map(([title, copy]) => (
+                    <div key={title} className="premium-metric">
+                      <p className="text-sm font-semibold text-white">{title}</p>
+                      <p className="premium-copy mt-2 text-sm leading-6">{copy}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        <section id="features" className="py-24">
-          <div className="container mx-auto px-6">
-            <div className="grid gap-12 text-center md:grid-cols-3">
-              <div className="flex flex-col items-center">
-                <div className="glass-panel mb-6 flex h-16 w-16 items-center justify-center rounded-2xl">
-                  <ShieldCheck className="h-8 w-8 text-[#34cd2f]" />
+        <section className="px-6 pb-24">
+          <div className="premium-container">
+            <div className="grid gap-6 lg:grid-cols-3">
+              {roleCards.map((item) => (
+                <article key={item.title} className="premium-card-light p-8">
+                  <div className="glass-panel mb-6 flex h-14 w-14 items-center justify-center rounded-2xl">
+                    <item.icon className="h-7 w-7 text-[#34cd2f]" />
+                  </div>
+                  <p className="premium-light-kicker">{item.title}</p>
+                  <h2 className="mt-4 text-3xl font-bold text-zinc-950">{item.title}</h2>
+                  <p className="premium-light-copy mt-4 text-sm leading-7">{item.copy}</p>
+                  <Link href={item.href} className="premium-button premium-button-dark mt-8">
+                    {item.cta}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="px-6 pb-24">
+          <div className="premium-container">
+            <div className="premium-glass-section p-8 sm:p-10">
+              <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+                <div>
+                  <div className="premium-badge">
+                    <Users className="h-3.5 w-3.5 text-[#5fd5ff]" />
+                    Shared platform benefit
+                  </div>
+                  <h2 className="mt-5 text-4xl font-bold text-white">Different homes, one connected product.</h2>
+                  <p className="premium-copy mt-4 max-w-2xl text-sm leading-7">
+                    The public landing page explains the whole value proposition. After login, each audience gets a home
+                    page that fits their role, while membership stays visible to both as a premium add-on.
+                  </p>
                 </div>
-                <h3 className="mb-3 text-xl font-semibold">Pre-Vetted Talent</h3>
-                <p className="text-[#cde3e1]">Every candidate passes a role-specific exam simulating real-world Learning UX and Adult Learning Theory challenges.</p>
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="glass-panel mb-6 flex h-16 w-16 items-center justify-center rounded-2xl">
-                  <TrendingUp className="h-8 w-8 text-[#5fd5ff]" />
+
+                <div className="grid gap-4 sm:grid-cols-3">
+                  {[
+                    ["Candidates", "Validate and grow"],
+                    ["Employers", "Hire with confidence"],
+                    ["Members", "Unlock premium support"],
+                  ].map(([title, copy]) => (
+                    <div key={title} className="premium-metric">
+                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#80ef7a]">{title}</p>
+                      <p className="mt-2 text-sm font-semibold text-white">{copy}</p>
+                    </div>
+                  ))}
                 </div>
-                <h3 className="mb-3 text-xl font-semibold">Structured Learning Paths</h3>
-                <p className="text-[#cde3e1]">Candidates who fall short are redirected to structured learning paths to upskill, ensuring a constantly improving talent pool.</p>
-              </div>
-              <div className="flex flex-col items-center">
-                <div className="glass-panel mb-6 flex h-16 w-16 items-center justify-center rounded-2xl">
-                  <Users className="h-8 w-8 text-white" />
-                </div>
-                <h3 className="mb-3 text-xl font-semibold">Community & Growth</h3>
-                <p className="text-[#cde3e1]">Premium memberships offer access to exclusive templates, storyboarding guides, and advanced career resources.</p>
               </div>
             </div>
           </div>

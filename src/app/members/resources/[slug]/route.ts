@@ -4,6 +4,13 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { getResourceSlug } from "@/lib/resource-catalog";
 import { hasActiveMembership } from "@/lib/membership";
 
+type MemberResourceProfile = {
+  role?: string | null;
+  membership_status?: string | null;
+  membership_plan?: string | null;
+  membership_expires_at?: string | null;
+};
+
 export async function GET(
   req: Request,
   { params }: { params: Promise<{ slug: string }> }
@@ -35,7 +42,7 @@ export async function GET(
     admin.from("resources").select("title, file_link, source_file_link, premium_only"),
   ]);
 
-  let profile = profileResult.data;
+  let profile: MemberResourceProfile | null = profileResult.data;
   if (profileResult.error?.code === "42703") {
     const fallback = await supabase
       .from("profiles")

@@ -1,22 +1,29 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
-import { Eye, EyeOff } from 'lucide-react'
+import { ArrowRight, Eye, EyeOff, ShieldCheck, Sparkles } from 'lucide-react'
 
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={<RegisterPageFallback />}>
+      <RegisterPageContent />
+    </Suspense>
+  )
+}
+
+function RegisterPageContent() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [selectedRole, setSelectedRole] = useState('candidate_onhold') // default to candidate
+  const [selectedRole, setSelectedRole] = useState('candidate_onhold')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
-  
-  const router = useRouter()
+
   const searchParams = useSearchParams()
   const supabase = createClient()
 
@@ -31,7 +38,6 @@ export default function RegisterPage() {
     setLoading(true)
     setError(null)
 
-    // 1. Sign up user
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
@@ -66,79 +72,134 @@ export default function RegisterPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black px-4">
-        <div className="w-full max-w-md p-8 text-center bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-2xl shadow-xl">
-          <h2 className="text-2xl font-bold gradient-text mb-4">Check your email</h2>
-          <p className="text-zinc-600 dark:text-zinc-400 mb-6">We've sent a verification link to {email}. Please verify to continue.</p>
-          <Link href="/login" className="inline-block px-6 py-2 bg-brand-600 text-white rounded-lg font-medium hover:bg-brand-700">
-            Go to Login
-          </Link>
+      <div className="premium-shell premium-page">
+        <div className="premium-content premium-container">
+          <div className="premium-panel mx-auto max-w-2xl rounded-[2rem] p-10 text-center">
+            <div className="premium-badge mx-auto">
+              <Sparkles className="h-3.5 w-3.5 text-[#34cd2f]" />
+              Registration complete
+            </div>
+            <h2 className="mt-5 text-4xl font-bold text-white">Check your email</h2>
+            <p className="premium-copy mx-auto mt-4 max-w-xl">
+              We&apos;ve sent a verification link to {email}. Once you confirm your email, your premium onboarding flow
+              continues inside the Guild.
+            </p>
+            <Link href="/login" className="premium-button premium-button-primary mt-8 inline-flex">
+              Go to Login
+            </Link>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black px-4 py-12 pt-20">
-      <div className="w-full max-w-md p-8 bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-2xl shadow-xl">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold gradient-text">Join the Guild</h1>
-          <p className="text-zinc-600 dark:text-zinc-400 mt-2 text-sm">Create your verified account today</p>
-        </div>
-
-        <form onSubmit={handleRegister} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">I am a...</label>
-            <div className="flex gap-4">
-               <label className="flex items-center gap-2 bg-zinc-50 dark:bg-[#1a1c23] p-3 rounded-lg border border-border flex-1 cursor-pointer hover:border-brand-500 transition-colors">
-                  <input type="radio" checked={selectedRole === 'candidate_onhold'} onChange={() => setSelectedRole('candidate_onhold')} />
-                  <span className="text-sm font-medium">Candidate</span>
-               </label>
-               <label className="flex items-center gap-2 bg-zinc-50 dark:bg-[#1a1c23] p-3 rounded-lg border border-border flex-1 cursor-pointer hover:brand-500 transition-colors">
-                  <input type="radio" checked={selectedRole === 'employer_free'} onChange={() => setSelectedRole('employer_free')} />
-                  <span className="text-sm font-medium">Employer</span>
-               </label>
+    <div className="premium-shell premium-page">
+      <div className="premium-content premium-container">
+        <div className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr] lg:items-stretch">
+          <section className="premium-hero p-8 sm:p-10">
+            <div className="premium-badge">
+              <Sparkles className="h-3.5 w-3.5 text-[#34cd2f]" />
+              Premium onboarding
             </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1" htmlFor="name">Full Name</label>
-            <input id="name" type="text" required className="w-full px-4 py-2 border border-zinc-300 dark:border-border rounded-lg bg-transparent focus:ring-2 focus:ring-brand-500 outline-none" value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1" htmlFor="email">Email address</label>
-            <input id="email" type="email" required className="w-full px-4 py-2 border border-zinc-300 dark:border-border rounded-lg bg-transparent focus:ring-2 focus:ring-brand-500 outline-none" value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1" htmlFor="password">Password</label>
-            <div className="relative">
-              <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                required
-                className="w-full px-4 py-2 pr-12 border border-zinc-300 dark:border-border rounded-lg bg-transparent focus:ring-2 focus:ring-brand-500 outline-none"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            <h1 className="premium-title mt-6 text-4xl sm:text-5xl">Join the Guild with a more intentional first impression.</h1>
+            <p className="premium-copy mt-4 max-w-lg text-sm leading-7">
+              We&apos;re turning registration into a clear entry point for both candidate and employer journeys so the
+              product feels high-trust from the start.
+            </p>
+            <div className="mt-8 space-y-4">
+              {[
+                'Candidate sign-up leads into assessment and profile readiness',
+                'Employer sign-up leads into hiring workflow and talent discovery',
+                'Membership becomes an add-on benefit, not a role replacement',
+              ].map((item) => (
+                <div key={item} className="premium-metric flex items-center gap-3">
+                  <ShieldCheck className="h-5 w-5 text-[#34cd2f]" />
+                  <span className="text-sm text-white">{item}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="premium-panel rounded-[2rem] p-8 sm:p-10">
+            <div className="mb-8">
+              <p className="premium-kicker">Create account</p>
+              <h2 className="mt-3 text-3xl font-bold text-white">Build your premium Guild profile</h2>
+              <p className="premium-copy mt-3 text-sm">Choose your path and get into the right workflow immediately.</p>
+            </div>
+
+            <form onSubmit={handleRegister} className="space-y-5">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-white">I am a...</label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className={`rounded-2xl border p-4 transition-colors ${selectedRole === 'candidate_onhold' ? 'border-[#34cd2f] bg-white/12' : 'border-white/10 bg-white/6 hover:bg-white/10'}`}>
+                    <input type="radio" className="sr-only" checked={selectedRole === 'candidate_onhold'} onChange={() => setSelectedRole('candidate_onhold')} />
+                    <p className="text-sm font-semibold text-white">Candidate</p>
+                    <p className="mt-1 text-xs text-[#cde3e1]/72">Take the assessment and build a verified profile.</p>
+                  </label>
+                  <label className={`rounded-2xl border p-4 transition-colors ${selectedRole === 'employer_free' ? 'border-[#34cd2f] bg-white/12' : 'border-white/10 bg-white/6 hover:bg-white/10'}`}>
+                    <input type="radio" className="sr-only" checked={selectedRole === 'employer_free'} onChange={() => setSelectedRole('employer_free')} />
+                    <p className="text-sm font-semibold text-white">Employer</p>
+                    <p className="mt-1 text-xs text-[#cde3e1]/72">Post roles and discover pre-vetted L&D talent.</p>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-white" htmlFor="name">Full Name</label>
+                <input id="name" type="text" required className="premium-input" value={name} onChange={(e) => setName(e.target.value)} />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-white" htmlFor="email">Email address</label>
+                <input id="email" type="email" required className="premium-input" value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-white" htmlFor="password">Password</label>
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    required
+                    className="premium-input pr-12"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#cde3e1]/66 hover:text-white"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {error && <div className="rounded-2xl border border-red-400/20 bg-red-500/10 p-3 text-sm text-red-100">{error}</div>}
+
+              <button type="submit" disabled={loading} className="premium-button premium-button-primary w-full disabled:cursor-not-allowed disabled:opacity-50">
+                {loading ? 'Creating account...' : 'Create account'}
+                {!loading && <ArrowRight className="h-4 w-4" />}
               </button>
+            </form>
+
+            <div className="mt-6 text-sm text-[#cde3e1]">
+              Already have an account? <Link href="/login" className="font-semibold text-[#80ef7a] hover:text-white">Sign in</Link>
             </div>
-          </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  )
+}
 
-          {error && <div className="text-red-500 text-sm bg-red-50 dark:bg-red-900/10 p-3 rounded-lg border border-red-200 dark:border-red-900/50">{error}</div>}
-
-          <button type="submit" disabled={loading} className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-medium rounded-lg transition-colors disabled:opacity-50">
-            {loading ? 'Creating account...' : 'Create account'}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
-          Already have an account? <Link href="/login" className="text-brand-600 hover:underline">Sign in</Link>
+function RegisterPageFallback() {
+  return (
+    <div className="premium-shell premium-page">
+      <div className="premium-content premium-container">
+        <div className="premium-panel mx-auto max-w-md rounded-[2rem] p-8 text-center">
+          <h1 className="text-2xl font-bold text-white">Join the Guild</h1>
+          <p className="premium-copy mt-3 text-sm">Loading registration...</p>
         </div>
       </div>
     </div>

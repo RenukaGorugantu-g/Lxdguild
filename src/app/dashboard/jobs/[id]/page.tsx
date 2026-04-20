@@ -126,7 +126,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
     .order("imported_at", { ascending: false })
     .limit(40);
   const recommendationResult = await recommendationQuery;
-  let recommendationPool = recommendationResult.data;
+  let recommendationPool: SuggestedJob[] | null = recommendationResult.data as SuggestedJob[] | null;
   const recommendationError = recommendationResult.error;
 
   if (recommendationError?.code === "42703") {
@@ -137,10 +137,13 @@ export default async function JobDetailPage({ params }: { params: { id: string }
       .order("created_at", { ascending: false })
       .limit(40);
 
-    recommendationPool = fallbackRecommendations.data;
+    recommendationPool = (fallbackRecommendations.data || []).map((item) => ({
+      ...item,
+      expires_at: null,
+    })) as SuggestedJob[];
   }
 
-  const similarJobs = ((recommendationPool || []) as SuggestedJob[])
+  const similarJobs = (recommendationPool || [])
     .map((item) => ({
       ...item,
       score: scoreSimilarJob(job.title, item.title, item.company === job.company),

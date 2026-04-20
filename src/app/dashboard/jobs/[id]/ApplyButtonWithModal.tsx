@@ -5,9 +5,9 @@ import { CheckCircle, ExternalLink, Lock, Send } from "lucide-react";
 import ApplyModal from "./ApplyModal";
 
 type ApplyJob = {
-  id?: string;
-  title?: string | null;
-  company?: string | null;
+  id: string;
+  title: string;
+  company: string;
   apply_url?: string | null;
 };
 

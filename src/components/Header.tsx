@@ -7,6 +7,7 @@ import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
 import {
   canAccessJobBoardRole,
+  getBaseRole,
   getRoleDisplayLabel,
   isCandidateRole,
   isEmployerRole,
@@ -75,12 +76,23 @@ export default function Header() {
       } = await supabase.auth.getUser();
       setUser(user);
       if (user) {
-        const { data } = await supabase
+        const profileResult = await supabase
           .from("profiles")
           .select("name, role, verification_status, membership_status, membership_plan, membership_expires_at")
           .eq("id", user.id)
           .single();
-        setProfile(data);
+        let nextProfile = profileResult.data;
+
+        if (profileResult.error?.code === "42703") {
+          const fallback = await supabase
+            .from("profiles")
+            .select("name, role, verification_status, membership_status")
+            .eq("id", user.id)
+            .single();
+          nextProfile = fallback.data;
+        }
+
+        setProfile(nextProfile);
       } else {
         setProfile(null);
       }
@@ -120,12 +132,22 @@ export default function Header() {
   const isVerifiedMVP = isVerifiedCandidateRole(profile?.role);
   const canAccessJobBoard = canAccessJobBoardRole(profile?.role);
   const roleLabel = getRoleDisplayLabel(profile);
+  const baseRole = getBaseRole(profile);
+  const brandHref = baseRole === "candidate" ? "/candidate" : baseRole === "employer" ? "/employer" : "/";
 
   const primaryLinks: NavLink[] = [
+    ...(user
+      ? baseRole === "candidate"
+        ? [{ href: "/candidate", label: "Candidate" }]
+        : baseRole === "employer"
+          ? [{ href: "/employer", label: "Employer" }]
+          : []
+      : []),
+    { href: "/membership", label: "Membership" },
     { href: "https://lxdguild.com", label: "Community", external: true },
     { href: "https://lxdguildacademy.com", label: "Academy", external: true },
-    ...(canAccessJobBoard ? [{ href: "/dashboard/jobs", label: "Jobs" }] : []),
-    { href: "/dashboard/resources", label: "Resources" },
+    ...(canAccessJobBoard ? [{ href: "/dashboard/jobs", label: "Marketplace" }] : []),
+    { href: user ? "/dashboard/resources" : "/candidate", label: "Resources" },
   ];
 
   const dashboardLinks = user
@@ -173,7 +195,7 @@ export default function Header() {
     >
       <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
         <div className="flex min-h-16 items-center justify-between rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(9,23,55,0.96),rgba(9,23,55,0.88))] px-4 shadow-[0_24px_80px_rgba(3,10,26,0.45)] sm:px-5">
-          <Link href="/" className="group flex items-center gap-3">
+          <Link href={brandHref} className="group flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] text-[#091737] shadow-[0_18px_40px_rgba(52,205,47,0.26)]">
               <BookOpen className="h-5 w-5" />
             </div>
@@ -189,7 +211,7 @@ export default function Header() {
             {primaryLinks.map((link) =>
               link.external ? (
                 <a
-                  key={link.href}
+                  key={`${link.label}-${link.href}`}
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -199,7 +221,7 @@ export default function Header() {
                 </a>
               ) : (
                 <Link
-                  key={link.href}
+                  key={`${link.label}-${link.href}`}
                   href={link.href}
                   className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
                     pathname === link.href || pathname.startsWith(link.href + "/")
@@ -338,7 +360,7 @@ export default function Header() {
             {primaryLinks.map((link) =>
               link.external ? (
                 <a
-                  key={link.href}
+                  key={`${link.label}-${link.href}`}
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -349,7 +371,7 @@ export default function Header() {
                 </a>
               ) : (
                 <Link
-                  key={link.href}
+                  key={`${link.label}-${link.href}`}
                   href={link.href}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center rounded-2xl px-3 py-3 text-sm font-semibold text-[#cde3e1] transition-colors hover:bg-white/6 hover:text-white"

@@ -85,14 +85,16 @@ export default async function EmployerDashboard({ profile: initialProfile }: { p
     .order("created_at", { ascending: false });
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black pt-28 pb-16 px-6">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className="premium-shell premium-page">
+      <div className="premium-content max-w-6xl mx-auto space-y-8">
         
         {/* Header content */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="premium-hero p-7 sm:p-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Employer Hub</h1>
-            <p className="text-zinc-500 mt-1">
+            <div className="premium-badge">Employer workflow</div>
+            <h1 className="mt-4 text-3xl font-bold text-white">Employer Hub</h1>
+            <p className="premium-copy mt-2">
               {isFreePlan
                 ? `There are ${mvpCount} verified MVP candidates available. Upgrade to Pro to unlock full access.`
                 : "Discover pre-vetted L&D talent ready to hire."}
@@ -124,9 +126,10 @@ export default async function EmployerDashboard({ profile: initialProfile }: { p
             </div>
           )}
         </div>
+        </div>
 
         {isFreePlan && (
-          <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-5 text-sm text-yellow-900">
+          <div className="premium-card-light p-5 text-sm text-yellow-900">
             <p className="font-semibold">MVP candidates are available</p>
             <p className="mt-2">We currently have <span className="font-semibold">{mvpCount}</span> verified MVP candidates. Upgrade to Pro to unlock full profile details and connect with them.</p>
           </div>
@@ -134,17 +137,17 @@ export default async function EmployerDashboard({ profile: initialProfile }: { p
 
         <PostedJobsSection initialJobs={postedJobs || []} />
 
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 dark:bg-surface-dark dark:border-border">
+        <div className="premium-card p-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h2 className="text-xl font-semibold">Tools & Resources Membership</h2>
-              <p className="mt-1 text-sm text-zinc-500">
+              <h2 className="text-xl font-semibold text-white">Tools & Resources Membership</h2>
+              <p className="mt-1 text-sm text-[#cde3e1]/72">
                 Employer or candidate, membership unlocks the full LXD Guild tools and resources library for one year.
               </p>
             </div>
             <Link
               href={membership.active ? "/dashboard/resources" : "/dashboard/membership"}
-              className="inline-flex items-center justify-center rounded-xl bg-zinc-950 px-5 py-3 text-sm font-semibold text-white hover:bg-zinc-800"
+              className="premium-button premium-button-primary"
             >
               {membership.active ? "Open Resources" : "Get Membership"}
             </Link>
@@ -153,30 +156,30 @@ export default async function EmployerDashboard({ profile: initialProfile }: { p
 
         {/* Candidate Search / Discovery */}
 
-        <div className="bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-2xl p-6">
+        <div className="premium-card p-6">
           <div className="flex items-center gap-4 mb-6">
             <div className="flex-1 relative">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-[#cde3e1]/45" />
               <input 
                 type="text" 
                 placeholder="Search verified Instructional Designers, LXDs..." 
-                className="w-full pl-10 pr-4 py-2 border rounded-lg bg-zinc-50 dark:bg-black focus:ring-2 focus:ring-brand-500 outline-none"
+                className="premium-input pl-10"
               />
             </div>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {(mvpCandidates as EmployerCandidateCard[] | null)?.map((candidate) => (
-               <div key={candidate.id} className="border border-zinc-200 dark:border-border rounded-xl p-5 relative overflow-hidden">
+               <div key={candidate.id} className="border border-white/10 bg-white/6 rounded-xl p-5 relative overflow-hidden">
                  <div className="flex items-start gap-4 mb-4">
                     <div className="w-12 h-12 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold shrink-0">
                       {isFreePlan ? "C" : (candidate.name?.substring(0, 1) || "C")}
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg">{isFreePlan ? "Verified Candidate" : candidate.name}</h3>
-                      <p className="text-zinc-500 text-sm">{candidate.designation_level || "Instructional Designer"}</p>
+                      <h3 className="font-semibold text-lg text-white">{isFreePlan ? "Verified Candidate" : candidate.name}</h3>
+                      <p className="text-[#cde3e1]/72 text-sm">{candidate.designation_level || "Instructional Designer"}</p>
                       {!isFreePlan && candidate.headline && (
-                        <p className="text-zinc-400 text-xs mt-0.5">{candidate.headline}</p>
+                        <p className="text-[#cde3e1]/48 text-xs mt-0.5">{candidate.headline}</p>
                       )}
                     </div>
                  </div>
@@ -185,7 +188,7 @@ export default async function EmployerDashboard({ profile: initialProfile }: { p
                  </div>
                  
                  {isFreePlan && (
-                    <div className="absolute inset-0 bg-white/70 dark:bg-black/70 backdrop-blur-[2px] flex items-center justify-center transition-opacity">
+                    <div className="absolute inset-0 bg-[#091737]/74 backdrop-blur-[2px] flex items-center justify-center transition-opacity">
                       <Link href="/dashboard/employer/upgrade" className="flex items-center gap-2 bg-brand-600 text-white px-5 py-2.5 rounded-full font-medium shadow-lg">
                         <Lock className="w-4 h-4" /> Unlock Profile
                       </Link>
@@ -196,7 +199,7 @@ export default async function EmployerDashboard({ profile: initialProfile }: { p
                    <div className="space-y-2">
                      <Link
                        href={`/dashboard/employer/candidates/${candidate.id}`}
-                       className="w-full inline-flex justify-center items-center gap-2 border border-zinc-200 dark:border-border rounded-lg hover:bg-zinc-50 dark:hover:bg-[#1a1c23] transition-colors text-sm font-medium py-2.5"
+                       className="w-full inline-flex justify-center items-center gap-2 border border-white/10 rounded-lg bg-white/8 hover:bg-white/12 transition-colors text-sm font-medium py-2.5 text-white"
                      >
                        View Full Profile
                      </Link>
@@ -210,12 +213,12 @@ export default async function EmployerDashboard({ profile: initialProfile }: { p
                          View Resume
                        </a>
                      ) : (
-                       <p className="text-xs text-zinc-500 text-center">Resume not uploaded yet</p>
+                       <p className="text-xs text-[#cde3e1]/48 text-center">Resume not uploaded yet</p>
                      )}
                    </div>
                  )}
                  {!isFreePlan && !isProPlan && (
-                    <button className="w-full py-2 border rounded-lg hover:bg-zinc-50 dark:hover:bg-[#1a1c23] transition-colors text-sm font-medium">
+                    <button className="w-full py-2 border border-white/10 rounded-lg hover:bg-white/10 transition-colors text-sm font-medium text-white">
                       View Full Profile
                     </button>
                  )}
@@ -223,7 +226,7 @@ export default async function EmployerDashboard({ profile: initialProfile }: { p
             ))}
 
             {mvpCandidates?.length === 0 && (
-              <div className="col-span-full py-12 text-center text-zinc-500">
+              <div className="col-span-full py-12 text-center text-[#cde3e1]/72">
                 No MVP Candidates available right now. Check back soon.
               </div>
             )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle, Crown, Lock, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle, Crown, Lock, Sparkles, Star } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 type MembershipCheckoutProps = {
@@ -88,13 +88,13 @@ export default function MembershipCheckout({
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-      <div className="rounded-[32px] border border-zinc-200 bg-[linear-gradient(145deg,#f8fafc_0%,#ffffff_45%,#fefce8_100%)] p-8 shadow-sm">
-        <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-800">
+      <div className="premium-hero p-8 sm:p-10">
+        <div className="premium-badge">
           <Sparkles className="h-3.5 w-3.5" />
           Annual membership
         </div>
-        <h1 className="mt-5 text-4xl font-bold tracking-tight text-zinc-950">Tools & resources membership</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
+        <h1 className="mt-5 text-4xl font-bold tracking-tight text-white">Tools &amp; resources membership</h1>
+        <p className="premium-copy mt-3 max-w-2xl text-sm leading-7">
           Unlock the full LXD Guild resource library across instructional design, facilitation, sales enablement,
           coaching, technology application, and more. Candidates and employers can both subscribe.
         </p>
@@ -106,17 +106,28 @@ export default function MembershipCheckout({
             "Keep access active for one full year",
             "Return and renew after expiry when needed",
           ].map((item) => (
-            <div key={item} className="rounded-2xl border border-zinc-200 bg-white px-4 py-4 text-sm font-medium text-zinc-700">
+            <div key={item} className="premium-metric text-sm font-medium text-white">
               <span className="inline-flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-emerald-600" />
+                <CheckCircle className="h-4 w-4 text-[#34cd2f]" />
                 {item}
               </span>
             </div>
           ))}
         </div>
+
+        <div className="mt-8 rounded-[1.75rem] border border-white/12 bg-white/6 p-5">
+          <div className="flex items-center gap-2 text-sm font-semibold text-white">
+            <Star className="h-4 w-4 text-[#5fd5ff]" />
+            Why this feels premium
+          </div>
+          <p className="premium-copy mt-3 text-sm leading-7">
+            Membership now reads as a high-value product layer across the candidate and employer journeys instead of a
+            plain payment box.
+          </p>
+        </div>
       </div>
 
-      <div className="rounded-[32px] border border-zinc-200 bg-white p-8 shadow-sm">
+      <div className="premium-card-light p-8">
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
             <Crown className="h-6 w-6" />
@@ -147,10 +158,11 @@ export default function MembershipCheckout({
         <button
           onClick={handlePurchase}
           disabled={isActive || loading}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 py-4 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
+          className="premium-button premium-button-dark mt-6 flex w-full disabled:cursor-not-allowed disabled:bg-zinc-300"
         >
           {isActive ? <Lock className="h-4 w-4" /> : <Crown className="h-4 w-4" />}
           {isActive ? "Membership Active" : loading ? "Opening checkout..." : "Pay Now"}
+          {!isActive && !loading && <ArrowRight className="h-4 w-4" />}
         </button>
 
         <a

@@ -309,7 +309,9 @@ async function fetchJSearchFreelanceJobs(query: string, nowIso: string): Promise
   if (!resp.ok) return [];
 
   const data = await resp.json();
-  const jobs = Array.isArray(data.data) ? data.data.slice(0, JSEARCH_RESULTS_PER_PAGE) : [];
+  const jobs: Array<Record<string, unknown>> = Array.isArray(data.data)
+    ? (data.data.slice(0, JSEARCH_RESULTS_PER_PAGE) as Array<Record<string, unknown>>)
+    : [];
 
   return jobs
     .filter((job) => {

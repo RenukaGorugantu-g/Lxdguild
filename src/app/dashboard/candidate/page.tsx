@@ -64,14 +64,16 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
   const membership = getMembershipState(profile);
   const { canAccessJobBoard } = await getJobBoardAccessForUser(supabase, user.id);
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black pt-28 pb-16 px-6">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="premium-shell premium-page">
+      <div className="premium-content max-w-5xl mx-auto space-y-8">
         
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="premium-hero p-7 sm:p-8">
+          <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold">Welcome, {profile.name}</h1>
-            <p className="text-zinc-500 mt-1">Track your progress and validate your L&D skills.</p>
+            <div className="premium-badge">Candidate workflow</div>
+            <h1 className="mt-4 text-3xl font-bold text-white">Welcome, {profile.name}</h1>
+            <p className="premium-copy mt-2">Track your progress and validate your L&amp;D skills through a more guided, premium dashboard experience.</p>
           </div>
           {isVerified && (
              <div className="px-4 py-2 bg-green-100 text-green-800 rounded-full font-medium inline-flex items-center gap-2">
@@ -79,10 +81,11 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
              </div>
           )}
         </div>
+        </div>
 
         {/* Progression Journey */}
-        <div className="bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-2xl p-6">
-          <h2 className="text-lg font-semibold mb-4">Your Journey</h2>
+        <div className="premium-card p-6">
+          <h2 className="mb-4 text-lg font-semibold text-white">Your Journey</h2>
           <div className="flex flex-col sm:flex-row justify-between items-center sm:items-start gap-4">
             <Step active={true} label="Register" icon={<CheckCircle className="w-8 h-8 text-green-500"/>} />
             <div className="flex-1 h-1 bg-brand-100 dark:bg-zinc-800 sm:mt-4 hidden sm:block"></div>
@@ -98,7 +101,7 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
         <div className="grid md:grid-cols-2 gap-6">
           
           {/* Exam Status */}
-          <div className="bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-2xl p-6">
+          <div className="premium-card p-6">
             <h3 className="text-xl font-semibold flex items-center gap-2 mb-4">
               <FileText className="w-6 h-6 text-brand-600" />
               Skill Validation Exam
@@ -140,7 +143,7 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
               </div>
             ) : (
                <div className="space-y-4">
-                 <p className="text-zinc-600 dark:text-zinc-400">Prove your expertise. Our 30-question assessment will determine your MVP Candidate status.</p>
+                 <p className="premium-copy">Prove your expertise. Our 30-question assessment will determine your MVP Candidate status.</p>
                  <Link href="/dashboard/candidate/exam" className="flex items-center justify-center gap-2 bg-brand-600 text-white py-2.5 px-4 rounded-lg hover:bg-brand-700 transition">
                    Start Exam <ArrowRight className="w-4 h-4" />
                  </Link>
@@ -174,7 +177,7 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
           {/* Professional Profile */}
           <Link 
             href="/dashboard/candidate/profile"
-            className="p-6 bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-3xl hover:shadow-xl hover:shadow-brand-500/10 transition-all group"
+            className="premium-card p-6 transition-all group hover:translate-y-[-2px]"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="w-10 h-10 bg-brand-50 dark:bg-brand-900/20 rounded-xl flex items-center justify-center text-brand-600">
@@ -182,13 +185,13 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
               </div>
               <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:translate-x-1 transition-transform" />
             </div>
-            <h3 className="font-bold mb-1">Professional Profile</h3>
-            <p className="text-zinc-500 text-sm">Update your bio, skills, and resume for employers.</p>
+            <h3 className="font-bold mb-1 text-white">Professional Profile</h3>
+            <p className="text-[#cde3e1]/72 text-sm">Update your bio, skills, and resume for employers.</p>
           </Link>
 
           <Link
             href="/dashboard/candidate/applications"
-            className="p-6 bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-3xl hover:shadow-xl hover:shadow-brand-500/10 transition-all group"
+            className="premium-card p-6 transition-all group hover:translate-y-[-2px]"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="w-10 h-10 bg-brand-50 dark:bg-brand-900/20 rounded-xl flex items-center justify-center text-brand-600">
@@ -196,8 +199,8 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
               </div>
               <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:translate-x-1 transition-transform" />
             </div>
-            <h3 className="font-bold mb-1">My Applications</h3>
-            <p className="text-zinc-500 text-sm">
+            <h3 className="font-bold mb-1 text-white">My Applications</h3>
+            <p className="text-[#cde3e1]/72 text-sm">
               {recentApplications?.length
                 ? `Track ${recentApplications.length} recent application update${recentApplications.length > 1 ? "s" : ""}.`
                 : "See all roles you applied to and current status."}
@@ -206,7 +209,7 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
 
           <Link
             href={membership.active ? "/dashboard/resources" : "/dashboard/membership"}
-            className="p-6 bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-3xl hover:shadow-xl hover:shadow-brand-500/10 transition-all group md:col-span-2"
+            className="premium-card p-6 transition-all group hover:translate-y-[-2px] md:col-span-2"
           >
             <div className="flex items-center justify-between mb-4">
               <div className="w-10 h-10 bg-brand-50 dark:bg-brand-900/20 rounded-xl flex items-center justify-center text-brand-600">
@@ -214,8 +217,8 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
               </div>
               <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:translate-x-1 transition-transform" />
             </div>
-            <h3 className="font-bold mb-1">Tools & Resources Membership</h3>
-            <p className="text-zinc-500 text-sm">
+            <h3 className="font-bold mb-1 text-white">Tools & Resources Membership</h3>
+            <p className="text-[#cde3e1]/72 text-sm">
               {membership.active
                 ? "Your annual membership is active. Open the full resource library."
                 : "Download the free resources now and unlock the full library with annual membership."}
@@ -231,7 +234,7 @@ function Step({ active, label, icon }: { active: boolean, label: string, icon: R
   return (
     <div className={`flex flex-col items-center gap-2 ${active ? "" : "opacity-50 grayscale"}`}>
       {icon}
-      <span className="text-sm font-medium">{label}</span>
+      <span className="text-sm font-medium text-zinc-950">{label}</span>
     </div>
   )
 }

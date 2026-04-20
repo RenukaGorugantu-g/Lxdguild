@@ -3,6 +3,15 @@ import { createClient } from "@/utils/supabase/server";
 import MembershipCheckout from "./MembershipCheckout";
 import { MEMBER_ANNUAL_PRICE_INR, formatMembershipDate, getMembershipState } from "@/lib/membership";
 
+type MembershipPageProfile = {
+  name?: string | null;
+  email?: string | null;
+  role?: string | null;
+  membership_status?: string | null;
+  membership_plan?: string | null;
+  membership_expires_at?: string | null;
+};
+
 export default async function MembershipPage() {
   const supabase = await createClient();
   const {
@@ -16,7 +25,7 @@ export default async function MembershipPage() {
     .select("name, email, role, membership_status, membership_plan, membership_expires_at")
     .eq("id", user.id)
     .single();
-  let profile = membershipProfileResult.data;
+  let profile: MembershipPageProfile | null = membershipProfileResult.data;
 
   if (membershipProfileResult.error?.code === "42703") {
     const fallback = await supabase
@@ -30,8 +39,8 @@ export default async function MembershipPage() {
   const membership = getMembershipState(profile);
 
   return (
-    <div className="min-h-screen bg-zinc-50 pt-28 pb-16 px-6 dark:bg-black">
-      <div className="mx-auto max-w-6xl">
+    <div className="premium-shell premium-page">
+      <div className="premium-content mx-auto max-w-6xl">
         <MembershipCheckout
           isActive={membership.active}
           expiresAtLabel={formatMembershipDate(membership.expiresAt)}

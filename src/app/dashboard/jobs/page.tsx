@@ -229,19 +229,20 @@ export default async function JobsDashboard({
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black pt-28 pb-16 px-6">
-      <div className="max-w-7xl mx-auto space-y-8">
-        
-        <div className="flex items-center justify-between">
+    <div className="premium-shell premium-page">
+      <div className="premium-content max-w-7xl mx-auto space-y-8">
+        <div className="premium-hero p-7 sm:p-8">
+          <div className="flex items-center justify-between gap-6">
           <div>
-            <h1 className="text-3xl font-bold">{pageTitle}</h1>
-            <p className="text-zinc-500 mt-1">{pageDescription}</p>
+            <div className="premium-badge">Curated opportunities</div>
+            <h1 className="mt-4 text-3xl font-bold text-white">{pageTitle}</h1>
+            <p className="premium-copy mt-2">{pageDescription}</p>
             {activeFilterChips.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap gap-2">
                 {activeFilterChips.map((chip) => (
                   <span
                     key={chip}
-                    className="rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-semibold text-brand-700"
+                    className="rounded-full border border-white/12 bg-white/8 px-3 py-1 text-xs font-semibold text-white"
                   >
                     {chip}
                   </span>
@@ -252,11 +253,12 @@ export default async function JobsDashboard({
           {isAdminRole(profile?.role) && (
              <Link 
                href="/api/jobs/import" 
-               className="flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors shadow-sm"
+               className="premium-button premium-button-primary hidden sm:inline-flex"
              >
                <RefreshCw className="w-4 h-4" /> Import Latest Jobs
              </Link>
           )}
+        </div>
         </div>
 
         <div className="flex flex-col md:flex-row gap-8">
@@ -266,7 +268,7 @@ export default async function JobsDashboard({
            {/* Main Content */}
            <div className="flex-1 space-y-4">
               {view !== "freelance" && freelanceJobs.length > 0 && (
-                <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+                <div className="premium-card-light p-5">
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <div className="flex items-center gap-2 text-sm font-semibold text-zinc-900">
@@ -293,10 +295,10 @@ export default async function JobsDashboard({
               )}
 
               {!canAccessJobBoard && (
-                <div className="p-4 bg-amber-50 border border-amber-200 dark:bg-amber-900/10 dark:border-amber-900/20 rounded-xl text-amber-900 dark:text-amber-300 text-sm flex items-center justify-between gap-4">
+                <div className="premium-card-light flex items-center justify-between gap-4 p-4 text-sm">
                   <div className="flex items-center gap-2">
-                    <Lock className="w-4 h-4" />
-                    <span>Jobs are visible, but applying is locked. Complete the assessment to unlock applications.</span>
+                    <Lock className="w-4 h-4 text-amber-700" />
+                    <span className="text-amber-900">Jobs are visible, but applying is locked. Complete the assessment to unlock applications.</span>
                   </div>
                   <Link href="/dashboard/candidate/exam" className="px-3 py-1 bg-amber-600 text-white rounded-md text-xs font-bold whitespace-nowrap">
                     Write Assessment
@@ -305,10 +307,10 @@ export default async function JobsDashboard({
               )}
 
               {(!jobsList || jobsList.length <= 3) && isAdminRole(profile?.role) && (
-                <div className="p-4 bg-blue-50 border border-blue-100 dark:bg-blue-900/10 dark:border-blue-900/20 rounded-xl text-blue-800 dark:text-blue-300 text-sm flex items-center justify-between gap-4">
+                <div className="premium-card-light flex items-center justify-between gap-4 p-4 text-sm">
                    <div className="flex items-center gap-2">
-                      <RefreshCw className="w-4 h-4 animate-spin-slow" />
-                      <span>Job board looks a bit empty. Want to sync fresh roles?</span>
+                      <RefreshCw className="w-4 h-4 animate-spin-slow text-sky-700" />
+                      <span className="text-sky-800">Job board looks a bit empty. Want to sync fresh roles?</span>
                    </div>
                    <Link href="/api/jobs/import" className="px-3 py-1 bg-blue-600 text-white rounded-md text-xs font-bold whitespace-nowrap">Sync Now</Link>
                 </div>
@@ -320,7 +322,7 @@ export default async function JobsDashboard({
                 ))}
 
                 {(!jobsList || jobsList.length === 0) && (
-                  <div className="py-20 text-center bg-white dark:bg-surface-dark border rounded-2xl">
+                  <div className="premium-card-light py-20 text-center">
                     <RefreshCw className="w-12 h-12 text-zinc-200 mx-auto mb-4" />
                     <p className="text-zinc-500">No jobs found. Check back soon for new opportunities.</p>
                   </div>
@@ -328,7 +330,7 @@ export default async function JobsDashboard({
               </div>
 
               {totalJobs > 0 && totalPages > 1 && (
-                <div className="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between">
+                <div className="premium-card-light flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
                   <p className="text-sm text-zinc-500">
                     Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, totalJobs)} of {totalJobs} jobs
                   </p>
