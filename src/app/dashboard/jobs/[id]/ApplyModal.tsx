@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { normalizeExternalApplyUrl } from "@/lib/job-apply";
 
 type ApplyJob = {
   id: string;
@@ -47,6 +48,12 @@ type SimilarJob = {
   score: number;
 };
 
+type AtsResult = {
+  score?: number | null;
+  autoDecision?: string | null;
+  summary?: string | null;
+};
+
 export default function ApplyModal({
   job,
   profile,
@@ -58,6 +65,7 @@ export default function ApplyModal({
   alreadyApplied,
   onClose,
   onSuccess,
+  onQuotaReached,
 }: {
   job: ApplyJob;
   profile: CandidateProfile;
@@ -69,18 +77,22 @@ export default function ApplyModal({
   alreadyApplied: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  onQuotaReached?: (reason: string) => void;
 }) {
-  const initialApplyUrl = job.apply_url || null;
+  const initialApplyUrl = normalizeExternalApplyUrl(job.apply_url);
+  const isInternalApply = !initialApplyUrl;
   const [step, setStep] = useState(alreadyApplied ? 3 : 1);
   const [selectedResumeId, setSelectedResumeId] = useState(resumes[0]?.id || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [launchedApplyUrl, setLaunchedApplyUrl] = useState<string | null>(initialApplyUrl);
+  const [quotaMessage, setQuotaMessage] = useState<string | null>(null);
+  const [atsResult, setAtsResult] = useState<AtsResult | null>(null);
   const [companySaved, setCompanySaved] = useState(isCompanySaved);
   const [roleFollowed, setRoleFollowed] = useState(isRoleFollowed);
   const [savingCompany, setSavingCompany] = useState(false);
   const [followingRole, setFollowingRole] = useState(false);
   const router = useRouter();
-  const externalApplyUrl = launchedApplyUrl || initialApplyUrl;
+  const externalApplyUrl = normalizeExternalApplyUrl(launchedApplyUrl) || initialApplyUrl;
 
   const openEmployerPage = (url?: string | null, target?: Window | null) => {
     if (!url) return;
@@ -129,15 +141,28 @@ export default function ApplyModal({
       const response = await fetch("/api/notifications/job-application", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobId: job.id, resumeUrl }),
+        body: JSON.stringify({ jobId: job.id, resumeUrl, resumeId: selectedResumeId || null }),
       });
 
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Unable to submit application.");
+      if (!response.ok) {
+        if (response.status === 403 && result.error && onQuotaReached) {
+          onQuotaReached(result.error);
+        }
+        throw new Error(result.error || "Unable to submit application.");
+      }
       const applyUrl = result.applyUrl || job.apply_url;
 
       if (applyUrl) {
         setLaunchedApplyUrl(applyUrl);
+      }
+      setAtsResult({
+        score: typeof result.atsScore === "number" ? result.atsScore : null,
+        autoDecision: result.atsAutoDecision || null,
+        summary: result.atsSummary || null,
+      });
+      if (typeof result.freeAccessRemaining === "number" && result.freeAccessRemaining <= 0) {
+        setQuotaMessage("Your free job access is now complete. Verify your profile to keep applying for more roles.");
       }
 
       onSuccess();
@@ -258,7 +283,9 @@ export default function ApplyModal({
               </div>
 
               <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                This opens the employer&apos;s official application page in a popup or new tab. You still need to finish the application there for your resume to reach them.
+                {isInternalApply
+                  ? "This role uses LXD Guild's internal apply flow. Once you submit, the employer can review your profile, ATS fit, and resume directly in the platform."
+                  : "This opens the employer's official application page in a popup or new tab. You still need to finish the application there for your resume to reach them."}
               </div>
 
               <div className="flex gap-4">
@@ -274,7 +301,7 @@ export default function ApplyModal({
                   className="flex-[2] py-4 bg-brand-600 text-white rounded-2xl font-bold shadow-lg hover:shadow-brand-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-4 h-4" />}
-                  Continue to Official Apply Page
+                  {isInternalApply ? "Submit Application" : "Continue to Official Apply Page"}
                 </button>
               </div>
             </div>
@@ -293,7 +320,9 @@ export default function ApplyModal({
                       <div>
                       <p className="text-2xl font-bold tracking-tight text-zinc-950">Your application is in motion</p>
                       <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-700">
-                          Continue on the employer&apos;s official application page in a new tab. Many job sites block embedded forms, so we now send you there directly.
+                          {isInternalApply
+                            ? "Your application has been submitted inside LXD Guild. The employer can now review your profile, resume, and ATS fit directly on the platform."
+                            : "Continue on the employer's official application page in a new tab. Many job sites block embedded forms, so we now send you there directly."}
                         </p>
                       </div>
                     </div>
@@ -312,7 +341,9 @@ export default function ApplyModal({
                       <div>
                         <p className="text-sm font-bold text-zinc-900">Next step</p>
                         <p className="mt-1 text-sm text-zinc-500">
-                          Submit the employer form in the external window so your resume reaches their team.
+                          {isInternalApply
+                            ? "Your profile is already in the employer's review queue. Stay here to track shortlist and next-round updates."
+                            : "Submit the employer form in the external window so your resume reaches their team."}
                         </p>
                       </div>
                       <ExternalLink className="h-5 w-5 text-brand-600" />
@@ -322,9 +353,13 @@ export default function ApplyModal({
                       <div className="flex items-start gap-3 rounded-2xl bg-zinc-50 px-4 py-3">
                         <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">1</div>
                         <div>
-                        <p className="text-sm font-semibold text-zinc-900">Finish the official employer application</p>
+                        <p className="text-sm font-semibold text-zinc-900">
+                          {isInternalApply ? "Application submitted in-platform" : "Finish the official employer application"}
+                        </p>
                           <p className="mt-1 text-xs leading-5 text-zinc-500">
-                            Some employers ask for extra questions, work samples, or a profile login before the submission is complete.
+                            {isInternalApply
+                              ? "The employer can shortlist, reject, and move you to interview stages right here in LXD Guild."
+                              : "Some employers ask for extra questions, work samples, or a profile login before the submission is complete."}
                           </p>
                         </div>
                       </div>
@@ -349,6 +384,26 @@ export default function ApplyModal({
                   </div>
                 </div>
 
+                {atsResult && (typeof atsResult.score === "number" || atsResult.summary) && (
+                  <div className="rounded-[28px] border border-blue-200 bg-blue-50 p-6">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-700">ATS review</p>
+                        <p className="mt-2 text-lg font-bold text-zinc-950">
+                          {typeof atsResult.score === "number" ? `Resume match score: ${Math.round(atsResult.score)}%` : "ATS analysis completed"}
+                        </p>
+                        {atsResult.summary ? <p className="mt-2 text-sm leading-6 text-zinc-700">{atsResult.summary}</p> : null}
+                      </div>
+                      {atsResult.autoDecision ? (
+                        <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold capitalize text-blue-800">
+                          {atsResult.autoDecision.replace(/_/g, " ")}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                )}
+
+                {!isInternalApply && (
                 <div className="rounded-[28px] border border-zinc-200 bg-white p-6 shadow-sm">
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
@@ -390,15 +445,18 @@ export default function ApplyModal({
                     </div>
                   </div>
                 </div>
+                )}
 
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <button
-                    onClick={() => window.open(externalApplyUrl || job.apply_url || "", "_blank", "noopener,noreferrer")}
-                    disabled={!externalApplyUrl && !job.apply_url}
-                    className="w-full rounded-2xl bg-brand-600 py-4 font-bold text-white shadow-lg transition-all hover:shadow-brand-500/20 disabled:opacity-50"
-                  >
-                    Open Employer Page in New Tab
-                  </button>
+                  {!isInternalApply && (
+                    <button
+                      onClick={() => window.open(externalApplyUrl || job.apply_url || "", "_blank", "noopener,noreferrer")}
+                      disabled={!externalApplyUrl && !job.apply_url}
+                      className="w-full rounded-2xl bg-brand-600 py-4 font-bold text-white shadow-lg transition-all hover:shadow-brand-500/20 disabled:opacity-50"
+                    >
+                      Open Employer Page in New Tab
+                    </button>
+                  )}
                   <button
                     onClick={() => router.push("/dashboard/jobs")}
                     className="w-full rounded-2xl bg-zinc-100 py-4 font-bold text-zinc-700 transition-all hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
@@ -423,9 +481,17 @@ export default function ApplyModal({
                   </button>
                 </div>
 
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
-                  Some external job sites send `X-Frame-Options` or `Content-Security-Policy` headers that block embedding, so this flow now sends candidates to the official page in a new tab instead of showing a broken frame.
-                </div>
+                {!isInternalApply && (
+                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+                    Some external job sites send `X-Frame-Options` or `Content-Security-Policy` headers that block embedding, so this flow now sends candidates to the official page in a new tab instead of showing a broken frame.
+                  </div>
+                )}
+
+                {quotaMessage && (
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    {quotaMessage}
+                  </div>
+                )}
               </div>
 
               <aside className="rounded-3xl border border-zinc-200 bg-[linear-gradient(180deg,#f8fafc_0%,#f8fafc_60%,#ffffff_100%)] p-5 space-y-4">

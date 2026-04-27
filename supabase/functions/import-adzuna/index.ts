@@ -54,7 +54,6 @@ serve(async (req: Request) => {
         }
       }
     }
-
     return new Response(JSON.stringify({ success: true, imported }), {
       headers: { "Content-Type": "application/json" },
     });

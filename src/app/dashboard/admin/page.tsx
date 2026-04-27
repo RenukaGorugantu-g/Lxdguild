@@ -1,8 +1,16 @@
 import { createClient } from "@/utils/supabase/server";
 import { Users, GraduationCap, Building, Briefcase } from "lucide-react";
 import CertificateReviewList from "./certificate-review-list";
+import JobDeletionReviewList from "./job-deletion-review-list";
+import { ensureUserProfile } from "@/lib/ensure-user-profile";
 
-export default async function AdminDashboard({ profile: initialProfile }: { profile?: any }) {
+type AdminProfile = {
+  id?: string;
+  role?: string | null;
+  [key: string]: unknown;
+};
+
+export default async function AdminDashboard({ profile: initialProfile }: { profile?: AdminProfile | null }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -17,6 +25,18 @@ export default async function AdminDashboard({ profile: initialProfile }: { prof
   }
 
   if (!profile) {
+    const ensuredProfile = await ensureUserProfile(user);
+    if (ensuredProfile) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+      profile = data;
+    }
+  }
+
+  if (!profile) {
     return <div>Loading profile...</div>;
   }
 
@@ -25,7 +45,11 @@ export default async function AdminDashboard({ profile: initialProfile }: { prof
   const { count: mvpCandidates } = await supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "candidate_mvp");
   const { count: onholdCandidates } = await supabase.from("profiles").select("*", { count: "exact", head: true }).eq("role", "candidate_onhold");
   const { count: totalEmployers } = await supabase.from("profiles").select("*", { count: "exact", head: true }).like("role", "employer%");
-  const { count: totalJobs } = await supabase.from("jobs").select("*", { count: "exact", head: true });
+  const { count: totalJobs } = await supabase.from("jobs").select("*", { count: "exact", head: true }).is("deleted_at", null);
+  const { count: pendingDeletionCount } = await supabase
+    .from("deleted_jobs")
+    .select("*", { count: "exact", head: true })
+    .eq("request_status", "pending");
 
   // Fetch pending certificates
   const { data: pendingCertificates } = await supabase
@@ -33,6 +57,12 @@ export default async function AdminDashboard({ profile: initialProfile }: { prof
     .select("*, profiles(name, email)")
     .eq("status", "pending")
     .order("created_at", { ascending: true });
+
+  const { data: pendingDeletionRequests } = await supabase
+    .from("deleted_jobs")
+    .select("id, original_job_id, title, company, requested_at, request_status")
+    .eq("request_status", "pending")
+    .order("requested_at", { ascending: true });
 
   const passRate = totalCandidates ? Math.round(((mvpCandidates || 0) / (totalCandidates || 1)) * 100) : 0;
 
@@ -53,11 +83,17 @@ export default async function AdminDashboard({ profile: initialProfile }: { prof
           <KpiCard title="On-hold Candidates" value={onholdCandidates || 0} icon={<Users className="w-5 h-5 text-orange-500" />} />
           <KpiCard title="Total Employers" value={totalEmployers || 0} icon={<Building className="w-5 h-5 text-purple-500" />} />
           <KpiCard title="Imported Jobs" value={totalJobs || 0} icon={<Briefcase className="w-5 h-5 text-zinc-500" />} trend="Across all sources" />
+          <KpiCard title="Delete Requests" value={pendingDeletionCount || 0} icon={<Briefcase className="w-5 h-5 text-red-500" />} trend="Awaiting review" />
         </div>
 
         <div className="bg-white dark:bg-surface-dark border p-6 rounded-2xl">
            <h2 className="text-xl font-semibold mb-6">Pending Certificate Approvals</h2>
            <CertificateReviewList certificates={pendingCertificates || []} />
+        </div>
+
+        <div className="bg-white dark:bg-surface-dark border p-6 rounded-2xl">
+           <h2 className="text-xl font-semibold mb-6">Pending Job Deletion Requests</h2>
+           <JobDeletionReviewList requests={pendingDeletionRequests || []} />
         </div>
 
       </div>

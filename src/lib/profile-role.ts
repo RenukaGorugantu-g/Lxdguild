@@ -63,3 +63,7 @@ export function getRoleDisplayLabel(profile: ProfileLike | null | undefined) {
 export function canAccessJobBoardRole(role?: string | null) {
   return isAdminRole(role) || isVerifiedCandidateRole(role);
 }
+
+export function canViewJobBoardRole(role?: string | null) {
+  return isAdminRole(role) || isCandidateRole(role);
+}

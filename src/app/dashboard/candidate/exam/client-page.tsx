@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
+import { getRequiredScoreForBucket, PASS_THRESHOLD } from "@/lib/assessment";
 
 type Question = {
   id: string;
@@ -10,9 +11,23 @@ type Question = {
   options: string[];
   correct_answer: string;
   skill_tag: string;
+  section_name?: string | null;
+  question_set?: string | null;
 };
 
-export default function ExamClient({ questions, designationLevel, userId }: { questions: Question[], designationLevel: string, userId: string }) {
+export default function ExamClient({
+  questions,
+  designationLevel,
+  targetRole,
+  designationBucket,
+  userId,
+}: {
+  questions: Question[];
+  designationLevel: string;
+  targetRole: string;
+  designationBucket: string;
+  userId: string;
+}) {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -62,31 +77,44 @@ export default function ExamClient({ questions, designationLevel, userId }: { qu
 
     const finalScore = Math.round((correctCount / questions.length) * 100);
 
-    // Pass criteria logic
-    let requiredScore = 75; // Default Level 4-6
-    if (designationLevel === "Level 1") requiredScore = 60;
-    if (designationLevel === "Level 2" || designationLevel === "Level 3") requiredScore = 70;
+    const requiredScore = getRequiredScoreForBucket();
 
     const passStatus = finalScore >= requiredScore ? 'pass' : 'fail';
     const newRole = passStatus === 'pass' ? 'candidate_mvp' : 'candidate_onhold';
 
     try {
       // 1. Record Attempt
-      const { error: attemptError } = await supabase.from("exam_attempts").insert({
+      const attemptInsert = await supabase.from("exam_attempts").insert({
         user_id: userId,
         designation_level: designationLevel,
+        assessment_track: designationBucket,
+        target_role: targetRole,
+        designation_bucket: designationBucket,
         score: finalScore,
         pass_fail: passStatus,
         scorecard_json: scorecard
       });
+      let attemptError = attemptInsert.error;
+
+      if (attemptError?.code === "42703") {
+        const legacyAttemptInsert = await supabase.from("exam_attempts").insert({
+          user_id: userId,
+          designation_level: designationLevel,
+          assessment_track: designationBucket,
+          score: finalScore,
+          pass_fail: passStatus,
+          scorecard_json: scorecard,
+        });
+        attemptError = legacyAttemptInsert.error;
+      }
 
       if (attemptError) throw new Error(`Failed to save attempt: ${attemptError.message}`);
 
       // 2. Update Candidate Table
-      const { data: candidate, error: fetchError } = await supabase.from("candidates").select("*").eq("user_id", userId).single();
+      const { data: candidate } = await supabase.from("candidates").select("*").eq("user_id", userId).single();
       
       if (candidate) {
-         const { error: updateError } = await supabase.from("candidates").update({
+        const { error: updateError } = await supabase.from("candidates").update({
            exam_status: "completed",
            pass_status: passStatus,
            latest_score: finalScore,
@@ -106,23 +134,60 @@ export default function ExamClient({ questions, designationLevel, userId }: { qu
 
       // 3. Update Role if passed
       if (passStatus === 'pass') {
-        const { error: profileError } = await supabase.from("profiles").update({ 
+        const profileUpdate = await supabase.from("profiles").update({ 
           role: "candidate_mvp", 
-          verification_status: "verified" 
+          verification_status: "verified",
+          candidate_target_role: targetRole,
+          candidate_designation: designationBucket,
+          designation_level: designationLevel,
         }).eq("id", userId);
+        let profileError = profileUpdate.error;
+
+        if (profileError?.code === "42703") {
+          const legacyProfileUpdate = await supabase.from("profiles").update({
+            role: "candidate_mvp",
+            verification_status: "verified",
+            candidate_designation: designationBucket,
+            designation_level: designationLevel,
+          }).eq("id", userId);
+          profileError = legacyProfileUpdate.error;
+        }
+
         if (profileError) throw new Error(`Failed to update profile: ${profileError.message}`);
+      } else {
+        const failedProfileUpdate = await supabase
+          .from("profiles")
+          .update({
+            role: newRole,
+            candidate_target_role: targetRole,
+            candidate_designation: designationBucket,
+            designation_level: designationLevel,
+          })
+          .eq("id", userId);
+        let profileUpdateError = failedProfileUpdate.error;
+
+        if (profileUpdateError?.code === "42703") {
+          const legacyFailedProfileUpdate = await supabase
+            .from("profiles")
+            .update({
+              role: newRole,
+              candidate_designation: designationBucket,
+              designation_level: designationLevel,
+            })
+            .eq("id", userId);
+          profileUpdateError = legacyFailedProfileUpdate.error;
+        }
+
+        if (profileUpdateError) throw new Error(`Failed to update profile: ${profileUpdateError.message}`);
       }
 
       // Done
-      if (passStatus === 'fail') {
-        router.push("/dashboard/candidate/scorecard");
-      } else {
-        router.push("/dashboard/candidate");
-      }
+      router.push("/dashboard/candidate/scorecard");
       router.refresh();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Exam submission error:", err);
-      alert(`There was an error submitting your exam: ${err.message}. Please try again.`);
+      const message = err instanceof Error ? err.message : "Unknown error";
+      alert(`There was an error submitting your exam: ${message}. Please try again.`);
       setIsSubmitting(false);
     }
   };
@@ -131,7 +196,19 @@ export default function ExamClient({ questions, designationLevel, userId }: { qu
     <div className="bg-white dark:bg-surface-dark rounded-2xl shadow-sm border border-zinc-200 dark:border-border p-8">
       <div className="mb-8 flex items-center justify-between">
         <span className="text-sm font-semibold text-brand-600">Question {currentIdx + 1} of {questions.length}</span>
-        <span className="text-sm text-zinc-500">{designationLevel} Validation Exam</span>
+        <div className="text-right">
+          <span className="block text-sm text-zinc-500">{designationLevel} Validation Exam</span>
+          <span className="block text-xs uppercase tracking-[0.18em] text-zinc-400">
+            {question.section_name || "General"} • {(question.question_set || "set1").toUpperCase()}
+          </span>
+        </div>
+      </div>
+
+      <div className="mb-5 flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm">
+        <span className="font-semibold text-zinc-900">{targetRole}</span>
+        <span className="rounded-full bg-[#091737] px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-white">
+          {designationBucket}
+        </span>
       </div>
 
       <h2 className="text-2xl font-semibold mb-6">{question.question}</h2>
@@ -177,6 +254,10 @@ export default function ExamClient({ questions, designationLevel, userId }: { qu
              Next
            </button>
         )}
+      </div>
+
+      <div className="mt-5 text-xs uppercase tracking-[0.16em] text-zinc-400">
+        Pass threshold: {PASS_THRESHOLD}%
       </div>
     </div>
   );

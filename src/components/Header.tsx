@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
 import {
-  canAccessJobBoardRole,
+  canViewJobBoardRole,
+  getBaseRole,
   getRoleDisplayLabel,
   isCandidateRole,
   isEmployerRole,
@@ -15,10 +16,11 @@ import {
 import {
   BadgeCheck,
   Bell,
-  BookOpen,
+  Building2,
   Briefcase,
   ChevronDown,
   LayoutDashboard,
+  Lock,
   LogOut,
   Menu,
   Settings,
@@ -47,7 +49,27 @@ type NavLink = {
   href: string;
   label: string;
   external?: boolean;
+  locked?: boolean;
 };
+
+function deriveProfileFromUser(user: SupabaseUser): HeaderProfile {
+  const metadata = user.user_metadata as Record<string, unknown> | undefined;
+  const roleFromMetadata = typeof metadata?.role === "string" ? metadata.role : null;
+  
+  // Default to candidate_onhold if no role in metadata (will be fixed by server-side logic)
+  const defaultRole = roleFromMetadata || "candidate_onhold";
+
+  return {
+    name:
+      typeof metadata?.name === "string" && metadata.name.trim().length > 0
+        ? metadata.name
+        : user.email?.split("@")[0] || "User",
+    role: defaultRole,
+    membership_status: null,
+    membership_plan: null,
+    membership_expires_at: null,
+  };
+}
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -75,12 +97,33 @@ export default function Header() {
       } = await supabase.auth.getUser();
       setUser(user);
       if (user) {
-        const { data } = await supabase
+        const profileResult = await supabase
           .from("profiles")
           .select("name, role, verification_status, membership_status, membership_plan, membership_expires_at")
           .eq("id", user.id)
           .single();
-        setProfile(data);
+        let nextProfile = profileResult.data;
+
+        if (profileResult.error?.code === "42703") {
+          const fallback = await supabase
+            .from("profiles")
+            .select("name, role, verification_status, membership_status")
+            .eq("id", user.id)
+            .single();
+          nextProfile = fallback.data
+            ? {
+                ...fallback.data,
+                membership_plan: null,
+                membership_expires_at: null,
+              }
+            : null;
+        }
+
+        if (!nextProfile) {
+          nextProfile = deriveProfileFromUser(user);
+        }
+
+        setProfile(nextProfile);
       } else {
         setProfile(null);
       }
@@ -92,6 +135,7 @@ export default function Header() {
   useEffect(() => {
     const fetchNotifications = async () => {
       if (!user?.id) return;
+
       const response = await fetch("/api/notifications");
       if (!response.ok) return;
       const result = await response.json();
@@ -118,14 +162,29 @@ export default function Header() {
   const isEmployer = isEmployerRole(profile?.role);
   const isCandidate = isCandidateRole(profile?.role);
   const isVerifiedMVP = isVerifiedCandidateRole(profile?.role);
-  const canAccessJobBoard = canAccessJobBoardRole(profile?.role);
+  const canViewJobBoard = canViewJobBoardRole(profile?.role);
+  const canApplyToJobs = isVerifiedMVP || profile?.role === "candidate_onhold";
   const roleLabel = getRoleDisplayLabel(profile);
+  const baseRole = getBaseRole(profile);
+  const brandHref = baseRole === "candidate" ? "/candidate" : baseRole === "employer" ? "/employer" : "/";
+  const isPublicMarketingRoute =
+    !user &&
+    (pathname === "/" ||
+      pathname === "/candidate" ||
+      pathname === "/employer" ||
+      pathname === "/membership" ||
+      pathname === "/login" ||
+      pathname === "/register");
 
   const primaryLinks: NavLink[] = [
+    { href: "/membership", label: "Membership" },
+    { href: "/contact", label: "Contact" },
     { href: "https://lxdguild.com", label: "Community", external: true },
     { href: "https://lxdguildacademy.com", label: "Academy", external: true },
-    ...(canAccessJobBoard ? [{ href: "/dashboard/jobs", label: "Jobs" }] : []),
-    { href: "/dashboard/resources", label: "Resources" },
+    ...(isCandidate || isVerifiedMVP || canViewJobBoard
+      ? [{ href: "/dashboard/jobs", label: "Marketplace", locked: !canApplyToJobs }]
+      : []),
+    { href: user ? "/dashboard/resources" : "/candidate", label: "Resources" },
   ];
 
   const dashboardLinks = user
@@ -133,9 +192,10 @@ export default function Header() {
         { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
         { href: "/dashboard/membership", label: "Membership", icon: CrownIcon },
         ...(isEmployer ? [{ href: "/dashboard/employer", label: "Employer Hub", icon: Briefcase }] : []),
+        ...(isEmployer ? [{ href: "/dashboard/employer/profile", label: "Employer Profile", icon: Building2 }] : []),
         ...(isCandidate ? [{ href: "/dashboard/candidate/profile", label: "My Profile", icon: User }] : []),
         ...(isCandidate ? [{ href: "/dashboard/candidate/applications", label: "My Applications", icon: Briefcase }] : []),
-        ...(canAccessJobBoard ? [{ href: "/dashboard/jobs", label: "Job Board", icon: Briefcase }] : []),
+        ...(isCandidate || isVerifiedMVP || canViewJobBoard ? [{ href: "/dashboard/jobs", label: "Job Board", icon: Briefcase }] : []),
       ]
     : [];
 
@@ -168,19 +228,28 @@ export default function Header() {
   return (
     <header
       className={`fixed left-0 right-0 top-0 z-50 transition-all duration-300 ${
-        isScrolled ? "border-b border-white/10 bg-[var(--bg-dark)]/92 backdrop-blur-2xl" : "bg-[var(--bg-dark)]"
+        isPublicMarketingRoute
+          ? isScrolled
+            ? "border-b border-[#dfe8d8] bg-[#f9fcf3]/92 backdrop-blur-2xl"
+            : "bg-[#f9fcf3]"
+          : isScrolled
+            ? "border-b border-white/10 bg-[var(--bg-dark)]/92 backdrop-blur-2xl"
+            : "bg-[var(--bg-dark)]"
       }`}
     >
       <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
-        <div className="flex min-h-16 items-center justify-between rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(9,23,55,0.96),rgba(9,23,55,0.88))] px-4 shadow-[0_24px_80px_rgba(3,10,26,0.45)] sm:px-5">
-          <Link href="/" className="group flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] text-[#091737] shadow-[0_18px_40px_rgba(52,205,47,0.26)]">
-              <BookOpen className="h-5 w-5" />
-            </div>
+        <div
+          className={`flex min-h-16 items-center justify-between rounded-[28px] px-4 sm:px-5 ${
+            isPublicMarketingRoute
+              ? "border border-[#dfe8d8] bg-white/86 shadow-[0_18px_45px_rgba(94,119,74,0.08)]"
+              : "border border-white/10 bg-[linear-gradient(180deg,rgba(9,23,55,0.96),rgba(9,23,55,0.88))] shadow-[0_24px_80px_rgba(3,10,26,0.45)]"
+          }`}
+        >
+          <Link href={brandHref} className="group flex items-center gap-3">
             <div className="leading-tight">
-              <span className="block text-lg font-extrabold tracking-[0.03em] text-white">LXD Guild</span>
-              <span className="hidden text-[10px] font-semibold uppercase tracking-[0.26em] text-[#cde3e1]/72 sm:block">
-                Come. Connect. Collaborate.
+              <span className={`block text-lg font-extrabold tracking-[0.03em] ${isPublicMarketingRoute ? "text-[#138d1a]" : "text-white"}`}>LXD Guild</span>
+              <span className={`hidden text-[10px] font-semibold uppercase tracking-[0.26em] sm:block ${isPublicMarketingRoute ? "text-[#74826e]" : "text-[#cde3e1]/72"}`}>
+                Career ecosystem
               </span>
             </div>
           </Link>
@@ -189,25 +258,36 @@ export default function Header() {
             {primaryLinks.map((link) =>
               link.external ? (
                 <a
-                  key={link.href}
+                  key={`${link.label}-${link.href}`}
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-full px-4 py-2 text-sm font-semibold text-[#cde3e1] transition-all hover:bg-white/8 hover:text-white"
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+                    isPublicMarketingRoute
+                      ? "text-[#5e6c5a] hover:bg-[#eef5e5] hover:text-[#111827]"
+                      : "text-[#cde3e1] hover:bg-white/8 hover:text-white"
+                  }`}
                 >
                   {link.label}
                 </a>
               ) : (
                 <Link
-                  key={link.href}
+                  key={`${link.label}-${link.href}`}
                   href={link.href}
                   className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
                     pathname === link.href || pathname.startsWith(link.href + "/")
-                      ? "bg-white/14 text-white"
-                      : "text-[#cde3e1] hover:bg-white/8 hover:text-white"
+                      ? isPublicMarketingRoute
+                        ? "bg-[#ebf7e3] text-[#138d1a]"
+                        : "bg-white/14 text-white"
+                      : isPublicMarketingRoute
+                        ? "text-[#5e6c5a] hover:bg-[#eef5e5] hover:text-[#111827]"
+                        : "text-[#cde3e1] hover:bg-white/8 hover:text-white"
                   }`}
                 >
-                  {link.label}
+                  <span className="inline-flex items-center gap-2">
+                    {link.label}
+                    {link.locked ? <Lock className="h-3.5 w-3.5 text-[#80ef7a]" /> : null}
+                  </span>
                 </Link>
               )
             )}
@@ -218,15 +298,23 @@ export default function Header() {
               <div className="hidden items-center gap-2 sm:flex">
                 <Link
                   href="/login"
-                  className="rounded-full px-4 py-2 text-sm font-semibold text-[#cde3e1] transition-all hover:bg-white/8 hover:text-white"
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+                    isPublicMarketingRoute
+                      ? "text-[#111827] hover:bg-[#eef5e5]"
+                      : "text-[#cde3e1] hover:bg-white/8 hover:text-white"
+                  }`}
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/register"
-                  className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] px-5 py-2.5 text-sm font-bold text-[#091737] shadow-[0_18px_40px_rgba(52,205,47,0.24)] transition-all hover:translate-y-[-1px]"
+                  className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-all hover:translate-y-[-1px] ${
+                    isPublicMarketingRoute
+                      ? "bg-[linear-gradient(135deg,#118118,#2aa82b)] text-white shadow-[0_16px_32px_rgba(24,124,29,0.18)]"
+                      : "bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] text-[#091737] shadow-[0_18px_40px_rgba(52,205,47,0.24)]"
+                  }`}
                 >
-                  <Sparkles className="h-4 w-4" /> Join Guild
+                  <Sparkles className="h-4 w-4" /> Get Started
                 </Link>
               </div>
             )}
@@ -338,23 +426,29 @@ export default function Header() {
             {primaryLinks.map((link) =>
               link.external ? (
                 <a
-                  key={link.href}
+                  key={`${link.label}-${link.href}`}
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center rounded-2xl px-3 py-3 text-sm font-semibold text-[#cde3e1] transition-colors hover:bg-white/6 hover:text-white"
                 >
-                  {link.label}
+                  <span className="inline-flex items-center gap-2">
+                    {link.label}
+                    {link.locked ? <Lock className="h-3.5 w-3.5 text-[#80ef7a]" /> : null}
+                  </span>
                 </a>
               ) : (
                 <Link
-                  key={link.href}
+                  key={`${link.label}-${link.href}`}
                   href={link.href}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center rounded-2xl px-3 py-3 text-sm font-semibold text-[#cde3e1] transition-colors hover:bg-white/6 hover:text-white"
                 >
-                  {link.label}
+                  <span className="inline-flex items-center gap-2">
+                    {link.label}
+                    {link.locked ? <Lock className="h-3.5 w-3.5 text-[#80ef7a]" /> : null}
+                  </span>
                 </Link>
               )
             )}

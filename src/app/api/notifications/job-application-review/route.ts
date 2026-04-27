@@ -6,7 +6,7 @@ export async function POST(req: Request) {
   const body = await req.json()
   const { applicationId, action } = body
 
-  if (!applicationId || !['accepted', 'rejected'].includes(action)) {
+  if (!applicationId || !['shortlisted', 'rejected'].includes(action)) {
     return NextResponse.json({ error: 'Missing or invalid fields' }, { status: 400 })
   }
 
@@ -25,11 +25,27 @@ export async function POST(req: Request) {
     .eq('id', user.id)
     .single()
 
-  const { data: application, error: appError } = await supabase
+  let application = null
+  let appError = null
+  const applicationWithResumeLink = await supabase
     .from('job_applications')
-    .select('id, user_id, job_id, status, jobs(user_id, title, company)')
+    .select('id, user_id, job_id, status, resume_id, resume_url, jobs(user_id, title, company, description, location)')
     .eq('id', applicationId)
     .single()
+
+  application = applicationWithResumeLink.data
+  appError = applicationWithResumeLink.error
+
+  if (appError?.code === '42703' || appError?.message?.includes('resume_id')) {
+    const legacyApplicationQuery = await supabase
+      .from('job_applications')
+      .select('id, user_id, job_id, status, resume_url, jobs(user_id, title, company, description, location)')
+      .eq('id', applicationId)
+      .single()
+
+    appError = legacyApplicationQuery.error
+    application = legacyApplicationQuery.data ? { ...legacyApplicationQuery.data, resume_id: null } : null
+  }
 
   if (appError || !application) {
     return NextResponse.json({ error: 'Application not found' }, { status: 404 })
@@ -43,13 +59,19 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  if (application.status === 'accepted' || application.status === 'rejected') {
+  if (application.status === 'shortlisted' || application.status === 'rejected') {
     return NextResponse.json({ error: 'Final decision already recorded for this application.' }, { status: 409 })
   }
 
+  const timestampField = action === 'shortlisted' ? 'shortlisted_at' : 'rejected_at'
+
   const { data: updatedRows, error: updateError } = await supabase
     .from('job_applications')
-    .update({ status: action })
+    .update({
+      status: action,
+      reviewed_at: new Date().toISOString(),
+      [timestampField]: new Date().toISOString(),
+    })
     .eq('id', applicationId)
     .select('id')
 
@@ -63,12 +85,13 @@ export async function POST(req: Request) {
     )
   }
 
-  const statusText = action === 'accepted' ? 'accepted' : 'rejected'
   await notifyUser(
     application.user_id,
     'job_application_reviewed',
-    `Application ${statusText}`,
-    `Your application for ${job?.title || 'the role'} at ${job?.company || 'the company'} was ${statusText} by the employer.`,
+    action === 'shortlisted' ? 'You were shortlisted' : 'Application update',
+    action === 'shortlisted'
+      ? `Your application for ${job?.title || 'the role'} at ${job?.company || 'the company'} was shortlisted by the employer.`
+      : `Your application for ${job?.title || 'the role'} at ${job?.company || 'the company'} was rejected by the employer.`,
     {
       application_id: applicationId,
       job_id: application.job_id,

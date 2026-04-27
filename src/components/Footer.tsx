@@ -38,11 +38,14 @@ const SocialFacebook = () => (
 
 const footerLinks = {
   Platform: [
+    { label: "Candidate", href: "/candidate" },
+    { label: "Employer", href: "/employer" },
     { label: "Job Board", href: "/dashboard/jobs" },
     { label: "Candidate Dashboard", href: "/dashboard/candidate" },
     { label: "Professional Profile", href: "/dashboard/candidate/profile" },
   ],
   Membership: [
+    { label: "Membership Benefits", href: "/membership" },
     { label: "Resources", href: "/dashboard/resources" },
     { label: "Membership", href: "/dashboard/membership" },
     { label: "Skill Validation Exam", href: "/dashboard/candidate/exam" },
@@ -51,7 +54,7 @@ const footerLinks = {
     { label: "Community", href: "https://lxdguild.com", external: true },
     { label: "Academy", href: "https://lxdguildacademy.com", external: true },
     { label: "Events", href: "https://lxdguild.com/events.html", external: true },
-    { label: "Contact", href: "https://lxdguild.com/contact.html", external: true },
+    { label: "Contact", href: "/contact" },
   ],
 };
 
@@ -76,9 +79,9 @@ export default function Footer() {
             <Link href="/register" className="rounded-full bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] px-6 py-3 text-sm font-bold text-[#091737] shadow-[0_18px_40px_rgba(52,205,47,0.24)] transition-all hover:translate-y-[-1px]">
               Join the Guild
             </Link>
-            <a href="https://lxdguild.com/contact.html" target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/14 px-6 py-3 text-sm font-bold text-[#cde3e1] transition-all hover:bg-white/6">
+            <Link href="/contact" className="rounded-full border border-white/14 px-6 py-3 text-sm font-bold text-[#cde3e1] transition-all hover:bg-white/6">
               Contact Us
-            </a>
+            </Link>
           </div>
         </div>
       </div>

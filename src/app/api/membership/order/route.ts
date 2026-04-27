@@ -3,6 +3,12 @@ import Razorpay from "razorpay";
 import { createClient } from "@/utils/supabase/server";
 import { MEMBER_ANNUAL_PLAN_CODE, MEMBER_ANNUAL_PRICE_INR, hasActiveMembership } from "@/lib/membership";
 
+type MembershipRouteProfile = {
+  role?: string | null;
+  membership_status?: string | null;
+  membership_expires_at?: string | null;
+};
+
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID || "rzp_live_jOXWfiSjhOX7IX",
   key_secret: process.env.RAZORPAY_KEY_SECRET || "P4hRxesj7MOwZx1nWovLtNv5",
@@ -23,7 +29,7 @@ export async function POST() {
     .select("role, membership_status, membership_expires_at")
     .eq("id", user.id)
     .single();
-  let profile = orderProfileResult.data;
+  let profile: MembershipRouteProfile | null = orderProfileResult.data;
 
   if (orderProfileResult.error?.code === "42703") {
     const fallback = await supabase

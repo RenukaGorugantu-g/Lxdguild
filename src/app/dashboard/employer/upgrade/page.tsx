@@ -1,151 +1,79 @@
-"use client";
+import Link from "next/link";
+import { ArrowRight, BadgeCheck, BriefcaseBusiness, Mail, Sparkles } from "lucide-react";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { CheckCircle } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
+const tiers = [
+  {
+    name: "Employer Pro",
+    copy: "For teams that want richer employer branding, stronger candidate discovery, and more guided hiring support.",
+    features: ["Priority employer support", "Enhanced candidate visibility", "Stronger employer branding on job posts"],
+  },
+  {
+    name: "Employer Premium",
+    copy: "For higher-touch hiring teams that want a more consultative relationship with LXD Guild.",
+    features: ["Everything in Pro", "Hiring concierge support", "Custom workflow guidance"],
+  },
+];
 
-export default function UpgradePage() {
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
-  const supabase = createClient();
-
-  useEffect(() => {
-    // Dynamically load Razorpay SDK
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
-    document.body.appendChild(script);
-  }, []);
-
-  const handleUpgrade = async (plan: string, amount: number) => {
-    setLoading(true);
-
-    try {
-      // 1. Create Order
-      const res = await fetch("/api/razorpay", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount }),
-      });
-      const order = await res.json();
-
-      if (!order.id) throw new Error("Order creation failed");
-
-      // 2. Open Razorpay Checkout
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_live_jOXWfiSjhOX7IX", 
-        amount: order.amount,
-        currency: order.currency,
-        name: "LXD Guild",
-        description: `Upgrade to ${plan}`,
-        order_id: order.id,
-        handler: async function (response: any) {
-           // Payment successful, update Supabase user role
-           const { data: { user } } = await supabase.auth.getUser();
-           if (user) {
-              const newRole = plan === "Pro Plan" ? "employer_pro" : "employer_premium";
-              await supabase.from("profiles").update({ role: newRole }).eq("id", user.id);
-           }
-           alert(`Payment successful! Welcome to the ${plan}.`);
-           router.push("/dashboard/employer");
-           router.refresh();
-        },
-        theme: {
-          color: "#3b82f6",
-        },
-      };
-
-      const rzp = new (window as any).Razorpay(options);
-      rzp.open();
-    } catch (error) {
-       console.error("Payment Error:", error);
-       alert("Something went wrong opening the checkout gateway.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+export default function EmployerPricingPage() {
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black pt-28 pb-16 px-4">
-      <div className="max-w-4xl mx-auto text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Upgrade Your Access</h1>
-        <p className="text-lg text-zinc-600 dark:text-zinc-400">Unlock the world's most rigorously vetted directory of Instructional Designers and LXDs.</p>
-      </div>
+    <div className="marketing-page">
+      <main className="mx-auto max-w-7xl px-6 pb-20 pt-32">
+        <section className="marketing-shell rounded-[2.25rem] p-8 sm:p-10">
+          <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+            <div>
+              <div className="marketing-kicker">
+                <Sparkles className="h-3.5 w-3.5" />
+                Employer Pricing
+              </div>
+              <h1 className="mt-6 text-4xl font-bold tracking-[-0.05em] text-[#111827] sm:text-5xl">
+                Upgrade when you want deeper hiring support, not more friction.
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-8 text-[#5b6757]">
+                We&apos;re keeping employer pricing consultative for now. Tell us what kind of hiring flow you need and we&apos;ll guide you to the right plan.
+              </p>
+              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+                <Link href="/contact" className="marketing-primary">
+                  Contact Us for Pricing
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <a href="mailto:lxdguild@gmail.com?subject=Employer%20Pricing%20Inquiry" className="marketing-secondary">
+                  <Mail className="h-4 w-4" />
+                  Email LXD Guild
+                </a>
+              </div>
+            </div>
 
-      <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
-        
-        {/* Pro Plan */}
-        <div className="bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-3xl p-8 shadow-sm flex flex-col">
-          <div className="mb-6">
-            <h3 className="text-2xl font-bold mb-2">Pro Plan</h3>
-            <div className="flex items-baseline gap-1">
-              <span className="text-4xl font-extrabold">₹4,999</span>
-              <span className="text-zinc-500">/mo</span>
+            <div className="grid gap-5 md:grid-cols-2">
+              {tiers.map((tier, index) => (
+                <article
+                  key={tier.name}
+                  className={`rounded-[2rem] border p-6 shadow-[0_16px_38px_rgba(92,115,71,0.08)] ${
+                    index === 0
+                      ? "border-[#dbe7d4] bg-white"
+                      : "border-[#1d8c21]/20 bg-[linear-gradient(180deg,#1f9c1f,#177f1c)] text-white"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${index === 0 ? "bg-[#eff8ea] text-[#138d1a]" : "bg-white/16 text-white"}`}>
+                      {index === 0 ? <BriefcaseBusiness className="h-5 w-5" /> : <BadgeCheck className="h-5 w-5" />}
+                    </div>
+                    <h2 className={`text-2xl font-bold ${index === 0 ? "text-[#111827]" : "text-white"}`}>{tier.name}</h2>
+                  </div>
+                  <p className={`mt-4 text-sm leading-7 ${index === 0 ? "text-[#5b6757]" : "text-white/88"}`}>{tier.copy}</p>
+                  <ul className={`mt-6 space-y-3 text-sm ${index === 0 ? "text-[#334155]" : "text-white/92"}`}>
+                    {tier.features.map((feature) => (
+                      <li key={feature} className="flex items-start gap-3">
+                        <span className={`mt-1 h-2.5 w-2.5 rounded-full ${index === 0 ? "bg-[#1f9c1f]" : "bg-white"}`} />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+              ))}
             </div>
           </div>
-          <ul className="space-y-4 mb-8 flex-1">
-            <li className="flex items-center gap-3">
-              <CheckCircle className="w-5 h-5 text-brand-500 shrink-0" />
-              <span>Full access to all MVP Candidate profiles</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <CheckCircle className="w-5 h-5 text-brand-500 shrink-0" />
-              <span>View Exam Scorecards & detailed assessments</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <CheckCircle className="w-5 h-5 text-brand-500 shrink-0" />
-              <span>Contact candidates directly</span>
-            </li>
-          </ul>
-          <button 
-            disabled={loading}
-            onClick={() => handleUpgrade("Pro Plan", 4999)}
-            className="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-semibold transition"
-          >
-            Upgrade to Pro
-          </button>
-        </div>
-
-        {/* Premium Plan */}
-        <div className="bg-gradient-to-b border border-brand-500 from-brand-600 to-accent-700 dark:from-brand-900 dark:to-accent-900 rounded-3xl p-8 shadow-lg text-white flex flex-col relative overflow-hidden">
-          <div className="absolute top-0 right-0 bg-white/20 px-4 py-1 rounded-bl-xl text-sm font-bold tracking-widest uppercase">Popular</div>
-          <div className="mb-6 relative z-10">
-            <h3 className="text-2xl font-bold mb-2">Premium Plan</h3>
-            <div className="flex items-baseline gap-1">
-              <span className="text-4xl font-extrabold">₹9,999</span>
-              <span className="opacity-80">/mo</span>
-            </div>
-          </div>
-          <ul className="space-y-4 mb-8 flex-1 relative z-10">
-            <li className="flex items-center gap-3">
-               <CheckCircle className="w-5 h-5 text-white shrink-0" />
-               <span>Everything in Pro</span>
-            </li>
-            <li className="flex items-center gap-3">
-               <CheckCircle className="w-5 h-5 text-white shrink-0" />
-               <span>Post unlimited Jobs</span>
-            </li>
-            <li className="flex items-center gap-3">
-               <CheckCircle className="w-5 h-5 text-white shrink-0" />
-               <span>Featured employer branding</span>
-            </li>
-            <li className="flex items-center gap-3">
-               <CheckCircle className="w-5 h-5 text-white shrink-0" />
-               <span>Dedicated hiring concierge</span>
-            </li>
-          </ul>
-          <button 
-            disabled={loading}
-            onClick={() => handleUpgrade("Premium Plan", 9999)}
-            className="w-full py-3 bg-white text-brand-700 hover:bg-zinc-50 rounded-xl font-semibold transition relative z-10"
-          >
-            Upgrade to Premium
-          </button>
-        </div>
-
-      </div>
+        </section>
+      </main>
     </div>
   );
 }
-

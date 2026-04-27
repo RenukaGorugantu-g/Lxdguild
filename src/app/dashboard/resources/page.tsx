@@ -5,6 +5,13 @@ import { syncResourceCatalog } from "@/lib/resource-catalog";
 import { getMembershipState } from "@/lib/membership";
 import ResourcesCatalog from "./ResourcesCatalog";
 
+type ResourcesPageProfile = {
+  role?: string | null;
+  membership_status?: string | null;
+  membership_plan?: string | null;
+  membership_expires_at?: string | null;
+};
+
 export default async function ResourcesPage() {
   const supabase = await createClient();
   const {
@@ -25,7 +32,7 @@ export default async function ResourcesPage() {
     (admin || supabase).from("resources").select("id, category, title, file_link, premium_only").order("category"),
   ]);
 
-  let profile = profileResult.data;
+  let profile: ResourcesPageProfile | null = profileResult.data;
   if (profileResult.error?.code === "42703") {
     const fallback = await supabase
       .from("profiles")
@@ -48,9 +55,11 @@ export default async function ResourcesPage() {
   }));
 
   return (
-    <div className="min-h-screen bg-zinc-50 pt-28 pb-16 px-6 dark:bg-black">
-      <div className="mx-auto max-w-7xl">
+    <div className="marketing-page min-h-screen">
+      <div className="marketing-section pt-32 pb-16">
+        <div className="marketing-container">
         <ResourcesCatalog resources={serializedResources} hasMembership={membership.active} />
+        </div>
       </div>
     </div>
   );

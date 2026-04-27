@@ -3,6 +3,12 @@ import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, FileText, ShieldCheck, User, GraduationCap } from "lucide-react";
 
+type CandidateResume = {
+  id: string;
+  file_url?: string | null;
+  visibility?: string | null;
+};
+
 export default async function EmployerCandidateDetailPage({ params }: { params: { id: string } }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -118,14 +124,14 @@ export default async function EmployerCandidateDetailPage({ params }: { params: 
 
               {resumes.length > 0 ? (
                 <div className="space-y-4">
-                  {resumes.map((resume: any) => (
+                  {resumes.map((resume: CandidateResume) => (
                     <div key={resume.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-3xl border border-zinc-200 dark:border-border p-5">
                       <div>
                         <p className="text-sm font-semibold">Resume</p>
                         <p className="text-xs text-zinc-500">Visibility: {resume.visibility || "private"}</p>
                       </div>
                       <a
-                        href={resume.file_url}
+                        href={`/api/resumes/${resume.id}/download`}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-brand-600 text-brand-600 hover:bg-brand-50 transition"

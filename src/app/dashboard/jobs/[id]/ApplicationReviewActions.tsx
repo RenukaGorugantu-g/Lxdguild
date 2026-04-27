@@ -10,12 +10,12 @@ export default function ApplicationReviewActions({
   applicationId: string;
   currentStatus: string;
 }) {
-  const [loadingAction, setLoadingAction] = useState<"accepted" | "rejected" | null>(null);
+  const [loadingAction, setLoadingAction] = useState<"shortlisted" | "rejected" | null>(null);
   const [status, setStatus] = useState(currentStatus);
   const router = useRouter();
-  const isFinalStatus = status === "accepted" || status === "rejected";
+  const isFinalStatus = status === "shortlisted" || status === "rejected";
 
-  const reviewApplication = async (action: "accepted" | "rejected") => {
+  const reviewApplication = async (action: "shortlisted" | "rejected") => {
     setLoadingAction(action);
     try {
       const response = await fetch("/api/notifications/job-application-review", {
@@ -31,8 +31,9 @@ export default function ApplicationReviewActions({
 
       setStatus(result.status || action);
       router.refresh();
-    } catch (error: any) {
-      alert(error?.message || "Failed to update application status.");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to update application status.";
+      alert(message);
     } finally {
       setLoadingAction(null);
     }
@@ -41,7 +42,7 @@ export default function ApplicationReviewActions({
   if (isFinalStatus) {
     return (
       <div className="mt-3">
-        <p className="text-xs text-zinc-500">Final decision recorded. You can no longer modify this application status.</p>
+        <p className="text-xs text-zinc-500">Final review recorded. This application is now locked for follow-up actions.</p>
       </div>
     );
   }
@@ -50,11 +51,11 @@ export default function ApplicationReviewActions({
     <div className="flex items-center gap-2 mt-3">
       <button
         type="button"
-        onClick={() => reviewApplication("accepted")}
+        onClick={() => reviewApplication("shortlisted")}
         disabled={!!loadingAction}
-        className="text-xs px-2.5 py-1 rounded-full bg-green-100 text-green-700 hover:bg-green-200 disabled:opacity-60"
+        className="text-xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-200 disabled:opacity-60"
       >
-        {loadingAction === "accepted" ? "Accepting..." : status === "accepted" ? "Accepted" : "Accept"}
+        {loadingAction === "shortlisted" ? "Shortlisting..." : status === "shortlisted" ? "Shortlisted" : "Shortlist"}
       </button>
       <button
         type="button"

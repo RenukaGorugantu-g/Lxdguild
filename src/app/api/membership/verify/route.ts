@@ -9,6 +9,12 @@ import {
   hasActiveMembership,
 } from "@/lib/membership";
 
+type MembershipRouteProfile = {
+  role?: string | null;
+  membership_status?: string | null;
+  membership_expires_at?: string | null;
+};
+
 export async function POST(req: Request) {
   const supabase = await createClient();
   const admin = createAdminClient();
@@ -47,7 +53,7 @@ export async function POST(req: Request) {
     .select("role, membership_status, membership_expires_at")
     .eq("id", user.id)
     .single();
-  let profile = verifyProfileResult.data;
+  let profile: MembershipRouteProfile | null = verifyProfileResult.data;
 
   if (verifyProfileResult.error?.code === "42703") {
     const fallback = await admin

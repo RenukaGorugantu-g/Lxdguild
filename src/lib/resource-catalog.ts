@@ -288,10 +288,6 @@ export async function syncResourceCatalog() {
     await supabase.from("resources").delete().like("file_link", "%example.com%");
   }
 
-  if ((existingCount || 0) > 0 && !shouldCleanDemoData) {
-    return { synced: 0, skipped: true, reason: "Resources already managed in the database." };
-  }
-
   const payload = RESOURCE_CATALOG.map((resource) => ({
     category: resource.category,
     title: resource.title,
@@ -310,6 +306,6 @@ export async function syncResourceCatalog() {
   return {
     synced: payload.length,
     skipped: false,
-    reason: existingCount ? "Catalog synchronized with upsert." : undefined,
+    reason: existingCount ? "Catalog synchronized with upsert for missing or outdated resources." : undefined,
   };
 }

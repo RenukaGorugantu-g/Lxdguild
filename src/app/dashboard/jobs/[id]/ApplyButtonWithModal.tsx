@@ -5,9 +5,9 @@ import { CheckCircle, ExternalLink, Lock, Send } from "lucide-react";
 import ApplyModal from "./ApplyModal";
 
 type ApplyJob = {
-  id?: string;
-  title?: string | null;
-  company?: string | null;
+  id: string;
+  title: string;
+  company: string;
   apply_url?: string | null;
 };
 
@@ -57,6 +57,7 @@ export default function ApplyButtonWithModal({
 }) {
   const [showModal, setShowModal] = useState(false);
   const [applied, setApplied] = useState(alreadyApplied);
+  const [buttonLockReason, setButtonLockReason] = useState(lockReason);
 
   if (applied && !showModal) {
     return (
@@ -71,13 +72,13 @@ export default function ApplyButtonWithModal({
 
   if (!canApply) {
     return (
-      <div className="space-y-2">
-        <div className="flex items-center justify-center gap-2 py-4 px-8 bg-zinc-100 text-zinc-500 rounded-2xl font-bold border border-zinc-200 shadow-sm">
-          <Lock className="w-4 h-4" /> Applications Locked
+        <div className="space-y-2">
+          <div className="flex items-center justify-center gap-2 py-4 px-8 bg-zinc-100 text-zinc-500 rounded-2xl font-bold border border-zinc-200 shadow-sm">
+            <Lock className="w-4 h-4" /> Applications Locked
+          </div>
+        <p className="text-xs text-center text-zinc-500">{buttonLockReason}</p>
         </div>
-        <p className="text-xs text-center text-zinc-500">{lockReason}</p>
-      </div>
-    );
+      );
   }
 
   return (
@@ -103,6 +104,9 @@ export default function ApplyButtonWithModal({
           onClose={() => setShowModal(false)}
           onSuccess={() => {
             setApplied(true);
+          }}
+          onQuotaReached={(reason) => {
+            setButtonLockReason(reason);
           }}
         />
       )}

@@ -3,13 +3,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Send } from "lucide-react";
+import { normalizeExternalApplyUrl } from "@/lib/job-apply";
 
 type JobData = {
   id: string;
   title: string;
   company: string;
   location: string;
-  apply_url: string;
+  apply_url: string | null;
   description: string;
 };
 
@@ -17,7 +18,7 @@ export default function JobEditForm({ initialJob }: { initialJob: JobData }) {
   const [title, setTitle] = useState(initialJob.title || "");
   const [company, setCompany] = useState(initialJob.company || "");
   const [location, setLocation] = useState(initialJob.location || "");
-  const [applyUrl, setApplyUrl] = useState(initialJob.apply_url || "");
+  const [applyUrl, setApplyUrl] = useState(normalizeExternalApplyUrl(initialJob.apply_url) || "");
   const [description, setDescription] = useState(initialJob.description || "");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -99,14 +100,16 @@ export default function JobEditForm({ initialJob }: { initialJob: JobData }) {
                 />
               </label>
               <label className="space-y-2 text-sm font-medium">
-                Apply URL
+                External Apply URL
                 <input
                   value={applyUrl}
                   onChange={(e) => setApplyUrl(e.target.value)}
                   type="url"
-                  required
                   className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200"
                 />
+                <p className="text-xs leading-5 text-zinc-500">
+                  Leave blank to keep this as an internal LXD Guild application flow.
+                </p>
               </label>
             </div>
 

@@ -11,9 +11,15 @@ import ApplicationReviewActions from "./ApplicationReviewActions";
 type ApplicantRow = {
   id: string;
   status: string;
+  resume_id?: string | null;
   resume_url: string | null;
   created_at: string;
   user_id: string;
+  ats_score?: number | null;
+  ats_summary?: string | null;
+  ats_auto_decision?: string | null;
+  ats_matched_keywords?: string[] | null;
+  ats_missing_keywords?: string[] | null;
 };
 
 type ApplicantProfile = {
@@ -40,36 +46,48 @@ export default async function JobDetailPage({ params }: { params: { id: string }
 
   const { data: job } = await supabase
     .from("jobs")
-    .select("*")
+    .select("id, title, description, company, location, apply_url, user_id, external_posted_at, imported_at, created_at, expires_at, is_active, deletion_request_status, deleted_at")
     .eq("id", id)
     .single();
 
   if (!job) notFound();
 
   const isJobOwner = user.id === job.user_id;
-  const { canAccessJobBoard } = await getJobBoardAccessForUser(supabase, user.id);
+  const {
+    canViewJobBoard,
+    canApplyToJobs,
+    isFreeAccessCandidate,
+    freeApplicationsRemaining,
+    lockReason,
+  } = await getJobBoardAccessForUser(supabase, user.id, profile);
 
-  // Fetch Profile and Resumes
+  if (!canViewJobBoard && !isJobOwner) {
+    redirect("/dashboard");
+  }
+
   const { data: profile } = await supabase
     .from("profiles")
-    .select("*")
+    .select("id, role, name, headline, email")
     .eq("id", user.id)
     .single();
 
+  if (job.deleted_at && profile?.role !== "admin" && !isJobOwner) {
+    notFound();
+  }
+
   const isMvpCandidate = profile?.role === "candidate_mvp";
   const isCandidateViewer = profile?.role?.startsWith("candidate");
-  const canApplyToJob = isCandidateViewer && !isJobOwner && canAccessJobBoard;
+  const canApplyToJob = isCandidateViewer && !isJobOwner && canApplyToJobs;
   const roleKeyword = deriveRoleKeyword(job.title);
 
   const { data: resumes } = await supabase
     .from("resumes")
-    .select("*")
+    .select("id, file_url, file_name")
     .eq("user_id", user.id);
 
-  // Check if already applied
   const { data: application } = await supabase
     .from("job_applications")
-    .select("*")
+    .select("id")
     .eq("job_id", id)
     .eq("user_id", user.id)
     .single();
@@ -93,9 +111,9 @@ export default async function JobDetailPage({ params }: { params: { id: string }
     : { data: null };
 
   const { data: applicants } = isJobOwner
-    ? await supabase
+      ? await supabase
         .from("job_applications")
-        .select("id, status, resume_url, created_at, user_id")
+        .select("id, status, resume_id, resume_url, created_at, user_id, ats_score, ats_summary, ats_auto_decision, ats_matched_keywords, ats_missing_keywords")
         .eq("job_id", id)
         .order("created_at", { ascending: false })
     : { data: null };
@@ -126,7 +144,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
     .order("imported_at", { ascending: false })
     .limit(40);
   const recommendationResult = await recommendationQuery;
-  let recommendationPool = recommendationResult.data;
+  let recommendationPool: SuggestedJob[] | null = recommendationResult.data as SuggestedJob[] | null;
   const recommendationError = recommendationResult.error;
 
   if (recommendationError?.code === "42703") {
@@ -137,10 +155,13 @@ export default async function JobDetailPage({ params }: { params: { id: string }
       .order("created_at", { ascending: false })
       .limit(40);
 
-    recommendationPool = fallbackRecommendations.data;
+    recommendationPool = (fallbackRecommendations.data || []).map((item) => ({
+      ...item,
+      expires_at: null,
+    })) as SuggestedJob[];
   }
 
-  const similarJobs = ((recommendationPool || []) as SuggestedJob[])
+  const similarJobs = (recommendationPool || [])
     .map((item) => ({
       ...item,
       score: scoreSimilarJob(job.title, item.title, item.company === job.company),
@@ -150,6 +171,8 @@ export default async function JobDetailPage({ params }: { params: { id: string }
 
   const postedDate = new Date(job.external_posted_at || job.imported_at || job.created_at).toLocaleDateString();
   const expiryDate = job.expires_at ? new Date(job.expires_at).toLocaleDateString() : null;
+  const isDeactivated = job.is_active === false;
+  const hasPendingDeletion = job.deletion_request_status === "pending";
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black pt-28 pb-16 px-6">
@@ -159,7 +182,6 @@ export default async function JobDetailPage({ params }: { params: { id: string }
         </Link>
 
         <div className="bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-3xl overflow-hidden shadow-sm">
-          {/* Header Banner */}
           <div className="h-32 bg-gradient-to-r from-brand-600/10 to-accent-600/10 border-b border-zinc-100 dark:border-zinc-800 flex items-end p-8">
              <div className="w-16 h-16 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl flex items-center justify-center -mb-12 shadow-md">
                 <Building className="w-8 h-8 text-brand-600" />
@@ -170,6 +192,16 @@ export default async function JobDetailPage({ params }: { params: { id: string }
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
               <div className="space-y-4">
                 <h1 className="text-4xl font-bold tracking-tight">{job.title}</h1>
+                {isDeactivated && (
+                  <div className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-amber-800">
+                    This job is deactivated
+                  </div>
+                )}
+                {hasPendingDeletion && (isJobOwner || profile?.role === "admin") && (
+                  <div className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-sky-800">
+                    Delete request pending admin review
+                  </div>
+                )}
                 <div className="flex flex-wrap items-center gap-6 text-zinc-500 font-medium">
                   <div className="flex items-center gap-2">
                     <Building className="w-5 h-5 text-brand-600" /> {job.company}
@@ -195,9 +227,16 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                     similarJobs={similarJobs}
                     isCompanySaved={!!savedCompany}
                     isRoleFollowed={!!followedRole}
-                    lockReason="Write the assessment to unlock job applications."
+                    lockReason={
+                      lockReason ||
+                      "Write the assessment to unlock job applications."
+                    }
                   />
-                  <p className="text-[10px] text-center text-zinc-400 uppercase tracking-widest font-bold">We track your application here, then send you to the official apply page</p>
+                  <p className="text-[10px] text-center text-zinc-400 uppercase tracking-widest font-bold">
+                    {isFreeAccessCandidate && freeApplicationsRemaining > 0
+                      ? `${freeApplicationsRemaining} free application${freeApplicationsRemaining === 1 ? "" : "s"} remaining`
+                      : "We track your application here, then send you to the official apply page"}
+                  </p>
                 </div>
               ) : (
                 <div className="min-w-[220px] rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-4">
@@ -240,8 +279,31 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                                 </span>
                               </div>
                               <ApplicationReviewActions applicationId={app.id} currentStatus={app.status} />
-                              {app.resume_url && (
-                                <a href={app.resume_url} target="_blank" rel="noreferrer" className="text-sm text-brand-600 hover:underline mt-3 block">
+                              {typeof app.ats_score === "number" && (
+                                <div className="mt-3 rounded-2xl bg-white px-4 py-3 text-sm text-zinc-700">
+                                  <p className="font-semibold text-zinc-900">ATS match: {Math.round(app.ats_score)}%</p>
+                                  {app.ats_summary ? <p className="mt-1 text-xs leading-5 text-zinc-500">{app.ats_summary}</p> : null}
+                                  <div className="mt-3 flex flex-wrap gap-2">
+                                    {app.ats_matched_keywords?.slice(0, 4).map((keyword) => (
+                                      <span key={keyword} className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
+                                        {keyword}
+                                      </span>
+                                    ))}
+                                    {app.ats_missing_keywords?.slice(0, 4).map((keyword) => (
+                                      <span key={keyword} className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                                        Missing: {keyword}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {(app.resume_id || app.resume_url) && (
+                                <a
+                                  href={app.resume_id ? `/api/resumes/${app.resume_id}/download` : app.resume_url || undefined}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-sm text-brand-600 hover:underline mt-3 block"
+                                >
                                   View resume
                                 </a>
                               )}
@@ -304,7 +366,11 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                            ? "You are browsing with admin access."
                            : isMvpCandidate
                              ? "Your MVP status gives you priority access to this role."
-                            : "Complete the assessment to unlock applications for this role."}
+                            : isFreeAccessCandidate
+                              ? freeApplicationsRemaining > 0
+                                ? `You have ${freeApplicationsRemaining} free application${freeApplicationsRemaining === 1 ? "" : "s"} left before verification is required.`
+                                : "Your free job access is complete. Verify your profile to keep applying."
+                              : "Browse now and complete the assessment to unlock applications for this role."}
                      </p>
                   </div>
                </div>
@@ -317,7 +383,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
 }
 
 function getStatusPillClasses(status: string) {
-  if (status === "accepted") return "bg-green-50 text-green-700 border-green-200";
+  if (status === "accepted" || status === "shortlisted") return "bg-green-50 text-green-700 border-green-200";
   if (status === "rejected") return "bg-red-50 text-red-700 border-red-200";
   return "bg-amber-50 text-amber-700 border-amber-200";
 }

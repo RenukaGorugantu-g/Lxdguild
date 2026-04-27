@@ -1,15 +1,34 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Filter, X, ChevronRight } from "lucide-react";
+import { ChevronRight, Filter, Search, X } from "lucide-react";
 
 export default function JobSidebar({ categories }: { categories: string[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const currentQuery = searchParams.get("q") || "";
   const currentCategory = searchParams.get("category");
   const currentView = searchParams.get("view") || "all";
   const currentRemote = searchParams.get("remote") || "all";
   const currentSchedule = searchParams.get("schedule") || "all";
+  const [query, setQuery] = useState(currentQuery);
+
+  const pushWithParams = (params: URLSearchParams) => {
+    params.delete("page");
+    router.push(`/dashboard/jobs${params.toString() ? `?${params.toString()}` : ""}`);
+  };
+
+  const submitSearch = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    const nextQuery = query.trim();
+    if (nextQuery) {
+      params.set("q", nextQuery);
+    } else {
+      params.delete("q");
+    }
+    pushWithParams(params);
+  };
 
   const setCategory = (cat: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -18,7 +37,7 @@ export default function JobSidebar({ categories }: { categories: string[] }) {
     } else {
       params.delete("category");
     }
-    router.push(`/dashboard/jobs?${params.toString()}`);
+    pushWithParams(params);
   };
 
   const setView = (view: string) => {
@@ -28,7 +47,7 @@ export default function JobSidebar({ categories }: { categories: string[] }) {
     } else {
       params.set("view", view);
     }
-    router.push(`/dashboard/jobs?${params.toString()}`);
+    pushWithParams(params);
   };
 
   const setRemote = (remote: string) => {
@@ -38,7 +57,7 @@ export default function JobSidebar({ categories }: { categories: string[] }) {
     } else {
       params.set("remote", remote);
     }
-    router.push(`/dashboard/jobs${params.toString() ? `?${params.toString()}` : ""}`);
+    pushWithParams(params);
   };
 
   const setSchedule = (schedule: string) => {
@@ -48,139 +67,160 @@ export default function JobSidebar({ categories }: { categories: string[] }) {
     } else {
       params.set("schedule", schedule);
     }
-    router.push(`/dashboard/jobs${params.toString() ? `?${params.toString()}` : ""}`);
+    pushWithParams(params);
   };
 
+  const clearFilters = () => {
+    setQuery("");
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("q");
+    params.delete("category");
+    params.delete("view");
+    params.delete("remote");
+    params.delete("schedule");
+    pushWithParams(params);
+  };
+
+  const isFiltered =
+    Boolean(currentQuery) || Boolean(currentCategory) || currentView !== "all" || currentRemote !== "all" || currentSchedule !== "all";
+
   return (
-    <aside className="w-full md:w-64 space-y-8 shrink-0">
-      <div>
-        <div className="flex items-center gap-2 mb-6">
-          <Filter className="w-5 h-5 text-brand-600" />
-          <h3 className="font-bold text-lg">Filters</h3>
+    <aside className="w-full shrink-0 space-y-6 lg:w-[290px]">
+      <div className="marketing-grid-card p-5 lg:sticky lg:top-28">
+        <div className="flex items-center gap-2 text-sm font-semibold text-[#111827]">
+          <Filter className="h-4 w-4 text-[#23b61f]" />
+          Filter jobs
         </div>
 
-        <div className="space-y-1 mb-6">
-          {[
+        <div className="mt-4 rounded-2xl border border-[#dde6d7] bg-white px-3 py-2">
+          <div className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-[#96a193]" />
+            <input
+              type="text"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  submitSearch();
+                }
+              }}
+              placeholder="Title, company, remote..."
+              className="h-10 flex-1 border-0 bg-transparent text-sm text-[#111827] outline-none placeholder:text-[#96a193]"
+            />
+            <button
+              type="button"
+              onClick={submitSearch}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl text-[#111827] transition hover:bg-[#f3f7ef]"
+              aria-label="Search jobs"
+            >
+              <Search className="h-4 w-4 text-[#23b61f]" />
+            </button>
+          </div>
+        </div>
+
+        <FilterGroup
+          title="View"
+          items={[
             { label: "All Jobs", value: "all" },
             { label: "Standard", value: "standard" },
             { label: "Freelance", value: "freelance" },
-          ].map((view) => (
-            <button
-              key={view.value}
-              onClick={() => setView(view.value)}
-              className={`w-full flex items-center justify-between p-3 rounded-xl text-sm font-medium transition-all ${
-                currentView === view.value
-                  ? "bg-zinc-950 text-white shadow-md"
-                  : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-              }`}
-            >
-              {view.label}
-              {currentView === view.value && <ChevronRight className="w-4 h-4" />}
-            </button>
-          ))}
-        </div>
+          ]}
+          currentValue={currentView}
+          onChange={setView}
+        />
 
-        <div className="mb-6">
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-400">Location</p>
+        <FilterGroup
+          title="Location"
+          items={[
+            { label: "All Locations", value: "all" },
+            { label: "Remote", value: "remote" },
+          ]}
+          currentValue={currentRemote}
+          onChange={setRemote}
+        />
+
+        <FilterGroup
+          title="Schedule"
+          items={[
+            { label: "All Schedules", value: "all" },
+            { label: "Full-time", value: "full-time" },
+            { label: "Part-time", value: "part-time" },
+          ]}
+          currentValue={currentSchedule}
+          onChange={setSchedule}
+        />
+
+        <div className="mt-6">
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#6d7d68]">Roles</p>
           <div className="space-y-1">
-            {[
-              { label: "All Locations", value: "all" },
-              { label: "Remote", value: "remote" },
-            ].map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setRemote(option.value)}
-                className={`w-full flex items-center justify-between p-3 rounded-xl text-sm font-medium transition-all ${
-                  currentRemote === option.value
-                    ? "bg-zinc-950 text-white shadow-md"
-                    : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                }`}
-              >
-                {option.label}
-                {currentRemote === option.value && <ChevronRight className="w-4 h-4" />}
-              </button>
+            <FilterButton active={!currentCategory} label="All Roles" onClick={() => setCategory(null)} />
+            {categories.map((cat) => (
+              <FilterButton key={cat} active={currentCategory === cat} label={cat} onClick={() => setCategory(cat)} />
             ))}
           </div>
-        </div>
-
-        <div className="mb-6">
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-400">Schedule</p>
-          <div className="space-y-1">
-            {[
-              { label: "All Schedules", value: "all" },
-              { label: "Full-time", value: "full-time" },
-              { label: "Part-time", value: "part-time" },
-            ].map((option) => (
-              <button
-                key={option.value}
-                onClick={() => setSchedule(option.value)}
-                className={`w-full flex items-center justify-between p-3 rounded-xl text-sm font-medium transition-all ${
-                  currentSchedule === option.value
-                    ? "bg-zinc-950 text-white shadow-md"
-                    : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                }`}
-              >
-                {option.label}
-                {currentSchedule === option.value && <ChevronRight className="w-4 h-4" />}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <button
-            onClick={() => setCategory(null)}
-            className={`w-full flex items-center justify-between p-3 rounded-xl text-sm font-medium transition-all ${
-              !currentCategory 
-                ? "bg-brand-600 text-white shadow-md shadow-brand-500/20" 
-                : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            }`}
-          >
-            All Roles
-            {!currentCategory && <ChevronRight className="w-4 h-4" />}
-          </button>
-
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setCategory(cat)}
-              className={`w-full flex items-center justify-between p-3 rounded-xl text-sm font-medium transition-all ${
-                currentCategory === cat 
-                  ? "bg-brand-600 text-white shadow-md shadow-brand-500/20" 
-                  : "text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-              }`}
-            >
-              {cat}
-              {currentCategory === cat && <ChevronRight className="w-4 h-4" />}
-            </button>
-          ))}
         </div>
       </div>
 
-      {(currentCategory || currentView !== "all" || currentRemote !== "all" || currentSchedule !== "all") && (
+      {isFiltered && (
         <button
-          onClick={() => {
-            const params = new URLSearchParams(searchParams.toString());
-            params.delete("category");
-            params.delete("view");
-            params.delete("remote");
-            params.delete("schedule");
-            router.push(`/dashboard/jobs${params.toString() ? `?${params.toString()}` : ""}`);
-          }}
-          className="flex items-center gap-2 text-xs font-bold text-brand-600 uppercase tracking-wider hover:underline"
+          onClick={clearFilters}
+          className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-[#5f705c] hover:text-[#111827]"
         >
-          <X className="w-3 h-3" /> Clear filters
+          <X className="h-3 w-3" />
+          Clear filters
         </button>
       )}
 
-      {/* Aesthetic Card */}
-      <div className="p-6 bg-gradient-to-br from-zinc-900 to-black rounded-2xl text-white shadow-xl">
-         <p className="text-[10px] font-bold text-brand-500 uppercase mb-2 tracking-widest">Growth</p>
-         <p className="text-sm font-bold mb-4 leading-tight">Validate more skills to unlock senior roles.</p>
-         <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
-            <div className="h-full bg-brand-500 w-2/3"></div>
-         </div>
+      <div className="rounded-[2rem] bg-[#33d31f] p-6 text-white shadow-[0_20px_50px_rgba(31,157,39,0.18)]">
+        <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-white/70">Growth</p>
+        <p className="text-sm font-semibold leading-6">Validate more skills to unlock stronger-fit premium roles.</p>
+        <div className="mt-4 h-1 overflow-hidden rounded-full bg-white/20">
+          <div className="h-full w-2/3 rounded-full bg-white" />
+        </div>
       </div>
     </aside>
+  );
+}
+
+function FilterGroup({
+  title,
+  items,
+  currentValue,
+  onChange,
+}: {
+  title: string;
+  items: Array<{ label: string; value: string }>;
+  currentValue: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="mt-6">
+      <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#6d7d68]">{title}</p>
+      <div className="space-y-1">
+        {items.map((item) => (
+          <FilterButton
+            key={item.value}
+            active={currentValue === item.value}
+            label={item.label}
+            onClick={() => onChange(item.value)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FilterButton({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex w-full items-center justify-between rounded-xl px-3 py-3 text-sm font-medium transition-all ${
+        active ? "bg-[#f0f8ea] text-[#111827]" : "text-[#596655] hover:bg-[#f6f8f2]"
+      }`}
+    >
+      {label}
+      {active && <ChevronRight className="h-4 w-4 text-[#23b61f]" />}
+    </button>
   );
 }

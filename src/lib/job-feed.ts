@@ -58,9 +58,9 @@ const JOOBLE_LOCATIONS = [
   "United Arab Emirates",
 ];
 const ADZUNA_COUNTRIES = ["in", "us", "gb", "ca", "au", "sg"];
-const STALE_AFTER_HOURS = 4;
-const EXPIRY_DAYS = 20;
-const HARD_DELETE_AFTER_DAYS = 30;
+const STALE_AFTER_HOURS = 24;
+const DEACTIVATE_AFTER_DAYS = 30;
+const HARD_DELETE_AFTER_DAYS = 60;
 const MAX_SOURCE_PAGES = 8;
 const RESULTS_PER_PAGE = 50;
 const JSEARCH_RESULTS_PER_PAGE = 10;
@@ -70,6 +70,14 @@ const FREELANCE_SEARCH_QUERIES = [
   "elearning developer freelance remote",
   "learning designer freelance remote",
   "training consultant freelance remote",
+];
+const JSEARCH_STANDARD_QUERIES = [
+  "Instructional Designer",
+  "eLearning Developer",
+  "Learning Experience Designer",
+  "Curriculum Developer",
+  "Learning and Development Manager",
+  "Training Manager",
 ];
 const RELEVANCE_TOKENS = [
   "instructional",
@@ -134,7 +142,7 @@ function normalizeDate(value: unknown): string | null {
 
 function expiryFrom(externalPostedAt: string | null, nowIso: string) {
   const base = externalPostedAt ? new Date(externalPostedAt) : new Date(nowIso);
-  base.setUTCDate(base.getUTCDate() + EXPIRY_DAYS);
+  base.setUTCDate(base.getUTCDate() + DEACTIVATE_AFTER_DAYS);
   return base.toISOString();
 }
 
@@ -290,7 +298,12 @@ async function fetchJoobleJobs(keyword: string, location: string, nowIso: string
   return results;
 }
 
-async function fetchJSearchFreelanceJobs(query: string, nowIso: string): Promise<NormalizedJob[]> {
+async function fetchJSearchJobs(
+  query: string,
+  nowIso: string,
+  jobKind: "standard" | "freelance",
+  publisherFilter?: string
+): Promise<NormalizedJob[]> {
   const rapidApiKey =
     process.env.RAPIDAPI_KEY ||
     process.env.RAPID_API_KEY ||
@@ -309,13 +322,19 @@ async function fetchJSearchFreelanceJobs(query: string, nowIso: string): Promise
   if (!resp.ok) return [];
 
   const data = await resp.json();
-  const jobs = Array.isArray(data.data) ? data.data.slice(0, JSEARCH_RESULTS_PER_PAGE) : [];
+  const jobs: Array<Record<string, unknown>> = Array.isArray(data.data)
+    ? (data.data.slice(0, JSEARCH_RESULTS_PER_PAGE) as Array<Record<string, unknown>>)
+    : [];
 
   return jobs
     .filter((job) => {
       const title = String(job.job_title || "");
       const description = String(job.job_description || "");
-      return title && isRelevantLndRole(title, description, query);
+      const publisher = String(job.job_publisher || "");
+      const matchesPublisher = publisherFilter
+        ? publisher.toLowerCase().includes(publisherFilter.toLowerCase())
+        : true;
+      return title && matchesPublisher && isRelevantLndRole(title, description, query);
     })
     .map((job) => {
       const applyUrl = String(job.job_apply_link || job.job_google_link || "");
@@ -330,6 +349,13 @@ async function fetchJSearchFreelanceJobs(query: string, nowIso: string): Promise
         ? "Remote"
         : [city, state, country].filter(Boolean).join(", ") || "Remote";
 
+      const publisher = String(job.job_publisher || "rapidapi");
+      const normalizedPublisher = publisher.toLowerCase();
+      const source =
+        normalizedPublisher.includes("indeed")
+          ? "indeed"
+          : `jsearch:${publisher}`;
+
       return {
         title,
         description,
@@ -341,7 +367,7 @@ async function fetchJSearchFreelanceJobs(query: string, nowIso: string): Promise
           description,
           Array.isArray(job.job_employment_types) ? job.job_employment_types.join(" ") : null
         ),
-        source: `jsearch:${String(job.job_publisher || "rapidapi")}`,
+        source,
         apply_url: applyUrl,
         source_job_id: job.job_id ? String(job.job_id) : null,
         search_keyword: query,
@@ -350,10 +376,18 @@ async function fetchJSearchFreelanceJobs(query: string, nowIso: string): Promise
         last_seen_at: nowIso,
         expires_at: expiryFrom(externalPostedAt, nowIso),
         is_active: true,
-        job_kind: "freelance",
+        job_kind: jobKind,
       } satisfies NormalizedJob;
     })
     .filter((job) => job.apply_url);
+}
+
+async function fetchJSearchFreelanceJobs(query: string, nowIso: string): Promise<NormalizedJob[]> {
+  return fetchJSearchJobs(query, nowIso, "freelance");
+}
+
+async function fetchJSearchIndeedJobs(query: string, nowIso: string): Promise<NormalizedJob[]> {
+  return fetchJSearchJobs(query, nowIso, "standard", "indeed");
 }
 
 export async function syncJobFeed() {
@@ -400,6 +434,37 @@ export async function syncJobFeed() {
       for (const job of jobs) {
         collected.set(job.apply_url, job);
       }
+    }
+
+    for (const query of JSEARCH_STANDARD_QUERIES) {
+      const jobs = await fetchJSearchIndeedJobs(query, nowIso);
+      for (const job of jobs) {
+        collected.set(job.apply_url, job);
+      }
+    }
+
+    if (collected.size === 0) {
+      const emptyResult = {
+        imported: 0,
+        refreshed: 0,
+        expired: 0,
+        skipped: true,
+        reason: "No jobs were returned from any configured source, so existing listings were left unchanged.",
+      } satisfies SyncCounters;
+
+      if (supportsLifecycle) {
+        await supabase
+          .from("job_feed_sync_state")
+          .upsert({
+            id: 1,
+            last_synced_at: nowIso,
+            last_sync_status: "warning",
+            last_sync_message: emptyResult.reason,
+            updated_at: nowIso,
+          });
+      }
+
+      return emptyResult;
     }
 
     const result = supportsLifecycle
@@ -574,7 +639,7 @@ async function upsertLifecycleJobs(collected: Map<string, NormalizedJob>, nowIso
   }
 
   const expiryThreshold = new Date();
-  expiryThreshold.setUTCDate(expiryThreshold.getUTCDate() - EXPIRY_DAYS);
+  expiryThreshold.setUTCDate(expiryThreshold.getUTCDate() - DEACTIVATE_AFTER_DAYS);
 
   const { data: staleJobs } = await supabase
     .from("jobs")
@@ -595,11 +660,31 @@ async function upsertLifecycleJobs(collected: Map<string, NormalizedJob>, nowIso
   const deleteThreshold = new Date();
   deleteThreshold.setUTCDate(deleteThreshold.getUTCDate() - HARD_DELETE_AFTER_DAYS);
 
-  await supabase
+  const { data: deletableJobs } = await supabase
     .from("jobs")
-    .delete()
     .eq("is_active", false)
+    .neq("source", "employer")
+    .select("id")
     .lt("last_seen_at", deleteThreshold.toISOString());
+
+  const deletableJobIds = (deletableJobs || []).map((job) => job.id);
+
+  if (deletableJobIds.length) {
+    const { data: appliedRows } = await supabase
+      .from("job_applications")
+      .select("job_id")
+      .in("job_id", deletableJobIds);
+
+    const appliedJobIds = new Set((appliedRows || []).map((row) => row.job_id));
+    const safeToDelete = deletableJobIds.filter((jobId) => !appliedJobIds.has(jobId));
+
+    if (safeToDelete.length) {
+      await supabase
+        .from("jobs")
+        .delete()
+        .in("id", safeToDelete);
+    }
+  }
 
   return { imported, refreshed, expired, skipped: false };
 }

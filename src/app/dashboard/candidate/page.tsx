@@ -1,7 +1,19 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { CheckCircle, AlertCircle, FileText, ArrowRight, PlayCircle, User, ChevronRight, Briefcase } from "lucide-react";
+import {
+  ArrowRight,
+  Briefcase,
+  CheckCircle,
+  ChevronRight,
+  FileText,
+  Lock,
+  PlayCircle,
+  Sparkles,
+  Star,
+  User,
+} from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
+import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { getMembershipState } from "@/lib/membership";
 import { isVerifiedCandidateRole } from "@/lib/profile-role";
@@ -18,220 +30,365 @@ type CandidateDashboardProfile = {
 
 export default async function CandidateDashboard({ profile: initialProfile }: { profile?: CandidateDashboardProfile | null }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
   let profile = initialProfile;
-  if (!profile && user) {
+  if (!profile) {
     const { data } = await supabase
       .from("profiles")
-      .select("*")
+      .select("id, name, role, membership_status, membership_plan, membership_expires_at")
       .eq("id", user.id)
       .single();
     profile = data;
   }
 
   if (!profile) {
-    return <div>Loading profile...</div>;
+    const ensuredProfile = await ensureUserProfile(user);
+    if (ensuredProfile) {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, name, role, membership_status, membership_plan, membership_expires_at")
+        .eq("id", user.id)
+        .single();
+      profile = data;
+    }
   }
-  
-  // Fetch candidate specifics
+
+  if (!profile) return <div>Loading profile...</div>;
+
   const { data: candidate } = await supabase
     .from("candidates")
-    .select("*")
-    .eq("user_id", user?.id)
+    .select("exam_status, pass_status, latest_score, reattempt_allowed")
+    .eq("user_id", user.id)
     .single();
 
-    // Fetch certificate status if failed
   const { data: certificate } = await supabase
     .from("certificates")
     .select("status")
-    .eq("user_id", user?.id)
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(1)
     .single();
+
   const { data: recentApplications } = await supabase
     .from("job_applications")
-    .select("id, status, created_at")
-    .eq("user_id", user?.id)
+    .select("id")
+    .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(3);
 
   const isVerified = isVerifiedCandidateRole(profile.role);
   const membership = getMembershipState(profile);
-  const { canAccessJobBoard } = await getJobBoardAccessForUser(supabase, user.id);
+  const {
+    canViewJobBoard,
+    canApplyToJobs,
+    isFreeAccessCandidate,
+    freeApplicationsRemaining,
+    lockReason,
+  } = await getJobBoardAccessForUser(supabase, user.id);
+
+  const examStarted = Boolean(candidate?.exam_status && candidate.exam_status !== "not_started");
+  const examCompleted = candidate?.exam_status === "completed";
+
+  const journey = [
+    {
+      title: "Register",
+      caption: "Account created & verified",
+      state: "completed",
+      icon: <CheckCircle className="h-5 w-5" />,
+    },
+    {
+      title: "Skill Test",
+      caption: "Validate your core competencies",
+      state: examStarted ? "active" : "next",
+      icon: <PlayCircle className="h-5 w-5" />,
+    },
+    {
+      title: "Verified",
+      caption: "Earn your Guild badge",
+      state: isVerified ? "completed" : "locked",
+      icon: <Lock className="h-5 w-5" />,
+    },
+    {
+      title: "Hired",
+      caption: "Land your dream position",
+      state: "locked",
+      icon: <Star className="h-5 w-5" />,
+    },
+  ] as const;
+
+  const examTitle =
+    candidate?.pass_status === "fail"
+      ? "Learning Path Required"
+      : isVerified
+        ? "Validation Complete"
+        : examCompleted
+          ? "Assessment Reviewed"
+          : "Skill Validation Exam";
+
+  const examCopy =
+    candidate?.pass_status === "fail"
+      ? `You scored ${candidate?.latest_score ?? 0}%. Submit a course completion certificate to unlock your reattempt.`
+      : isVerified
+        ? `You scored ${candidate?.latest_score ?? 0}%. Your profile is now visible for stronger-fit opportunities.`
+        : "Our assessment measures your practical L&D readiness and unlocks recommendations, resources, and marketplace access.";
+
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black pt-28 pb-16 px-6">
-      <div className="max-w-4xl mx-auto space-y-8">
-        
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Welcome, {profile.name}</h1>
-            <p className="text-zinc-500 mt-1">Track your progress and validate your L&D skills.</p>
-          </div>
-          {isVerified && (
-             <div className="px-4 py-2 bg-green-100 text-green-800 rounded-full font-medium inline-flex items-center gap-2">
-               <CheckCircle className="w-5 h-5" /> Verified MVP
-             </div>
-          )}
-        </div>
+    <div className="marketing-page min-h-screen">
+      <div className="marketing-section pt-32 pb-16">
+        <div className="marketing-container space-y-12">
+          <section className="grid items-start gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="space-y-6">
+              <h1 className="marketing-title max-w-3xl text-5xl sm:text-6xl">Welcome back, {profile.name}.</h1>
+              <p className="marketing-copy max-w-2xl text-base leading-8">
+                Your career trajectory is in motion. You&apos;re currently in the{" "}
+                <span className="font-semibold text-[#138d1a]">
+                  {isVerified ? "Verified" : examStarted ? "Validation" : "Registration"}
+                </span>{" "}
+                phase. Complete the right next step to unlock stronger-fit roles, premium resources, and cleaner visibility.
+              </p>
+            </div>
 
-        {/* Progression Journey */}
-        <div className="bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-2xl p-6">
-          <h2 className="text-lg font-semibold mb-4">Your Journey</h2>
-          <div className="flex flex-col sm:flex-row justify-between items-center sm:items-start gap-4">
-            <Step active={true} label="Register" icon={<CheckCircle className="w-8 h-8 text-green-500"/>} />
-            <div className="flex-1 h-1 bg-brand-100 dark:bg-zinc-800 sm:mt-4 hidden sm:block"></div>
-            <Step active={Boolean(candidate?.exam_status !== 'not_started')} label="Test" icon={candidate?.exam_status === 'completed' ? <CheckCircle className="w-8 h-8 text-green-500"/> : <PlayCircle className="w-8 h-8 text-brand-500"/>} />
-            <div className="flex-1 h-1 bg-brand-100 dark:bg-zinc-800 sm:mt-4 hidden sm:block"></div>
-            <Step active={isVerified} label="Verified" icon={isVerified || certificate?.status === 'approved' ? <CheckCircle className="w-8 h-8 text-green-500"/> : <CheckCircle className="w-8 h-8 text-zinc-300"/>} />
-            <div className="flex-1 h-1 bg-brand-100 dark:bg-zinc-800 sm:mt-4 hidden sm:block"></div>
-            <Step active={false} label="Hired" icon={<CheckCircle className="w-8 h-8 text-zinc-300"/>} />
-          </div>
-        </div>
-
-        {/* Action Area */}
-        <div className="grid md:grid-cols-2 gap-6">
-          
-          {/* Exam Status */}
-          <div className="bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-2xl p-6">
-            <h3 className="text-xl font-semibold flex items-center gap-2 mb-4">
-              <FileText className="w-6 h-6 text-brand-600" />
-              Skill Validation Exam
-            </h3>
-            
-            {candidate?.pass_status === 'fail' ? (
-              <div className="space-y-4">
-                <div className="p-4 bg-orange-50 border border-orange-200 text-orange-800 rounded-xl">
-                  <p className="font-medium flex items-center gap-2"><AlertCircle className="w-5 h-5"/> Learning Path Required</p>
-                  <p className="text-sm mt-1">You scored {candidate.latest_score}%. To unlock a reattempt, please submit a course completion certificate.</p>
-                </div>
-                
-                {certificate?.status === 'pending' ? (
-                  <div className="p-4 bg-zinc-100 dark:bg-zinc-800 rounded-xl text-center">
-                    <p className="text-sm font-medium">Certificate under review...</p>
-                    <p className="text-[10px] text-zinc-500 mt-1 uppercase tracking-wider">Reattempt will be enabled once approved</p>
+            <div className="marketing-panel p-5">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="marketing-soft-card p-4">
+                  <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Latest Score</p>
+                  <p className="mt-3 text-4xl font-bold text-[#17a21c]">
+                    {candidate?.latest_score ? `${candidate.latest_score}%` : "--"}
+                  </p>
+                  <div className="mt-3 h-1.5 rounded-full bg-[#e2ecd8]">
+                    <div
+                      className="h-1.5 rounded-full bg-[#23b61f]"
+                      style={{ width: `${Math.max(Math.min(candidate?.latest_score ?? 0, 100), 12)}%` }}
+                    />
                   </div>
-                ) : candidate.reattempt_allowed ? (
-                  <Link href="/dashboard/candidate/exam" className="w-full inline-flex justify-center items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg font-medium">
-                    Reattempt Exam
-                  </Link>
-                ) : (
-                  <CertificateUpload userId={user.id} />
-                )}
-
-                <Link href="/dashboard/candidate/scorecard" className="w-full inline-flex justify-center items-center gap-2 border border-zinc-200 dark:border-zinc-800 py-2.5 rounded-lg text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
-                  View Scorecard & Learning Path
-                </Link>
-              </div>
-            ) : isVerified ? (
-              <div className="space-y-4">
-                <div className="p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl">
-                  <p className="font-medium flex items-center gap-2"><CheckCircle className="w-5 h-5"/> Exam Passed</p>
-                  <p className="text-sm mt-1">You scored {candidate?.latest_score}%. Your profile is now visible to top employers.</p>
                 </div>
-                <Link href="/dashboard/candidate/scorecard" className="w-full inline-flex justify-center items-center gap-2 border border-zinc-200 dark:border-zinc-800 py-2.5 rounded-lg text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
-                  View Your Scorecard
+                <div className="marketing-soft-card p-4">
+                  <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Applications</p>
+                  <p className="mt-3 text-4xl font-bold text-[#111827]">{recentApplications?.length ?? 0}</p>
+                  <p className="mt-4 text-xs text-[#1da326]">
+                    {canApplyToJobs
+                      ? isFreeAccessCandidate
+                        ? `${freeApplicationsRemaining} free applications remaining`
+                        : "Marketplace unlocked"
+                      : lockReason || "Complete assessment to unlock"}
+                  </p>
+                </div>
+              </div>
+              <div className="marketing-soft-card mt-4 p-4">
+                <p className="text-sm font-semibold text-[#111827]">Candidate Progress</p>
+                <div className="mt-5 grid grid-cols-4 gap-3">
+                  {[34, 52, 28, 68].map((height, index) => (
+                    <div
+                      key={index}
+                      className={`${index === 1 ? "bg-[#35d421]" : "bg-[#dff5d8]"} rounded-t-xl`}
+                      style={{ height: `${height}px` }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="space-y-5">
+            <div className="flex items-center gap-3">
+              <Sparkles className="h-5 w-5 text-[#138d1a]" />
+              <h2 className="text-3xl font-bold text-[#111827]">Your Journey</h2>
+            </div>
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+              {journey.map((step) => {
+                const isCompleted = step.state === "completed";
+                const isActive = step.state === "active";
+                const isLocked = step.state === "locked";
+                return (
+                  <article
+                    key={step.title}
+                    className={`rounded-[1.9rem] border p-7 shadow-[0_16px_40px_rgba(87,108,67,0.08)] ${
+                      isActive
+                        ? "border-[#8fd97e] bg-white ring-2 ring-[#a9e99d]/70"
+                        : isLocked
+                          ? "border-[#e7ece2] bg-white/72 text-[#b4bdb0]"
+                          : "border-[#d8e6d3] bg-white"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                          isCompleted
+                            ? "bg-[#138d1a] text-white"
+                            : isActive
+                              ? "bg-[#138d1a] text-white"
+                              : "bg-[#ecf1e7] text-[#a0aa9b]"
+                        }`}
+                      >
+                        {step.icon}
+                      </div>
+                      <p
+                        className={`text-[11px] font-bold uppercase tracking-[0.18em] ${
+                          isCompleted ? "text-[#138d1a]" : isActive ? "text-[#138d1a]" : "text-[#b4bdb0]"
+                        }`}
+                      >
+                        {isCompleted ? "Completed" : isActive ? "In Progress" : "Locked"}
+                      </p>
+                    </div>
+                    <h3 className={`mt-8 text-2xl font-bold ${isLocked ? "text-[#bac1b8]" : "text-[#111827]"}`}>{step.title}</h3>
+                    <p className={`mt-3 text-base leading-7 ${isLocked ? "text-[#c4cbc2]" : "text-[#647061]"}`}>{step.caption}</p>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="grid gap-6 lg:grid-cols-[1.15fr_0.55fr]">
+            <article className="marketing-grid-card p-8">
+              <div className="grid gap-8 md:grid-cols-[260px_1fr] md:items-start">
+                <div className="rounded-[1.8rem] bg-[#19324b] p-6 text-white shadow-[0_22px_44px_rgba(15,23,42,0.2)]">
+                  <div className="mx-auto flex h-40 w-full items-center justify-center rounded-[1.4rem] bg-[#224463]">
+                    <FileText className="h-16 w-16 text-[#b7ffd0]" />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="rounded-full bg-[#eaf8e3] px-4 py-1 text-xs font-bold uppercase tracking-[0.16em] text-[#138d1a]">
+                      Priority Task
+                    </span>
+                    <span className="text-sm font-medium text-[#7a8577]">
+                      {candidate?.pass_status === "fail" ? "Course proof required" : "45 mins estimated"}
+                    </span>
+                  </div>
+
+                  <h3 className="mt-5 text-4xl font-bold text-[#111827]">{examTitle}</h3>
+                  <p className="mt-4 max-w-2xl text-base leading-8 text-[#5b6757]">{examCopy}</p>
+
+                  <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+                    {candidate?.pass_status === "fail" ? (
+                      certificate?.status === "pending" ? (
+                        <div className="rounded-full bg-[#eef4ea] px-6 py-4 text-sm font-semibold text-[#5b6757]">
+                          Certificate under review
+                        </div>
+                      ) : candidate.reattempt_allowed ? (
+                        <Link href="/dashboard/candidate/exam" className="marketing-primary">
+                          Reattempt Exam
+                          <ArrowRight className="h-4 w-4" />
+                        </Link>
+                      ) : (
+                        <div className="w-full max-w-sm">
+                          <CertificateUpload userId={user.id} />
+                        </div>
+                      )
+                    ) : isVerified ? (
+                      <Link href="/dashboard/candidate/scorecard" className="marketing-primary">
+                        View Scorecard
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    ) : (
+                      <Link href="/dashboard/candidate/exam" className="marketing-primary">
+                        {examCompleted ? "Continue Review" : "Start Exam"}
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    )}
+
+                    <Link
+                      href={membership.active ? "/dashboard/resources" : "/dashboard/membership"}
+                      className="marketing-secondary"
+                    >
+                      {membership.active ? "Open Resources" : "Prepare First"}
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <div className="space-y-6">
+              <DashboardSideCard
+                href="/dashboard/candidate/profile"
+                icon={<User className="h-5 w-5" />}
+                accent="bg-[#e9ecff] text-[#6877d3]"
+                title="Professional Profile"
+                copy="Keep your profile polished and employer-ready."
+              />
+
+              <DashboardSideCard
+                href="/dashboard/candidate/applications"
+                icon={<Briefcase className="h-5 w-5" />}
+                accent="bg-[#eaf8e3] text-[#138d1a]"
+                title="My Applications"
+                copy={
+                  recentApplications?.length
+                    ? `${recentApplications.length} active tracking update${recentApplications.length > 1 ? "s" : ""}`
+                    : "See all role applications and their status."
+                }
+              />
+
+              <article className="rounded-[1.9rem] border border-[#dde7d8] bg-[radial-gradient(circle_at_top,rgba(181,231,157,0.25),transparent_50%),rgba(255,255,255,0.85)] p-7 shadow-[0_16px_40px_rgba(87,108,67,0.08)]">
+                <h3 className="text-2xl font-bold text-[#111827]">Market Insight</h3>
+                <p className="mt-4 text-base leading-7 text-[#5b6757]">
+                  {canViewJobBoard
+                    ? "Based on your progress, new marketplace roles are now aligned to your profile."
+                    : "Complete validation to unlock stronger-fit opportunities and premium marketplace access."}
+                </p>
+                <div className="mt-6 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-[#e8eef5]" />
+                    <div>
+                      <p className="font-semibold text-[#111827]">Learning Experience Designer</p>
+                      <p className="text-sm text-[#96a193]">Guild Talent Network • Remote</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-[#e8eef5]" />
+                    <div>
+                      <p className="font-semibold text-[#111827]">Instructional Designer</p>
+                      <p className="text-sm text-[#96a193]">Capability Studio • Hybrid</p>
+                    </div>
+                  </div>
+                </div>
+                <Link
+                  href={canViewJobBoard ? "/dashboard/jobs" : "/dashboard/candidate/exam"}
+                  className="mt-8 inline-flex text-sm font-bold uppercase tracking-[0.16em] text-[#138d1a]"
+                >
+                  {canViewJobBoard ? "View all opportunities" : "Unlock marketplace"}
                 </Link>
-              </div>
-            ) : (
-               <div className="space-y-4">
-                 <p className="text-zinc-600 dark:text-zinc-400">Prove your expertise. Our 30-question assessment will determine your MVP Candidate status.</p>
-                 <Link href="/dashboard/candidate/exam" className="flex items-center justify-center gap-2 bg-brand-600 text-white py-2.5 px-4 rounded-lg hover:bg-brand-700 transition">
-                   Start Exam <ArrowRight className="w-4 h-4" />
-                 </Link>
-               </div>
-            )}
-          </div>
-
-          {/* Job Board Access */}
-          <div className="bg-gradient-to-br from-brand-600 to-accent-600 rounded-2xl p-6 text-white relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-8 opacity-10">
-                <ArrowRight className="w-32 h-32" />
-             </div>
-             <h3 className="text-xl font-semibold mb-2 relative z-10">Job Opportunities</h3>
-             {canAccessJobBoard ? (
-               <div className="relative z-10 space-y-4">
-                 <p className="opacity-90">Browse premium, deduplicated requests from Jooble, Adzuna, and Employers.</p>
-                 <Link href="/dashboard/jobs" className="inline-block bg-white text-brand-700 font-medium px-6 py-2.5 rounded-lg shadow hover:shadow-lg transition">
-                   View Job Board
-                 </Link>
-               </div>
-             ) : (
-               <div className="relative z-10 space-y-4">
-                  <p className="opacity-90">Pass the validation exam or get your course certificate approved to browse and apply to roles.</p>
-                  <button disabled className="bg-white/20 text-white font-medium px-6 py-2.5 rounded-lg cursor-not-allowed">
-                    Locked
-                  </button>
-               </div>
-             )}
-          </div>
-
-          {/* Professional Profile */}
-          <Link 
-            href="/dashboard/candidate/profile"
-            className="p-6 bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-3xl hover:shadow-xl hover:shadow-brand-500/10 transition-all group"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-10 h-10 bg-brand-50 dark:bg-brand-900/20 rounded-xl flex items-center justify-center text-brand-600">
-                <User className="w-5 h-5" />
-              </div>
-              <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:translate-x-1 transition-transform" />
+              </article>
             </div>
-            <h3 className="font-bold mb-1">Professional Profile</h3>
-            <p className="text-zinc-500 text-sm">Update your bio, skills, and resume for employers.</p>
-          </Link>
-
-          <Link
-            href="/dashboard/candidate/applications"
-            className="p-6 bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-3xl hover:shadow-xl hover:shadow-brand-500/10 transition-all group"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-10 h-10 bg-brand-50 dark:bg-brand-900/20 rounded-xl flex items-center justify-center text-brand-600">
-                <Briefcase className="w-5 h-5" />
-              </div>
-              <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:translate-x-1 transition-transform" />
-            </div>
-            <h3 className="font-bold mb-1">My Applications</h3>
-            <p className="text-zinc-500 text-sm">
-              {recentApplications?.length
-                ? `Track ${recentApplications.length} recent application update${recentApplications.length > 1 ? "s" : ""}.`
-                : "See all roles you applied to and current status."}
-            </p>
-          </Link>
-
-          <Link
-            href={membership.active ? "/dashboard/resources" : "/dashboard/membership"}
-            className="p-6 bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-3xl hover:shadow-xl hover:shadow-brand-500/10 transition-all group md:col-span-2"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-10 h-10 bg-brand-50 dark:bg-brand-900/20 rounded-xl flex items-center justify-center text-brand-600">
-                <FileText className="w-5 h-5" />
-              </div>
-              <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:translate-x-1 transition-transform" />
-            </div>
-            <h3 className="font-bold mb-1">Tools & Resources Membership</h3>
-            <p className="text-zinc-500 text-sm">
-              {membership.active
-                ? "Your annual membership is active. Open the full resource library."
-                : "Download the free resources now and unlock the full library with annual membership."}
-            </p>
-          </Link>
+          </section>
         </div>
       </div>
     </div>
   );
 }
 
-function Step({ active, label, icon }: { active: boolean, label: string, icon: React.ReactNode }) {
+function DashboardSideCard({
+  href,
+  icon,
+  accent,
+  title,
+  copy,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  accent: string;
+  title: string;
+  copy: string;
+}) {
   return (
-    <div className={`flex flex-col items-center gap-2 ${active ? "" : "opacity-50 grayscale"}`}>
-      {icon}
-      <span className="text-sm font-medium">{label}</span>
-    </div>
-  )
+    <Link
+      href={href}
+      className="flex items-center justify-between rounded-[1.9rem] border border-[#dde7d8] bg-white px-7 py-6 shadow-[0_16px_40px_rgba(87,108,67,0.08)] transition hover:-translate-y-0.5"
+    >
+      <div className="flex items-center gap-4">
+        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${accent}`}>{icon}</div>
+        <div>
+          <h3 className="text-2xl font-bold text-[#111827]">{title}</h3>
+          <p className="mt-1 text-sm text-[#7f8a7b]">{copy}</p>
+        </div>
+      </div>
+      <ChevronRight className="h-5 w-5 text-[#c2c8be]" />
+    </Link>
+  );
 }
