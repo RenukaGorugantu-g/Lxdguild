@@ -1,7 +1,8 @@
 import { createClient } from "@/utils/supabase/server";
 import {
-  buildWeightedAssessment,
+  buildRoleMatchedAssessment,
   DEFAULT_TOTAL_QUESTIONS,
+  getAssessmentSetKey,
   getLegacyDesignationLevel,
   resolveAssessmentBucket,
 } from "@/lib/assessment";
@@ -45,12 +46,14 @@ export default async function ExamPage() {
 
   const { targetRole, designationBucket } = resolveAssessmentBucket(profile);
   const level = profile?.designation_level || getLegacyDesignationLevel(designationBucket);
+  const targetSet = getAssessmentSetKey(designationBucket);
 
   const bucketQuery = await supabase
     .from("exam_questions")
     .select("id, question, options, correct_answer, skill_tag, section_name, designation_bucket, question_set, set_weight, designation_level")
     .eq("is_active", true)
-    .eq("designation_bucket", designationBucket);
+    .eq("designation_bucket", designationBucket)
+    .eq("question_set", targetSet);
 
   let questions = bucketQuery.data || [];
 
@@ -71,7 +74,8 @@ export default async function ExamPage() {
     const fallbackQuestions = await supabase
       .from("exam_questions")
       .select("id, question, options, correct_answer, skill_tag, section_name, designation_bucket, question_set, set_weight, designation_level")
-      .eq("designation_level", level);
+      .eq("designation_level", level)
+      .eq("question_set", targetSet);
 
     questions = (fallbackQuestions.data || []).map((question) => ({
       ...question,
@@ -80,7 +84,7 @@ export default async function ExamPage() {
     }));
   }
 
-  const weightedQuestions = buildWeightedAssessment(questions, DEFAULT_TOTAL_QUESTIONS);
+  const weightedQuestions = buildRoleMatchedAssessment(questions, designationBucket, DEFAULT_TOTAL_QUESTIONS);
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black pt-28 pb-16 px-4">
@@ -96,4 +100,3 @@ export default async function ExamPage() {
     </div>
   );
 }
-

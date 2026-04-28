@@ -2,6 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, FileText, ShieldCheck, User, GraduationCap } from "lucide-react";
+import { isEmployerRole } from "@/lib/profile-role";
 
 type CandidateResume = {
   id: string;
@@ -23,7 +24,7 @@ export default async function EmployerCandidateDetailPage({ params }: { params: 
     .eq("id", user.id)
     .single();
 
-  if (!profile || !profile.role?.startsWith("employer")) {
+  if (!profile || !isEmployerRole(profile.role)) {
     redirect("/dashboard");
   }
 

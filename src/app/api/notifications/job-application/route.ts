@@ -4,6 +4,7 @@ import { createAdminClient } from '@/utils/supabase/admin'
 import { getJobBoardAccessForUser } from '@/lib/job-board-access'
 import { notifyUser, notifyAdmins } from '@/lib/notifications'
 import { isInternalApplyValue, normalizeExternalApplyUrl } from '@/lib/job-apply'
+import { ensureUserProfile } from '@/lib/ensure-user-profile'
 import {
   decideApplicationStatus,
   downloadResumeBuffer,
@@ -11,6 +12,78 @@ import {
 } from '@/lib/resume-analysis'
 
 export const runtime = 'nodejs'
+
+function isMissingColumnError(message?: string | null) {
+  const normalized = message || '';
+  return (
+    normalized.includes('Could not find') ||
+    normalized.includes('does not exist') ||
+    normalized.includes('schema cache')
+  );
+}
+
+async function insertJobApplication(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  payload: {
+    job_id: string;
+    user_id: string;
+    resume_id: string | null;
+    resume_url: string | null;
+    status: string;
+    reviewed_at: string | null;
+    shortlisted_at: string | null;
+    rejected_at: string | null;
+    ats_score: number | null;
+    ats_summary: string | null;
+    ats_recommendations: string[];
+    ats_matched_keywords: string[];
+    ats_missing_keywords: string[];
+    ats_analysis_status: string;
+    ats_analysis_error: string | null;
+    ats_last_analyzed_at: string | null;
+    ats_auto_decision: string | null;
+    ats_auto_decision_reason: string | null;
+  }
+) {
+  const fullInsert = await supabase.from('job_applications').insert(payload);
+  if (!fullInsert.error) {
+    return fullInsert.error;
+  }
+
+  if (fullInsert.error.code !== '42703' && !isMissingColumnError(fullInsert.error.message)) {
+    return fullInsert.error;
+  }
+
+  const mediumInsert = await supabase.from('job_applications').insert({
+    job_id: payload.job_id,
+    user_id: payload.user_id,
+    resume_id: payload.resume_id,
+    resume_url: payload.resume_url,
+    status: payload.status,
+    reviewed_at: payload.reviewed_at,
+    shortlisted_at: payload.shortlisted_at,
+    rejected_at: payload.rejected_at,
+    ats_score: payload.ats_score,
+    ats_summary: payload.ats_summary,
+  });
+
+  if (!mediumInsert.error) {
+    return mediumInsert.error;
+  }
+
+  if (mediumInsert.error.code !== '42703' && !isMissingColumnError(mediumInsert.error.message)) {
+    return mediumInsert.error;
+  }
+
+  const legacyInsert = await supabase.from('job_applications').insert({
+    job_id: payload.job_id,
+    user_id: payload.user_id,
+    resume_url: payload.resume_url,
+    status: payload.status,
+  });
+
+  return legacyInsert.error;
+}
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -29,6 +102,8 @@ export async function POST(req: Request) {
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  await ensureUserProfile(user);
 
   const { canApplyToJobs, isFreeAccessCandidate, freeApplicationsRemaining, lockReason } = await getJobBoardAccessForUser(
     supabase,
@@ -146,8 +221,7 @@ export async function POST(req: Request) {
     }
   }
 
-  let insertError = null;
-  const insertWithResumeLink = await supabase.from('job_applications').insert({
+  const insertError = await insertJobApplication(supabase, {
     job_id: jobId,
     user_id: user.id,
     resume_id: resumeId || null,
@@ -168,18 +242,6 @@ export async function POST(req: Request) {
     ats_auto_decision_reason: atsAutoDecisionReason,
   });
 
-  insertError = insertWithResumeLink.error;
-
-  if (insertError?.code === '42703' || insertError?.message?.includes('resume_id')) {
-    const legacyInsert = await supabase.from('job_applications').insert({
-      job_id: jobId,
-      user_id: user.id,
-      resume_url: normalizedResumeUrl,
-      status: applicationStatus,
-    });
-    insertError = legacyInsert.error;
-  }
-
   if (insertError && insertError.code !== '23505') {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
@@ -193,36 +255,38 @@ export async function POST(req: Request) {
       : isInternalApply
         ? `Your application for ${job.title} at ${job.company} was submitted inside LXD Guild. The employer can now review your profile here.`
         : `We saved your application intent for ${job.title} at ${job.company}. Complete the application on the employer's official page to finish applying.`;
-  await notifyUser(user.id, 'job_application', 'Application submitted', candidateMessage, {
-    job_id: jobId,
-    company: job.company,
-    title: job.title,
-    apply_url: externalApplyUrl,
-    application_mode: isInternalApply ? 'internal' : 'external',
-    ats_score: atsScore,
-    ats_auto_decision: atsAutoDecision,
-  });
-
-  if (job.user_id) {
-    await notifyUser(job.user_id, 'job_application_received', 'New candidate applied', `A candidate has applied for ${job.title} at ${job.company}. ATS score: ${atsScore ?? 'n/a'}.`, {
+  void Promise.allSettled([
+    notifyUser(user.id, 'job_application', 'Application submitted', candidateMessage, {
       job_id: jobId,
-      applicant_id: user.id,
+      company: job.company,
+      title: job.title,
+      apply_url: externalApplyUrl,
+      application_mode: isInternalApply ? 'internal' : 'external',
       ats_score: atsScore,
       ats_auto_decision: atsAutoDecision,
-    });
-  }
-
-  await notifyAdmins(
-    'job_application_admin',
-    'Candidate applied for job',
-    `Candidate ${user.email || user.id} applied for ${job.title} at ${job.company}.`,
-    {
-      job_id: jobId,
-      applicant_id: user.id,
-      ats_score: atsScore,
-      ats_auto_decision: atsAutoDecision,
-    }
-  );
+    }),
+    ...(job.user_id
+      ? [
+          notifyUser(job.user_id, 'job_application_received', 'New candidate applied', `A candidate has applied for ${job.title} at ${job.company}. ATS score: ${atsScore ?? 'n/a'}.`, {
+            job_id: jobId,
+            applicant_id: user.id,
+            ats_score: atsScore,
+            ats_auto_decision: atsAutoDecision,
+          }),
+        ]
+      : []),
+    notifyAdmins(
+      'job_application_admin',
+      'Candidate applied for job',
+      `Candidate ${user.email || user.id} applied for ${job.title} at ${job.company}.`,
+      {
+        job_id: jobId,
+        applicant_id: user.id,
+        ats_score: atsScore,
+        ats_auto_decision: atsAutoDecision,
+      }
+    ),
+  ]);
 
   return NextResponse.json({
     success: true,

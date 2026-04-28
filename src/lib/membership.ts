@@ -1,6 +1,7 @@
 export const MEMBER_ANNUAL_PLAN_CODE = "member_annual";
 export const MEMBER_ANNUAL_PRICE_INR = 2999;
 export const MEMBER_DURATION_DAYS = 365;
+const LEGACY_ACTIVE_MEMBERSHIP_STATUSES = new Set(["active", "pro", "premium", "paid", "member"]);
 
 type MembershipProfile = {
   role?: string | null;
@@ -21,7 +22,7 @@ function parseExpiryFromStatus(value?: string | null) {
 export function hasActiveMembership(profile: MembershipProfile | null | undefined) {
   if (!profile) return false;
   if (profile.role === "admin" || profile.role === "pro_member") return true;
-  if (profile.membership_status === "active") return true;
+  if (profile.membership_status && LEGACY_ACTIVE_MEMBERSHIP_STATUSES.has(profile.membership_status)) return true;
 
   const expiresAt = profile.membership_expires_at
     ? new Date(profile.membership_expires_at)
@@ -36,12 +37,17 @@ export function getMembershipState(profile: MembershipProfile | null | undefined
   const expiresAt = profile?.membership_expires_at
     ? new Date(profile.membership_expires_at)
     : parseExpiryFromStatus(profile?.membership_status);
+  const normalizedPlan =
+    profile?.membership_plan ||
+    (profile?.membership_status === "pro" ? "pro" : null) ||
+    (profile?.membership_status === "premium" ? "premium" : null) ||
+    (active ? MEMBER_ANNUAL_PLAN_CODE : null);
 
   return {
     active,
     expiresAt,
     isLegacyProMember: profile?.role === "pro_member",
-    plan: active ? (profile?.membership_plan || MEMBER_ANNUAL_PLAN_CODE) : "free",
+    plan: active ? (normalizedPlan || MEMBER_ANNUAL_PLAN_CODE) : "free",
   };
 }
 

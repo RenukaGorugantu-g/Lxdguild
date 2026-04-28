@@ -36,6 +36,23 @@ type JobListItem = {
   job_kind?: string | null;
 };
 
+type JobSearchFilters = {
+  category?: string;
+  view?: string;
+  remote?: string;
+  schedule?: string;
+  normalizedQuery: string;
+};
+
+type FilterableJobQuery = {
+  ilike: (column: string, pattern: string) => FilterableJobQuery;
+  or: (filters: string) => FilterableJobQuery;
+  eq: (column: string, value: string) => FilterableJobQuery;
+};
+
+const JOB_SELECT =
+  "id, title, description, company, location, work_mode, employment_type, expires_at, external_posted_at, imported_at, created_at, is_active, source, job_kind";
+
 function normalizeJobText(...values: Array<string | null | undefined>) {
   return values.filter(Boolean).join(" ").toLowerCase();
 }
@@ -63,6 +80,104 @@ function matchesScheduleFilter(job: JobListItem, schedule?: string) {
   }
 
   return true;
+}
+
+function applyJobFilters(query: FilterableJobQuery, filters: JobSearchFilters) {
+  let nextQuery = query;
+
+  if (filters.category) nextQuery = nextQuery.ilike("title", `%${filters.category}%`);
+  if (filters.normalizedQuery) {
+    nextQuery = nextQuery.or(
+      `title.ilike.%${filters.normalizedQuery}%,company.ilike.%${filters.normalizedQuery}%,location.ilike.%${filters.normalizedQuery}%,description.ilike.%${filters.normalizedQuery}%`
+    );
+  }
+  if (filters.view === "freelance" || filters.view === "standard") nextQuery = nextQuery.eq("job_kind", filters.view);
+  if (filters.remote === "remote") nextQuery = nextQuery.eq("work_mode", "remote");
+  if (filters.schedule === "full-time") nextQuery = nextQuery.eq("employment_type", "full_time");
+  if (filters.schedule === "part-time") nextQuery = nextQuery.eq("employment_type", "part_time");
+
+  return nextQuery;
+}
+
+async function fetchJobsPage(
+  jobsReader: ReturnType<typeof createAdminClient> | Awaited<ReturnType<typeof createClient>>,
+  filters: JobSearchFilters,
+  currentPage: number,
+  pageSize: number
+) {
+  const from = (currentPage - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  const primaryQuery = applyJobFilters(
+    jobsReader
+      .from("jobs")
+      .select(JOB_SELECT, { count: "exact" })
+      .order("external_posted_at", { ascending: false, nullsFirst: false })
+      .order("imported_at", { ascending: false }),
+    filters
+  ).range(from, to);
+
+  const primaryResult = await primaryQuery;
+
+  if (primaryResult.error?.code !== "42703") {
+    return {
+      data: (primaryResult.data || []).filter((job: JobListItem) => job.is_active !== false),
+      count: primaryResult.count || 0,
+      error: primaryResult.error,
+    };
+  }
+
+  const fallbackQuery = applyJobFilters(
+    jobsReader
+      .from("jobs")
+      .select(JOB_SELECT, { count: "exact" })
+      .order("created_at", { ascending: false }),
+    filters
+  ).range(from, to);
+
+  const fallbackResult = await fallbackQuery;
+
+  return {
+    data: (fallbackResult.data || []).filter((job: JobListItem) => job.is_active !== false),
+    count: fallbackResult.count || 0,
+    error: fallbackResult.error,
+  };
+}
+
+async function fetchFeaturedFreelanceJobs(
+  jobsReader: ReturnType<typeof createAdminClient> | Awaited<ReturnType<typeof createClient>>,
+  filters: JobSearchFilters
+) {
+  const freelanceFilters: JobSearchFilters = {
+    ...filters,
+    view: "freelance",
+  };
+
+  const primaryQuery = applyJobFilters(
+    jobsReader
+      .from("jobs")
+      .select(JOB_SELECT)
+      .order("external_posted_at", { ascending: false, nullsFirst: false })
+      .order("imported_at", { ascending: false }),
+    freelanceFilters
+  ).limit(4);
+
+  const primaryResult = await primaryQuery;
+
+  if (primaryResult.error?.code !== "42703") {
+    return (primaryResult.data || []).filter((job: JobListItem) => job.is_active !== false);
+  }
+
+  const fallbackQuery = applyJobFilters(
+    jobsReader
+      .from("jobs")
+      .select(JOB_SELECT)
+      .order("created_at", { ascending: false }),
+    freelanceFilters
+  ).limit(4);
+
+  const fallbackResult = await fallbackQuery;
+  return (fallbackResult.data || []).filter((job: JobListItem) => job.is_active !== false);
 }
 
 export default async function JobsDashboard({
@@ -113,115 +228,35 @@ export default async function JobsDashboard({
   }
   const pageSize = 12;
   const normalizedQuery = q?.trim() || "";
+  const parsedPage = Number(page || "1");
+  const requestedPage = Number.isFinite(parsedPage) ? Math.max(1, Math.trunc(parsedPage)) : 1;
+  const filters: JobSearchFilters = { category, view, remote, schedule, normalizedQuery };
 
-  let query = jobsReader
-    .from("jobs")
-    .select("id, title, description, company, location, work_mode, employment_type, expires_at, external_posted_at, imported_at, created_at, is_active, source, job_kind")
-    .order("external_posted_at", { ascending: false, nullsFirst: false })
-    .order("imported_at", { ascending: false });
+  let jobsPageResult = await fetchJobsPage(jobsReader, filters, requestedPage, pageSize);
 
-  if (category) query = query.ilike("title", `%${category}%`);
-  if (normalizedQuery) {
-    query = query.or(`title.ilike.%${normalizedQuery}%,company.ilike.%${normalizedQuery}%,location.ilike.%${normalizedQuery}%,description.ilike.%${normalizedQuery}%`);
-  }
-  if (view === "freelance" || view === "standard") query = query.eq("job_kind", view);
-  if (remote === "remote") query = query.eq("work_mode", "remote");
-  if (schedule === "full-time") query = query.eq("employment_type", "full_time");
-  if (schedule === "part-time") query = query.eq("employment_type", "part_time");
-
-  let { data: rawJobsList, error: jobsError } = await query;
-
-  if (jobsError?.code === "42703") {
-    let fallbackQuery = jobsReader
-      .from("jobs")
-      .select("id, title, description, company, location, work_mode, employment_type, expires_at, external_posted_at, imported_at, created_at, is_active, source, job_kind")
-      .order("created_at", { ascending: false });
-    if (category) fallbackQuery = fallbackQuery.ilike("title", `%${category}%`);
-    if (normalizedQuery) {
-      fallbackQuery = fallbackQuery.or(`title.ilike.%${normalizedQuery}%,company.ilike.%${normalizedQuery}%,location.ilike.%${normalizedQuery}%,description.ilike.%${normalizedQuery}%`);
-    }
-    if (view === "freelance" || view === "standard") fallbackQuery = fallbackQuery.eq("job_kind", view);
-    if (remote === "remote") fallbackQuery = fallbackQuery.eq("work_mode", "remote");
-    if (schedule === "full-time") fallbackQuery = fallbackQuery.eq("employment_type", "full_time");
-    if (schedule === "part-time") fallbackQuery = fallbackQuery.eq("employment_type", "part_time");
-
-    const fallback = await fallbackQuery;
-    rawJobsList = fallback.data;
-    jobsError = fallback.error;
-  }
-
-  let jobsList = (rawJobsList || []).filter((job) => job.is_active !== false);
-
-  if ((!jobsList || jobsList.length === 0) && !jobsError) {
+  if ((jobsPageResult.count === 0 || jobsPageResult.data.length === 0) && !jobsPageResult.error) {
     await syncJobFeedIfStale();
-
-    let refreshQuery = jobsReader
-      .from("jobs")
-      .select("id, title, description, company, location, work_mode, employment_type, expires_at, external_posted_at, imported_at, created_at, is_active, source, job_kind")
-      .order("external_posted_at", { ascending: false, nullsFirst: false })
-      .order("imported_at", { ascending: false });
-
-    if (category) refreshQuery = refreshQuery.ilike("title", `%${category}%`);
-    if (normalizedQuery) {
-      refreshQuery = refreshQuery.or(`title.ilike.%${normalizedQuery}%,company.ilike.%${normalizedQuery}%,location.ilike.%${normalizedQuery}%,description.ilike.%${normalizedQuery}%`);
-    }
-    if (view === "freelance" || view === "standard") refreshQuery = refreshQuery.eq("job_kind", view);
-    if (remote === "remote") refreshQuery = refreshQuery.eq("work_mode", "remote");
-    if (schedule === "full-time") refreshQuery = refreshQuery.eq("employment_type", "full_time");
-    if (schedule === "part-time") refreshQuery = refreshQuery.eq("employment_type", "part_time");
-
-    const refreshed = await refreshQuery;
-
-    if (refreshed.error?.code === "42703") {
-      let legacyRefreshQuery = jobsReader
-        .from("jobs")
-        .select("id, title, description, company, location, work_mode, employment_type, expires_at, external_posted_at, imported_at, created_at, is_active, source, job_kind")
-        .order("created_at", { ascending: false });
-      if (category) legacyRefreshQuery = legacyRefreshQuery.ilike("title", `%${category}%`);
-      if (normalizedQuery) {
-        legacyRefreshQuery = legacyRefreshQuery.or(`title.ilike.%${normalizedQuery}%,company.ilike.%${normalizedQuery}%,location.ilike.%${normalizedQuery}%,description.ilike.%${normalizedQuery}%`);
-      }
-      if (view === "freelance" || view === "standard") legacyRefreshQuery = legacyRefreshQuery.eq("job_kind", view);
-      if (remote === "remote") legacyRefreshQuery = legacyRefreshQuery.eq("work_mode", "remote");
-      if (schedule === "full-time") legacyRefreshQuery = legacyRefreshQuery.eq("employment_type", "full_time");
-      if (schedule === "part-time") legacyRefreshQuery = legacyRefreshQuery.eq("employment_type", "part_time");
-
-      const legacyRefreshed = await legacyRefreshQuery;
-      jobsList = (legacyRefreshed.data || []).filter((job) => job.is_active !== false);
-    } else {
-      jobsList = (refreshed.data || []).filter((job) => job.is_active !== false);
-    }
+    jobsPageResult = await fetchJobsPage(jobsReader, filters, requestedPage, pageSize);
   }
 
-  if ((!jobsList || jobsList.length === 0) && !jobsError) {
-    let recentJobsQuery = jobsReader
-      .from("jobs")
-      .select("id, title, description, company, location, work_mode, employment_type, expires_at, external_posted_at, imported_at, created_at, is_active, source, job_kind")
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    if (category) recentJobsQuery = recentJobsQuery.ilike("title", `%${category}%`);
-    if (normalizedQuery) {
-      recentJobsQuery = recentJobsQuery.or(`title.ilike.%${normalizedQuery}%,company.ilike.%${normalizedQuery}%,location.ilike.%${normalizedQuery}%,description.ilike.%${normalizedQuery}%`);
-    }
-    if (view === "freelance" || view === "standard") recentJobsQuery = recentJobsQuery.eq("job_kind", view);
-
-    const recentJobs = await recentJobsQuery;
-    jobsList = (recentJobs.data || []).filter((job) => job.source !== "employer" || job.is_active !== false);
-  }
-
-  jobsList = jobsList.filter((job) => matchesRemoteFilter(job, remote));
+  let jobsList = jobsPageResult.data.filter((job) => matchesRemoteFilter(job, remote));
   jobsList = jobsList.filter((job) => matchesScheduleFilter(job, schedule));
 
   const categories = ["Instructional Designer", "eLearning Developer", "Learning Experience Designer", "L&D Manager", "Curriculum Developer"];
-  const freelanceJobs = jobsList.filter((job) => job.job_kind === "freelance").slice(0, 4);
+  const freelanceJobs = view === "freelance" ? [] : await fetchFeaturedFreelanceJobs(jobsReader, filters);
   const featuredFreelanceIds = new Set(freelanceJobs.map((job) => job.id));
-  const jobsToRender = view === "freelance" ? jobsList : jobsList.filter((job) => !featuredFreelanceIds.has(job.id));
-  const totalJobs = jobsToRender.length;
+  const totalJobs = jobsPageResult.count;
   const totalPages = Math.max(1, Math.ceil(totalJobs / pageSize));
-  const parsedPage = Number(page || "1");
-  const currentPage = Number.isFinite(parsedPage) ? Math.min(Math.max(1, Math.trunc(parsedPage)), totalPages) : 1;
-  const paginatedJobs = jobsToRender.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const currentPage = Math.min(requestedPage, totalPages);
+
+  if (requestedPage !== currentPage && totalJobs > 0) {
+    jobsPageResult = await fetchJobsPage(jobsReader, filters, currentPage, pageSize);
+    jobsList = jobsPageResult.data.filter((job) => matchesRemoteFilter(job, remote));
+    jobsList = jobsList.filter((job) => matchesScheduleFilter(job, schedule));
+  }
+
+  const jobsToRender = view === "freelance" ? jobsList : jobsList.filter((job) => !featuredFreelanceIds.has(job.id));
+  const paginatedJobs = jobsToRender;
   const pageTitle = view === "freelance" ? "Freelance L&D Jobs" : view === "standard" ? "Standard L&D Jobs" : "L&D Job Board";
   const pageDescription =
     view === "freelance"
@@ -271,7 +306,7 @@ export default async function JobsDashboard({
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="marketing-soft-card p-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Visible Roles</p>
-                  <p className="mt-3 text-4xl font-bold text-[#17a21c]">{jobsList.length}</p>
+                  <p className="mt-3 text-4xl font-bold text-[#17a21c]">{totalJobs}</p>
                   <div className="mt-3 h-1.5 rounded-full bg-[#e2ecd8]">
                     <div className="h-1.5 w-[82%] rounded-full bg-[#23b61f]" />
                   </div>

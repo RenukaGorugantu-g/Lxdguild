@@ -5,8 +5,8 @@ import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getBucketForTargetRole, TARGET_ROLE_OPTIONS } from "@/lib/assessment";
-import { AuthLogo, DividerLabel, SocialButton } from "@/components/auth/AuthShared";
-import { ArrowRight, BriefcaseBusiness, Check, Eye, EyeOff, Mail, SearchCheck } from "lucide-react";
+import { AuthLogo } from "@/components/auth/AuthShared";
+import { ArrowRight, BriefcaseBusiness, Check, Eye, EyeOff, SearchCheck } from "lucide-react";
 
 type PathCardProps = {
   selected: boolean;
@@ -327,14 +327,6 @@ function RegisterPageContent() {
                     {loading ? "Creating account..." : "Create Account"}
                     {!loading ? <ArrowRight className="h-4.5 w-4.5" /> : null}
                   </button>
-                </div>
-
-                <div className="mt-8 space-y-6">
-                  <DividerLabel label="Or Continue With" />
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <SocialButton icon={Mail} label="Google" />
-                    <SocialButton icon={BriefcaseBusiness} label="LinkedIn" />
-                  </div>
                 </div>
 
                 <p className="mt-7 text-center text-[15px] text-[#606a77]">

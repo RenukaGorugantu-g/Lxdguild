@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import EmployerProfileForm from "./EmployerProfileForm";
+import { isEmployerRole } from "@/lib/profile-role";
 
 export default async function EmployerProfilePage() {
   const supabase = await createClient();
@@ -18,7 +19,7 @@ export default async function EmployerProfilePage() {
     .eq("id", user.id)
     .single();
 
-  if (!profile || !String(profile.role || "").startsWith("employer")) {
+  if (!profile || !isEmployerRole(profile.role)) {
     redirect("/dashboard");
   }
 

@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import JobEditForm from "./JobEditForm";
+import { isAdminRole, isEmployerRole } from "@/lib/profile-role";
 
 export default async function EditJobPage({
   params,
@@ -18,7 +19,7 @@ export default async function EditJobPage({
     .eq("id", user.id)
     .single();
 
-  if (!profile || (!profile.role?.startsWith("employer") && profile.role !== "admin")) {
+  if (!profile || (!isEmployerRole(profile.role) && !isAdminRole(profile.role))) {
     redirect("/dashboard");
   }
 
@@ -30,7 +31,7 @@ export default async function EditJobPage({
 
   if (!job) notFound();
 
-  if (profile.role !== "admin" && job.user_id !== user.id) {
+  if (!isAdminRole(profile.role) && job.user_id !== user.id) {
     redirect("/dashboard");
   }
 

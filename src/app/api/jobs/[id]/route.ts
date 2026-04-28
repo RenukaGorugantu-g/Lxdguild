@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { buildInternalApplyValue, isInternalApplyValue } from "@/lib/job-apply";
 import { notifyAdmins, notifyUser } from "@/lib/notifications";
+import { isAdminRole, isEmployerRole } from "@/lib/profile-role";
 
 type JobRow = {
   id: string;
@@ -67,7 +68,7 @@ export async function DELETE(
       .eq("id", user.id)
       .single();
 
-    if (!profile || (!profile.role?.startsWith("employer") && profile.role !== "admin")) {
+    if (!profile || (!isEmployerRole(profile.role) && !isAdminRole(profile.role))) {
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
 
@@ -83,7 +84,7 @@ export async function DELETE(
 
     const resolvedJob = job as JobRow;
 
-    if (profile.role !== "admin" && resolvedJob.user_id !== user.id) {
+    if (!isAdminRole(profile.role) && resolvedJob.user_id !== user.id) {
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
 
@@ -184,7 +185,7 @@ export async function PUT(
       .eq("id", user.id)
       .single();
 
-    if (!profile || (!profile.role?.startsWith("employer") && profile.role !== "admin")) {
+    if (!profile || (!isEmployerRole(profile.role) && !isAdminRole(profile.role))) {
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
 
@@ -198,7 +199,7 @@ export async function PUT(
       return NextResponse.json({ error: "Job not found." }, { status: 404 });
     }
 
-    if (profile.role !== "admin" && job.user_id !== user.id) {
+    if (!isAdminRole(profile.role) && job.user_id !== user.id) {
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
 

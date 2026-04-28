@@ -62,6 +62,13 @@ const BUCKET_TO_SET_LABEL: Record<DesignationBucket, string> = {
   Leader: "Set 4 - L&D Leader",
 };
 
+const BUCKET_TO_SET_KEY: Record<DesignationBucket, QuestionSetKey> = {
+  Beginner: "set1",
+  Intermediate: "set2",
+  Senior: "set3",
+  Leader: "set4",
+};
+
 export const COURSE_CATALOG = {
   C1: {
     code: "C1",
@@ -184,6 +191,10 @@ export function getAssessmentSetLabel(bucket?: string | null) {
   return BUCKET_TO_SET_LABEL[(bucket as DesignationBucket) || "Intermediate"] || BUCKET_TO_SET_LABEL.Intermediate;
 }
 
+export function getAssessmentSetKey(bucket?: string | null): QuestionSetKey {
+  return BUCKET_TO_SET_KEY[(bucket as DesignationBucket) || "Intermediate"] || "set2";
+}
+
 export function getRequiredScoreForBucket() {
   return PASS_THRESHOLD;
 }
@@ -295,6 +306,21 @@ export function buildWeightedAssessment(
   );
 
   return shuffle(deduped.slice(0, Math.min(totalQuestions, deduped.length)));
+}
+
+export function buildRoleMatchedAssessment(
+  questions: AssessmentQuestion[],
+  bucket?: string | null,
+  totalQuestions = DEFAULT_TOTAL_QUESTIONS
+) {
+  const targetSet = getAssessmentSetKey(bucket);
+  const matchedQuestions = questions.filter((question) => {
+    const setKey = (question.question_set?.toLowerCase() as QuestionSetKey | undefined) || "set1";
+    return setKey === targetSet;
+  });
+
+  const source = matchedQuestions.length > 0 ? matchedQuestions : questions;
+  return shuffle(source).slice(0, Math.min(totalQuestions, source.length));
 }
 
 export function getRecommendationType(score: number) {

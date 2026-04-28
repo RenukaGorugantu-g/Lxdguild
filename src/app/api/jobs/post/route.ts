@@ -1,13 +1,66 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { notifyUser, notifyAdmins } from "@/lib/notifications";
 import { buildInternalApplyValue } from "@/lib/job-apply";
+import { ensureUserProfile } from "@/lib/ensure-user-profile";
+import { isAdminRole, isEmployerRole } from "@/lib/profile-role";
 
 function hasMissingColumn(message: string, column: string) {
   return (
     message.includes(column) &&
     (message.includes("does not exist") || message.includes("Could not find"))
   );
+}
+
+function notifyJobPosted(userId: string, title: string, company: string, jobId?: string | null) {
+  queueMicrotask(() => {
+    void import("@/lib/notifications")
+      .then(({ notifyUser, notifyAdmins }) =>
+        Promise.allSettled([
+          notifyUser(
+            userId,
+            "job_posted",
+            "Job posted successfully",
+            `Your job posting for ${title} at ${company} is live. Candidates will be notified when they apply.`,
+            { job_id: jobId, title, company }
+          ),
+          notifyAdmins(
+            "job_posted_admin",
+            "Employer posted a new job",
+            `An employer posted a new job: ${title} at ${company}.`,
+            { job_id: jobId, title, company }
+          ),
+        ])
+      )
+      .catch((error) => {
+        console.error("Deferred job post notification failed:", error);
+      });
+  });
+}
+
+function notifyLegacyJobPosted(userId: string, title: string, company: string, jobId?: string | null) {
+  queueMicrotask(() => {
+    void import("@/lib/notifications")
+      .then(({ notifyUser, notifyAdmins }) =>
+        Promise.allSettled([
+          notifyUser(
+            userId,
+            "job_posted",
+            "Job posted successfully",
+            `Your job posting for ${title} at ${company} is live. Apply the latest jobs migrations to enable expiry and freshness tracking.`,
+            { job_id: jobId, title, company }
+          ),
+          notifyAdmins(
+            "job_posted_admin",
+            "Employer posted a new job",
+            `An employer posted a new job: ${title} at ${company}. The database is missing job lifecycle columns, so the job was saved in compatibility mode.`,
+            { job_id: jobId, title, company }
+          ),
+        ])
+      )
+      .catch((error) => {
+        console.error("Deferred compatibility job post notification failed:", error);
+      });
+  });
 }
 
 export async function POST(req: Request) {
@@ -29,22 +82,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
     }
 
-    const { data: profile, error: profileError } = await supabase
+    let { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .single();
 
+    if (!profile) {
+      const ensuredProfile = await ensureUserProfile(user);
+      if (ensuredProfile) {
+        profile = ensuredProfile;
+        profileError = null;
+      }
+    }
+
     if (profileError || !profile) {
       return NextResponse.json({ error: "Unable to verify user." }, { status: 500 });
     }
 
-    if (!profile.role?.startsWith("employer") && profile.role !== "admin") {
+    if (!isEmployerRole(profile.role) && !isAdminRole(profile.role)) {
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
 
     if (resolvedApplyUrl) {
-      const { data: existing } = await supabase.from("jobs").select("id").eq("apply_url", resolvedApplyUrl).single();
+      const { data: existing } = await supabase
+        .from("jobs")
+        .select("id")
+        .eq("apply_url", resolvedApplyUrl)
+        .maybeSingle();
       if (existing) {
         return NextResponse.json({ error: "This job has already been posted." }, { status: 409 });
       }
@@ -98,20 +163,7 @@ export async function POST(req: Request) {
 
         const legacyPostedJob = Array.isArray(legacyJob) ? legacyJob[0] : legacyJob;
 
-        await notifyUser(
-          user.id,
-          "job_posted",
-          "Job posted successfully",
-          `Your job posting for ${title} at ${company} is live. Apply the latest jobs migrations to enable expiry and freshness tracking.`,
-          { job_id: legacyPostedJob?.id, title, company }
-        );
-
-        await notifyAdmins(
-          "job_posted_admin",
-          "Employer posted a new job",
-          `An employer posted a new job: ${title} at ${company}. The database is missing job lifecycle columns, so the job was saved in compatibility mode.`,
-          { job_id: legacyPostedJob?.id, title, company }
-        );
+        notifyLegacyJobPosted(user.id, title, company, legacyPostedJob?.id);
 
         return NextResponse.json({
           success: true,
@@ -140,12 +192,7 @@ export async function POST(req: Request) {
           return NextResponse.json({ error: fallbackError.message || "Unable to post job." }, { status: 500 });
         }
 
-        await notifyAdmins(
-          'job_posted_admin',
-          'Employer posted a new job',
-          `A new employer job was posted: ${title} at ${company}.`,
-          { job_id: fallbackJob?.[0]?.id, title, company }
-        );
+        notifyJobPosted(user.id, title, company, fallbackJob?.[0]?.id);
 
         return NextResponse.json({
           success: true,
@@ -160,20 +207,7 @@ export async function POST(req: Request) {
 
     const job = Array.isArray(insertedJob) ? insertedJob[0] : insertedJob;
 
-    await notifyUser(
-      user.id,
-      'job_posted',
-      'Job posted successfully',
-      `Your job posting for ${title} at ${company} is live. Candidates will be notified when they apply.`,
-      { job_id: job?.id, title, company }
-    );
-
-    await notifyAdmins(
-      'job_posted_admin',
-      'Employer posted a new job',
-      `An employer posted a new job: ${title} at ${company}.`,
-      { job_id: job?.id, title, company }
-    );
+    notifyJobPosted(user.id, title, company, job?.id);
 
     return NextResponse.json({ success: true, job: job ? { id: job.id } : undefined });
   } catch (err: unknown) {

@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
+import { loadProfile } from "@/lib/load-profile";
 import { redirect } from "next/navigation";
 import { Briefcase, ChevronRight, FileText, Sparkles, UserCircle2 } from "lucide-react";
 import Link from "next/link";
@@ -13,22 +14,13 @@ export default async function CandidateProfilePage() {
 
   if (!user) redirect("/login");
 
-  let { data: profile } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", user.id)
-    .single();
+  const profile = await loadProfile<Record<string, unknown>>(supabase, user.id, "*");
 
   let resolvedProfile = profile;
   if (!resolvedProfile) {
     const ensuredProfile = await ensureUserProfile(user);
     if (ensuredProfile) {
-      const { data: refreshedProfile } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-      resolvedProfile = refreshedProfile;
+      resolvedProfile = await loadProfile<Record<string, unknown>>(supabase, user.id, "*");
     }
   }
 

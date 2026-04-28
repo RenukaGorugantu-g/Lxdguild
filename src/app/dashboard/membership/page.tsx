@@ -3,6 +3,8 @@ import { createClient } from "@/utils/supabase/server";
 import MembershipCheckout from "./MembershipCheckout";
 import { MEMBER_ANNUAL_PRICE_INR, formatMembershipDate, getMembershipState } from "@/lib/membership";
 
+export const dynamic = "force-dynamic";
+
 type MembershipPageProfile = {
   name?: string | null;
   email?: string | null;

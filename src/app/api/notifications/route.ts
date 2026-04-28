@@ -1,6 +1,16 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 
+function shouldTreatNotificationsAsOptional(code?: string, message?: string | null) {
+  const normalizedMessage = message || "";
+  return (
+    code === '42P01' ||
+    code === 'PGRST205' ||
+    normalizedMessage.includes('notifications') ||
+    normalizedMessage.includes('does not exist')
+  );
+}
+
 export async function GET() {
   const supabase = await createClient();
   const {
@@ -19,6 +29,10 @@ export async function GET() {
     .limit(50);
 
   if (error) {
+    if (shouldTreatNotificationsAsOptional(error.code, error.message)) {
+      console.warn('[api/notifications] returning empty list:', error.message);
+      return NextResponse.json({ notifications: [] });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
@@ -48,6 +62,10 @@ export async function PATCH(req: Request) {
     .eq('user_id', user.id);
 
   if (error) {
+    if (shouldTreatNotificationsAsOptional(error.code, error.message)) {
+      console.warn('[api/notifications] skipping patch:', error.message);
+      return NextResponse.json({ success: true, skipped: true });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

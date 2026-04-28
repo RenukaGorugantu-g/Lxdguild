@@ -177,3 +177,309 @@
  GET /dashboard 200 in 947ms (next.js: 5ms, proxy.ts: 161ms, application-code: 781ms)
  GET /api/notifications 500 in 350ms (next.js: 5ms, proxy.ts: 126ms, application-code: 220ms)
  GET /login 200 in 619ms (next.js: 103ms, proxy.ts: 27ms, application-code: 489ms)
+ POST /api/auth/login 200 in 2.0s (next.js: 289ms, proxy.ts: 458ms, application-code: 1293ms)
+ GET /dashboard 200 in 2.3s (next.js: 23ms, proxy.ts: 202ms, application-code: 2.1s)
+ GET /api/notifications 500 in 449ms (next.js: 10ms, proxy.ts: 164ms, application-code: 275ms)
+ GET /login 200 in 361ms (next.js: 12ms, proxy.ts: 28ms, application-code: 321ms)
+ POST /api/auth/login 200 in 2.1s (next.js: 70ms, proxy.ts: 459ms, application-code: 1577ms)
+ GET /dashboard 200 in 3.0s (next.js: 50ms, proxy.ts: 185ms, application-code: 2.8s)
+ GET /api/notifications 500 in 792ms (next.js: 61ms, proxy.ts: 371ms, application-code: 360ms)
+ GET /dashboard/employer/post-job 200 in 984ms (next.js: 295ms, proxy.ts: 361ms, application-code: 328ms)
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+ GET /api/notifications 500 in 497ms (next.js: 5ms, proxy.ts: 196ms, application-code: 296ms)
+○ Compiling /api/jobs/post ...
+ POST /api/jobs/post 500 in 33.9s (next.js: 32.3s, proxy.ts: 270ms, application-code: 1368ms)
+ GET /dashboard/employer/post-job 200 in 1181ms (next.js: 311ms, proxy.ts: 563ms, application-code: 306ms)
+ GET /dashboard/employer/post-job 200 in 281ms (next.js: 14ms, proxy.ts: 168ms, application-code: 99ms)
+ GET /dashboard/employer/post-job 200 in 1389ms (next.js: 33ms, proxy.ts: 352ms, application-code: 1004ms)
+ GET /api/notifications 500 in 539ms (next.js: 17ms, proxy.ts: 185ms, application-code: 337ms)
+ GET /dashboard/employer/post-job 200 in 802ms (next.js: 8ms, proxy.ts: 591ms, application-code: 203ms)
+ GET /api/notifications 500 in 402ms (next.js: 13ms, proxy.ts: 144ms, application-code: 245ms)
+ POST /api/jobs/post 500 in 425ms (next.js: 13ms, proxy.ts: 175ms, application-code: 237ms)
+ GET /login 200 in 357ms (next.js: 116ms, proxy.ts: 48ms, application-code: 193ms)
+ POST /api/auth/login 200 in 438ms (next.js: 25ms, proxy.ts: 15ms, application-code: 398ms)
+ GET /dashboard 200 in 1707ms (next.js: 58ms, proxy.ts: 167ms, application-code: 1482ms)
+ GET /api/notifications 500 in 372ms (next.js: 10ms, proxy.ts: 124ms, application-code: 238ms)
+○ Compiling /dashboard/membership ...
+ GET /dashboard/membership 200 in 11.9s (next.js: 10.6s, proxy.ts: 113ms, application-code: 1223ms)
+ GET /dashboard/membership 200 in 404ms (next.js: 8ms, proxy.ts: 171ms, application-code: 225ms)
+ GET /api/notifications 500 in 413ms (next.js: 34ms, proxy.ts: 136ms, application-code: 243ms)
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+○ Compiling /dashboard/jobs ...
+ GET /dashboard/jobs 200 in 1047ms (next.js: 7ms, proxy.ts: 379ms, application-code: 662ms)
+ GET /api/notifications 500 in 3.5s (next.js: 3.0s, proxy.ts: 246ms, application-code: 276ms)
+ GET /dashboard/jobs 200 in 15.1s (next.js: 8.4s, proxy.ts: 665ms, application-code: 6.0s)
+ GET /dashboard/jobs?view=freelance 200 in 3.4s (next.js: 151ms, proxy.ts: 287ms, application-code: 3.0s)
+ GET /dashboard/jobs?view=freelance&category=Instructional+Designer 200 in 1171ms (next.js: 7ms, proxy.ts: 181ms, application-code: 984ms)
+ GET /dashboard/jobs?view=freelance&category=eLearning+Developer 200 in 1969ms (next.js: 8ms, proxy.ts: 178ms, application-code: 1784ms)
+ GET /dashboard/jobs?category=eLearning+Developer 200 in 7.3s (next.js: 9ms, proxy.ts: 994ms, application-code: 6.3s)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 2.8s (next.js: 15ms, proxy.ts: 499ms, application-code: 2.3s)
+⨯ ./src/lib/ensure-user-profile.ts
+Error:   x Expected ',', got ';'
+    ,-[C:\Users\ADMIN\.gemini\antigravity\scratch\lxd-guild\app\academy\Lxd-website\src\lib\ensure-user-profile.ts:64:1]
+ 61 |         admin.from("jobs").select("id", { head: true, count: "exact" }).eq("user_id", user.id),
+ 62 |         admin.from("job_applications").select("id", { head: true, count: "exact" }).eq("user_id", user.id),
+ 63 |       ]),
+ 64 |     ] as const;
+    :               ^
+ 65 | 
+ 66 |   const existingProfile = existingProfileResult.data;
+ 67 |   const candidatePassStatus =
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/ensure-user-profile.ts
+./src/app/dashboard/employer/page.tsx
+○ Compiling /_error ...
+⨯ ./src/lib/ensure-user-profile.ts
+Error:   x Expected ',', got ';'
+    ,-[C:\Users\ADMIN\.gemini\antigravity\scratch\lxd-guild\app\academy\Lxd-website\src\lib\ensure-user-profile.ts:64:1]
+ 61 |         admin.from("jobs").select("id", { head: true, count: "exact" }).eq("user_id", user.id),
+ 62 |         admin.from("job_applications").select("id", { head: true, count: "exact" }).eq("user_id", user.id),
+ 63 |       ]),
+ 64 |     ] as const;
+    :               ^
+ 65 | 
+ 66 |   const existingProfile = existingProfileResult.data;
+ 67 |   const candidatePassStatus =
+    `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/lib/ensure-user-profile.ts
+./src/app/dashboard/employer/page.tsx
+ GET /dashboard/jobs?category=Curriculum+Developer 500 in 16.5s (next.js: 14.9s, proxy.ts: 900ms, application-code: 667ms)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 3.9s (next.js: 55ms, proxy.ts: 477ms, application-code: 3.3s)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 11.4s (next.js: 4.6s, proxy.ts: 291ms, application-code: 6.6s)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 3.3s (next.js: 6ms, proxy.ts: 282ms, application-code: 3.1s)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 4.4s (next.js: 5ms, proxy.ts: 470ms, application-code: 3.9s)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 11.2s (next.js: 3.6s, proxy.ts: 213ms, application-code: 7.4s)
+ GET /dashboard/jobs?view=freelance&category=L%26D+Manager 200 in 9.9min (next.js: 20ms, proxy.ts: 1037ms, application-code: 9.9min)
+○ Compiling /api/notifications ...
+ GET /api/notifications 500 in 5.1s (next.js: 4.0s, proxy.ts: 471ms, application-code: 574ms)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 4.8s (next.js: 3.3s, proxy.ts: 906ms, application-code: 582ms)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 644ms (next.js: 7ms, proxy.ts: 131ms, application-code: 505ms)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 1076ms (next.js: 13ms, proxy.ts: 346ms, application-code: 717ms)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 739ms (next.js: 5ms, proxy.ts: 174ms, application-code: 560ms)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 1887ms (next.js: 196ms, proxy.ts: 435ms, application-code: 1256ms)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 1145ms (next.js: 7ms, proxy.ts: 183ms, application-code: 956ms)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 1724ms (next.js: 212ms, proxy.ts: 188ms, application-code: 1323ms)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 1616ms (next.js: 144ms, proxy.ts: 176ms, application-code: 1295ms)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 4.8s (next.js: 19ms, proxy.ts: 283ms, application-code: 4.5s)
+○ Compiling /api/notifications ...
+ GET /api/notifications 500 in 9.9s (next.js: 6.6s, proxy.ts: 171ms, application-code: 3.1s)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 5.7s (next.js: 687ms, proxy.ts: 1452ms, application-code: 3.5s)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 2.5s (next.js: 11ms, proxy.ts: 414ms, application-code: 2.1s)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 2.9s (next.js: 434ms, proxy.ts: 294ms, application-code: 2.1s)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 1770ms (next.js: 507ms, proxy.ts: 216ms, application-code: 1047ms)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 2.5s (next.js: 9ms, proxy.ts: 206ms, application-code: 2.2s)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 2.2s (next.js: 7ms, proxy.ts: 595ms, application-code: 1636ms)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 6.1s (next.js: 11ms, proxy.ts: 304ms, application-code: 5.7s)
+○ Compiling /api/notifications ...
+ GET /api/notifications 500 in 6.4s (next.js: 5.4s, proxy.ts: 363ms, application-code: 642ms)
+ GET /dashboard/jobs?category=Curriculum+Developer 200 in 3.8s (next.js: 177ms, proxy.ts: 542ms, application-code: 3.1s)
+ GET /api/notifications 500 in 382ms (next.js: 6ms, proxy.ts: 146ms, application-code: 231ms)
+○ Compiling /login ...
+ GET /login 200 in 13.4s (next.js: 11.8s, proxy.ts: 24ms, application-code: 1512ms)
+ GET /login 200 in 768ms (next.js: 29ms, proxy.ts: 81ms, application-code: 658ms)
+○ Compiling /api/auth/login ...
+ POST /api/auth/login 200 in 29.6s (next.js: 28.6s, proxy.ts: 182ms, application-code: 824ms)
+○ Compiling /dashboard ...
+ GET /dashboard 200 in 14.9s (next.js: 6.8s, proxy.ts: 165ms, application-code: 7.9s)
+○ Compiling /api/notifications ...
+ GET /api/notifications 500 in 6.3s (next.js: 5.7s, proxy.ts: 177ms, application-code: 446ms)
+ GET /dashboard/jobs 200 in 2.4s (next.js: 152ms, proxy.ts: 216ms, application-code: 2.1s)
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+ GET /api/notifications 500 in 493ms (next.js: 10ms, proxy.ts: 145ms, application-code: 339ms)
+ GET /dashboard/jobs?category=eLearning+Developer 200 in 1489ms (next.js: 6ms, proxy.ts: 180ms, application-code: 1303ms)
+ GET /dashboard/membership 200 in 1474ms (next.js: 394ms, proxy.ts: 620ms, application-code: 459ms)
+ GET /api/notifications 500 in 329ms (next.js: 16ms, proxy.ts: 118ms, application-code: 194ms)
+ GET /dashboard/membership 200 in 4.4s (next.js: 1198ms, proxy.ts: 486ms, application-code: 2.7s)
+ GET /login 200 in 1553ms (next.js: 144ms, proxy.ts: 59ms, application-code: 1350ms)
+ GET /login? 200 in 7.1s (next.js: 3.1s, proxy.ts: 2.8s, application-code: 1232ms)
+○ Compiling /api/auth/login ...
+ POST /api/auth/login 200 in 12.5s (next.js: 11.7s, proxy.ts: 56ms, application-code: 683ms)
+ GET /dashboard 200 in 5.6s (next.js: 194ms, proxy.ts: 146ms, application-code: 5.3s)
+○ Compiling /api/notifications ...
+ GET /api/notifications 500 in 5.6s (next.js: 4.6s, proxy.ts: 163ms, application-code: 915ms)
+ GET /dashboard 200 in 1990ms (next.js: 171ms, proxy.ts: 209ms, application-code: 1610ms)
+ GET /api/notifications 500 in 468ms (next.js: 7ms, proxy.ts: 126ms, application-code: 335ms)
+ GET /login 200 in 329ms (next.js: 31ms, proxy.ts: 15ms, application-code: 282ms)
+ POST /api/auth/login 200 in 449ms (next.js: 31ms, proxy.ts: 35ms, application-code: 384ms)
+ GET /dashboard 200 in 2.2s (next.js: 7ms, proxy.ts: 210ms, application-code: 2.0s)
+ GET /api/notifications 500 in 458ms (next.js: 5ms, proxy.ts: 243ms, application-code: 210ms)
+ GET /dashboard/membership 200 in 1160ms (next.js: 405ms, proxy.ts: 170ms, application-code: 584ms)
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+ GET /api/notifications 500 in 392ms (next.js: 5ms, proxy.ts: 137ms, application-code: 249ms)
+ GET /dashboard/membership 200 in 4.7s (next.js: 1472ms, proxy.ts: 647ms, application-code: 2.6s)
+ GET /dashboard/membership 200 in 2.1s (next.js: 11ms, proxy.ts: 314ms, application-code: 1742ms)
+○ Compiling /api/notifications ...
+ GET /api/notifications 500 in 13.1s (next.js: 12.4s, proxy.ts: 195ms, application-code: 480ms)
+ GET /dashboard/membership 200 in 555ms (next.js: 229ms, proxy.ts: 270ms, application-code: 56ms)
+ GET /dashboard/membership 200 in 949ms (next.js: 8ms, proxy.ts: 241ms, application-code: 701ms)
+○ Compiling /dashboard/resources ...
+ GET /dashboard/resources 200 in 1318ms (next.js: 13ms, proxy.ts: 183ms, application-code: 1122ms)
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+ GET /api/notifications 500 in 671ms (next.js: 27ms, proxy.ts: 151ms, application-code: 493ms)
+ GET /dashboard/resources 200 in 16.0s (next.js: 11.8s, proxy.ts: 137ms, application-code: 4.1s)
+ GET /login 200 in 1479ms (next.js: 93ms, proxy.ts: 47ms, application-code: 1339ms)
+ GET /dashboard/resources 200 in 14.3s (next.js: 9.5s, proxy.ts: 388ms, application-code: 4.4s)
+○ Compiling /api/auth/login ...
+ POST /api/auth/login 200 in 13.0s (next.js: 12.5s, proxy.ts: 41ms, application-code: 453ms)
+ GET /dashboard 200 in 2.7s (next.js: 172ms, proxy.ts: 144ms, application-code: 2.4s)
+ GET /api/notifications 500 in 3.7s (next.js: 3.3s, proxy.ts: 111ms, application-code: 273ms)
+○ Compiling /dashboard/employer ...
+ GET /dashboard/employer 200 in 9.9s (next.js: 8.6s, proxy.ts: 187ms, application-code: 1166ms)
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+ GET /api/notifications 500 in 510ms (next.js: 22ms, proxy.ts: 124ms, application-code: 364ms)
+ GET /dashboard 200 in 1104ms (next.js: 22ms, proxy.ts: 142ms, application-code: 940ms)
+ GET /api/notifications 500 in 386ms (next.js: 4ms, proxy.ts: 160ms, application-code: 222ms)
+ GET /dashboard/resources 200 in 1303ms (next.js: 32ms, proxy.ts: 211ms, application-code: 1060ms)
+ GET /api/notifications 500 in 332ms (next.js: 5ms, proxy.ts: 117ms, application-code: 210ms)
+○ Compiling /dashboard/employer/profile ...
+ GET /dashboard/employer/profile 200 in 5.7s (next.js: 4.7s, proxy.ts: 166ms, application-code: 813ms)
+ GET /api/notifications 500 in 1272ms (next.js: 32ms, proxy.ts: 644ms, application-code: 596ms)
+ GET /dashboard 200 in 1651ms (next.js: 34ms, proxy.ts: 151ms, application-code: 1466ms)
+ GET /dashboard 200 in 1625ms (next.js: 59ms, proxy.ts: 257ms, application-code: 1309ms)
+ GET /api/notifications 500 in 326ms (next.js: 5ms, proxy.ts: 113ms, application-code: 208ms)
+ GET /login 200 in 1587ms (next.js: 90ms, proxy.ts: 27ms, application-code: 1470ms)
+○ Compiling /api/auth/login ...
+ POST /api/auth/login 200 in 29.0s (next.js: 27.8s, proxy.ts: 236ms, application-code: 985ms)
+ GET /dashboard 200 in 3.3s (next.js: 373ms, proxy.ts: 207ms, application-code: 2.7s)
+○ Compiling /api/notifications ...
+ GET /api/notifications 500 in 4.8s (next.js: 4.1s, proxy.ts: 152ms, application-code: 514ms)
+ GET /dashboard 200 in 730ms (next.js: 385ms, proxy.ts: 141ms, application-code: 204ms)
+ GET /dashboard 200 in 2.2s (next.js: 10ms, proxy.ts: 149ms, application-code: 2.1s)
+○ Compiling /dashboard/candidate/applications ...
+ GET /dashboard 200 in 14.5s (next.js: 11.5s, proxy.ts: 2.5s, application-code: 538ms)
+ GET /dashboard/candidate/applications 200 in 35.5s (next.js: 32.8s, proxy.ts: 150ms, application-code: 2.5s)
+ GET /dashboard 200 in 3.6s (next.js: 7ms, proxy.ts: 489ms, application-code: 3.1s)
+ GET /dashboard 200 in 1308ms (next.js: 7ms, proxy.ts: 322ms, application-code: 978ms)
+ GET /dashboard 200 in 1310ms (next.js: 11ms, proxy.ts: 393ms, application-code: 906ms)
+ GET /dashboard/jobs 200 in 2.8s (next.js: 8ms, proxy.ts: 112ms, application-code: 2.6s)
+ GET /dashboard/jobs 200 in 5.2s (next.js: 72ms, proxy.ts: 197ms, application-code: 4.9s)
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+ GET /api/notifications 500 in 568ms (next.js: 57ms, proxy.ts: 166ms, application-code: 345ms)
+○ Compiling /dashboard/candidate/profile ...
+ GET /dashboard/candidate/profile 200 in 35.0s (next.js: 27.2s, proxy.ts: 283ms, application-code: 7.6s)
+ GET /api/notifications 500 in 1309ms (next.js: 390ms, proxy.ts: 332ms, application-code: 587ms)
+ GET /login 200 in 2.4s (next.js: 102ms, proxy.ts: 28ms, application-code: 2.3s)
+○ Compiling /api/auth/login ...
+ POST /api/auth/login 200 in 11.4s (next.js: 10.8s, proxy.ts: 45ms, application-code: 622ms)
+ GET /dashboard 200 in 2.9s (next.js: 238ms, proxy.ts: 129ms, application-code: 2.6s)
+ GET /api/notifications 500 in 386ms (next.js: 14ms, proxy.ts: 113ms, application-code: 260ms)
+ GET /login 200 in 580ms (next.js: 76ms, proxy.ts: 32ms, application-code: 472ms)
+ GET /login? 200 in 496ms (next.js: 7ms, proxy.ts: 13ms, application-code: 475ms)
+ POST /api/auth/login 200 in 487ms (next.js: 76ms, proxy.ts: 67ms, application-code: 344ms)
+ GET /dashboard 200 in 1305ms (next.js: 10ms, proxy.ts: 133ms, application-code: 1162ms)
+ GET /api/notifications 500 in 378ms (next.js: 12ms, proxy.ts: 145ms, application-code: 221ms)
+ GET /login 200 in 27.1s (next.js: 15.3s, proxy.ts: 376ms, application-code: 11.4s)
+ POST /api/auth/login 200 in 1492ms (next.js: 164ms, proxy.ts: 189ms, application-code: 1140ms)
+ GET /dashboard 200 in 16.8s (next.js: 509ms, proxy.ts: 449ms, application-code: 15.8s)
+ GET /api/notifications 500 in 792ms (next.js: 28ms, proxy.ts: 249ms, application-code: 514ms)
+ GET /login 200 in 668ms (next.js: 12ms, proxy.ts: 16ms, application-code: 640ms)
+○ Compiling / ...
+ GET / 200 in 28.4s (next.js: 16.1s, proxy.ts: 6.4s, application-code: 5.8s)
+ GET /login 200 in 2.4s (next.js: 1887ms, proxy.ts: 37ms, application-code: 507ms)
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+○ Compiling /api/auth/login ...
+ POST /api/auth/login 200 in 8.9s (next.js: 8.0s, proxy.ts: 87ms, application-code: 751ms)
+ GET /dashboard 200 in 4.2s (next.js: 500ms, proxy.ts: 230ms, application-code: 3.5s)
+○ Compiling /api/notifications ...
+ GET /api/notifications 500 in 4.4s (next.js: 4.0s, proxy.ts: 129ms, application-code: 299ms)
+ GET /dashboard 200 in 6.9s (next.js: 138ms, proxy.ts: 243ms, application-code: 6.5s)
+ GET /api/notifications 500 in 525ms (next.js: 8ms, proxy.ts: 289ms, application-code: 228ms)
+ GET /dashboard 200 in 4.2s (next.js: 17ms, proxy.ts: 450ms, application-code: 3.7s)
+ GET /api/notifications 500 in 5.3s (next.js: 205ms, proxy.ts: 232ms, application-code: 4.9s)
+ GET /dashboard 200 in 3.3s (next.js: 1272ms, proxy.ts: 403ms, application-code: 1637ms)
+○ Compiling /dashboard/candidate ...
+ GET /dashboard/jobs 200 in 41s (next.js: 33.4s, proxy.ts: 487ms, application-code: 7.0s)
+ GET /dashboard/candidate 200 in 58s (next.js: 51s, proxy.ts: 341ms, application-code: 7.0s)
+ GET /dashboard/candidate 200 in 38.6s (next.js: 29.4s, proxy.ts: 2.2s, application-code: 7.0s)
+ GET /login 200 in 2.6s (next.js: 246ms, proxy.ts: 37ms, application-code: 2.3s)
+○ Compiling /api/auth/login ...
+ POST /api/auth/login 200 in 17.3s (next.js: 14.9s, proxy.ts: 46ms, application-code: 2.3s)
+ GET /dashboard 307 in 21.8s (next.js: 2.7s, proxy.ts: 10.0s, application-code: 9.1s)
+○ Compiling /dashboard/candidate ...
+ GET /dashboard/candidate 200 in 52s (next.js: 41s, proxy.ts: 822ms, application-code: 10.0s)
+○ Compiling /api/notifications ...
+ GET /api/notifications 500 in 61s (next.js: 57s, proxy.ts: 1961ms, application-code: 1703ms)
+ GET /dashboard/candidate/profile 200 in 54s (next.js: 44s, proxy.ts: 5.6s, application-code: 3.6s)
+ GET /dashboard/candidate/profile 200 in 2.5s (next.js: 694ms, proxy.ts: 181ms, application-code: 1597ms)
+ GET /api/notifications 500 in 531ms (next.js: 34ms, proxy.ts: 168ms, application-code: 329ms)
+ GET /api/notifications 500 in 1272ms (next.js: 306ms, proxy.ts: 463ms, application-code: 503ms)
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+ GET /dashboard 200 in 8.8s (next.js: 1309ms, proxy.ts: 2.1s, application-code: 5.4s)
+ GET /dashboard/candidate 200 in 3.1s (next.js: 736ms, proxy.ts: 364ms, application-code: 1960ms)
+ GET /dashboard/candidate 200 in 2.0s (next.js: 25ms, proxy.ts: 370ms, application-code: 1610ms)
+ GET /api/notifications 500 in 499ms (next.js: 7ms, proxy.ts: 192ms, application-code: 300ms)
+ GET / 200 in 6.0s (next.js: 1599ms, proxy.ts: 77ms, application-code: 4.4s)
+ GET /login 200 in 251ms (next.js: 47ms, proxy.ts: 18ms, application-code: 185ms)
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+ GET /dashboard 200 in 3.7s (next.js: 107ms, proxy.ts: 624ms, application-code: 3.0s)
+ GET /dashboard 200 in 2.2s (next.js: 12ms, proxy.ts: 633ms, application-code: 1516ms)
+○ Compiling /api/notifications ...
+ GET /dashboard/candidate 200 in 13.2s (next.js: 48ms, proxy.ts: 345ms, application-code: 12.8s)
+ GET /api/notifications 500 in 23.6s (next.js: 21.4s, proxy.ts: 387ms, application-code: 1861ms)
+ GET /dashboard/candidate 200 in 24.8s (next.js: 21.1s, proxy.ts: 412ms, application-code: 3.4s)
+ GET /api/notifications 500 in 579ms (next.js: 13ms, proxy.ts: 194ms, application-code: 372ms)
+○ Compiling /dashboard/membership ...
+ GET /dashboard/membership 200 in 23.3s (next.js: 20.2s, proxy.ts: 141ms, application-code: 3.0s)
+ GET /dashboard/membership 200 in 463ms (next.js: 12ms, proxy.ts: 119ms, application-code: 333ms)
+ GET /api/notifications 500 in 383ms (next.js: 37ms, proxy.ts: 120ms, application-code: 226ms)
+○ Compiling /dashboard/candidate/applications ...
+ GET /dashboard/candidate/applications 200 in 21.7s (next.js: 19.4s, proxy.ts: 567ms, application-code: 1725ms)
+ GET /dashboard/candidate/applications 200 in 469ms (next.js: 8ms, proxy.ts: 136ms, application-code: 325ms)
+ GET /api/notifications 500 in 3.1s (next.js: 2.7s, proxy.ts: 136ms, application-code: 220ms)
+ GET /login 200 in 873ms (next.js: 109ms, proxy.ts: 14ms, application-code: 750ms)
+ GET /dashboard 200 in 1842ms (next.js: 36ms, proxy.ts: 147ms, application-code: 1659ms)
+ GET /dashboard 200 in 1681ms (next.js: 5ms, proxy.ts: 123ms, application-code: 1553ms)
+○ Compiling /dashboard/employer ...
+ GET /api/notifications 500 in 7.4s (next.js: 5.5s, proxy.ts: 1529ms, application-code: 382ms)
+ GET /dashboard/employer 200 in 8.3s (next.js: 7.3s, proxy.ts: 127ms, application-code: 915ms)
+ GET /dashboard/employer 200 in 770ms (next.js: 5ms, proxy.ts: 103ms, application-code: 662ms)
+ GET /dashboard/employer 200 in 955ms (next.js: 5ms, proxy.ts: 221ms, application-code: 728ms)
+[browser] Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+ GET /api/notifications 500 in 324ms (next.js: 3ms, proxy.ts: 100ms, application-code: 222ms)
+○ Compiling /dashboard/employer/post-job ...
+ GET /dashboard/employer/post-job 200 in 11.2s (next.js: 10.2s, proxy.ts: 673ms, application-code: 308ms)
+ GET /dashboard/employer/post-job 200 in 408ms (next.js: 8ms, proxy.ts: 185ms, application-code: 215ms)
+ GET /api/notifications 500 in 5.3s (next.js: 4.9s, proxy.ts: 153ms, application-code: 260ms)
+○ Compiling /api/jobs/post ...
+ GET /dashboard/employer/post-job 200 in 1729ms (next.js: 469ms, proxy.ts: 159ms, application-code: 1102ms)
+ POST /api/jobs/post 500 in 14.7s (next.js: 9.9s, proxy.ts: 724ms, application-code: 4.1s)
+
+<--- Last few GCs --->
+
+[23896:0000029F7A47D000] 53510066 ms: Mark-Compact 3971.4 (4036.2) -> 3964.4 (4036.4) MB, pooled: 2 MB, 2242.23 / 0.42 ms  (average mu = 0.298, current mu = 0.233) task; scavenge might not succeed
+[23896:0000029F7A47D000] 53514006 ms: Mark-Compact 3971.0 (4036.7) -> 3964.9 (4036.4) MB, pooled: 2 MB, 3232.69 / 0.57 ms  (average mu = 0.231, current mu = 0.180) task; scavenge might not succeed
+
+FATAL ERROR: Ineffective mark-compacts near heap limit Allocation failed - JavaScript heap out of memory
+----- Native stack trace -----
+
+ 1: 00007FF669CAC44F node::OnFatalError+1343
+ 2: 00007FF66A8F6217 v8::Function::NewInstance+423
+ 3: 00007FF66A6F6C07 v8::base::AddressSpaceReservation::AddressSpaceReservation+322071
+ 4: 00007FF66A6FA914 v8::base::AddressSpaceReservation::AddressSpaceReservation+337700
+ 5: 00007FF66A70986C v8::internal::StrongRootAllocatorBase::deallocate_impl+16604
+ 6: 00007FF66A7090AB v8::internal::StrongRootAllocatorBase::deallocate_impl+14619
+ 7: 00007FF66BB8F8ED v8::base::UnsignedDivisionByConstant<unsigned __int64>+2794685
+ 8: 00007FF66A6F46D0 v8::base::AddressSpaceReservation::AddressSpaceReservation+312544
+ 9: 00007FF66A6A5082 EVP_PKEY_asn1_set_get_priv_key+86258
+10: 00007FF669BFF0CA node::GetNodeReport+99354
+11: 00007FF669BFD8B0 node::GetNodeReport+93184
+12: 00007FF66A95D81B uv_run+1867
+13: 00007FF66A95D38F uv_run+703
+14: 00007FF669DBECAF node::DecodeWrite+351
+15: 00007FF669C3B416 node::MultiIsolatePlatform::DisposeIsolate+244262
+16: 00007FF669D0726C node::Start+1052
+17: 00007FF66AD250C2 AES_cbc_encrypt+2546
+18: 00007FF66BB98FF4 v8::base::UnsignedDivisionByConstant<unsigned __int64>+2833348
+19: 00007FFF30647374 BaseThreadInitThunk+20
+20: 00007FFF3247CC91 RtlUserThreadStart+33
+[?25h

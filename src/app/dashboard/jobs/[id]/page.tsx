@@ -2,6 +2,8 @@ import { createClient } from "@/utils/supabase/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { deriveRoleKeyword, scoreSimilarJob } from "@/lib/job-preferences";
+import { ensureUserProfile } from "@/lib/ensure-user-profile";
+import { loadProfile } from "@/lib/load-profile";
 import { notFound, redirect } from "next/navigation";
 import { MapPin, Building, Calendar, ArrowLeft, CheckCircle, Clock3 } from "lucide-react";
 import Link from "next/link";
@@ -29,12 +31,38 @@ type ApplicantProfile = {
   email: string | null;
 };
 
+type ViewerProfile = {
+  id: string;
+  role?: string | null;
+  name?: string | null;
+  headline?: string | null;
+  email?: string | null;
+  skills?: string[] | null;
+};
+
 type SuggestedJob = {
   id: string;
   title: string;
   company: string | null;
   location: string | null;
   expires_at: string | null;
+};
+
+type JobDetailRecord = {
+  id: string;
+  title: string;
+  description: string | null;
+  company: string | null;
+  location: string | null;
+  apply_url?: string | null;
+  user_id?: string | null;
+  external_posted_at?: string | null;
+  imported_at?: string | null;
+  created_at?: string | null;
+  expires_at?: string | null;
+  is_active?: boolean | null;
+  deletion_request_status?: string | null;
+  deleted_at?: string | null;
 };
 
 export default async function JobDetailPage({ params }: { params: { id: string } }) {
@@ -44,32 +72,63 @@ export default async function JobDetailPage({ params }: { params: { id: string }
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: job } = await supabase
+  let profile = await loadProfile<ViewerProfile>(
+    supabase,
+    user.id,
+    "id, role, name, headline, email, skills"
+  );
+
+  if (!profile) {
+    const ensuredProfile = await ensureUserProfile(user);
+    if (ensuredProfile) {
+      profile = await loadProfile<ViewerProfile>(
+        supabase,
+        user.id,
+        "id, role, name, headline, email, skills"
+      );
+    }
+  }
+
+  if (!profile) {
+    redirect("/dashboard");
+  }
+
+  const jobQuery = await supabase
     .from("jobs")
     .select("id, title, description, company, location, apply_url, user_id, external_posted_at, imported_at, created_at, expires_at, is_active, deletion_request_status, deleted_at")
     .eq("id", id)
     .single();
+  let job = jobQuery.data as JobDetailRecord | null;
+
+  if (jobQuery.error?.code === "42703") {
+    const fallbackJobQuery = await supabase
+      .from("jobs")
+      .select("id, title, description, company, location, apply_url, user_id, created_at")
+      .eq("id", id)
+      .single();
+
+    job = fallbackJobQuery.data
+      ? {
+          ...fallbackJobQuery.data,
+          external_posted_at: null,
+          imported_at: fallbackJobQuery.data.created_at,
+          expires_at: null,
+          is_active: true,
+          deletion_request_status: "none",
+          deleted_at: null,
+        }
+      : null;
+  }
 
   if (!job) notFound();
 
   const isJobOwner = user.id === job.user_id;
   const {
-    canViewJobBoard,
     canApplyToJobs,
     isFreeAccessCandidate,
     freeApplicationsRemaining,
     lockReason,
   } = await getJobBoardAccessForUser(supabase, user.id, profile);
-
-  if (!canViewJobBoard && !isJobOwner) {
-    redirect("/dashboard");
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("id, role, name, headline, email")
-    .eq("id", user.id)
-    .single();
 
   if (job.deleted_at && profile?.role !== "admin" && !isJobOwner) {
     notFound();
@@ -90,25 +149,27 @@ export default async function JobDetailPage({ params }: { params: { id: string }
     .select("id")
     .eq("job_id", id)
     .eq("user_id", user.id)
-    .single();
+    .maybeSingle();
 
-  const { data: savedCompany } = !isJobOwner
+  const savedCompanyQuery = !isJobOwner && job.company
     ? await supabase
         .from("saved_companies")
         .select("id")
         .eq("user_id", user.id)
         .eq("company_name", job.company)
         .maybeSingle()
-    : { data: null };
+    : { data: null, error: null };
+  const savedCompany = savedCompanyQuery.error?.code === "42P01" ? null : savedCompanyQuery.data;
 
-  const { data: followedRole } = !isJobOwner
+  const followedRoleQuery = !isJobOwner
     ? await supabase
         .from("followed_job_roles")
         .select("id")
         .eq("user_id", user.id)
         .eq("keyword", roleKeyword)
         .maybeSingle()
-    : { data: null };
+    : { data: null, error: null };
+  const followedRole = followedRoleQuery.error?.code === "42P01" ? null : followedRoleQuery.data;
 
   const { data: applicants } = isJobOwner
       ? await supabase

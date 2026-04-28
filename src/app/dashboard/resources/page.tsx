@@ -1,9 +1,12 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { syncResourceCatalog } from "@/lib/resource-catalog";
+import { getResourceSlug, syncResourceCatalog } from "@/lib/resource-catalog";
 import { getMembershipState } from "@/lib/membership";
+import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import ResourcesCatalog from "./ResourcesCatalog";
+
+export const dynamic = "force-dynamic";
 
 type ResourcesPageProfile = {
   role?: string | null;
@@ -22,6 +25,7 @@ export default async function ResourcesPage() {
   if (!user) redirect("/login");
 
   await syncResourceCatalog();
+  await ensureUserProfile(user);
 
   const [profileResult, resourcesResult] = await Promise.all([
     supabase
@@ -51,7 +55,7 @@ export default async function ResourcesPage() {
     title: resource.title,
     category: resource.category,
     premiumOnly: resource.premium_only,
-    fileLink: resource.file_link,
+    fileLink: `/members/resources/${getResourceSlug(resource.file_link)}`,
   }));
 
   return (

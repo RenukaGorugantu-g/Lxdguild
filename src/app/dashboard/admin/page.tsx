@@ -10,11 +10,11 @@ type AdminProfile = {
   [key: string]: unknown;
 };
 
-export default async function AdminDashboard({ profile: initialProfile }: { profile?: AdminProfile | null }) {
+export default async function AdminDashboard() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  let profile = initialProfile;
+  let profile: AdminProfile | null = null;
   if (!profile && user) {
     const { data } = await supabase
       .from("profiles")
@@ -115,4 +115,3 @@ function KpiCard({ title, value, icon, trend }: { title: string, value: string |
     </div>
   )
 }
-

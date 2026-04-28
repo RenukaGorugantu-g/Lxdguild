@@ -2,6 +2,29 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { notifyUser, notifyAdmins } from '@/lib/notifications'
 
+async function unlockCandidateReattempt(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
+  const { error: candError } = await supabase
+    .from('candidates')
+    .update({ reattempt_allowed: true })
+    .eq('user_id', userId);
+
+  if (candError) {
+    console.error('Failed to unlock candidate reattempt:', candError.message);
+  }
+
+  const { error: roleError } = await supabase
+    .from('profiles')
+    .update({
+      role: 'candidate_onhold',
+      verification_status: 'unverified',
+    })
+    .eq('id', userId);
+
+  if (roleError) {
+    console.error('Failed to keep candidate in reattempt state after certificate approval:', roleError.message);
+  }
+}
+
 export async function POST(req: Request) {
   const body = await req.json();
   const { certId, userId, action } = body;
@@ -39,23 +62,7 @@ export async function POST(req: Request) {
   }
 
   if (action === 'approved') {
-    const { error: candError } = await supabase
-      .from('candidates')
-      .update({ reattempt_allowed: true })
-      .eq('user_id', userId);
-
-    if (candError) {
-      console.error('Failed to unlock candidate reattempt:', candError.message);
-    }
-
-    const { error: roleError } = await supabase
-      .from('profiles')
-      .update({ role: 'candidate_mvp' })
-      .eq('id', userId);
-
-    if (roleError) {
-      console.error('Failed to promote candidate role after certificate approval:', roleError.message);
-    }
+    await unlockCandidateReattempt(supabase, userId);
   }
 
   await notifyUser(userId, 'certificate_reviewed', 'Certificate review completed', `Your certificate has been ${action}.`, {

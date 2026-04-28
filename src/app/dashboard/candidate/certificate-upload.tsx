@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { Upload, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 
@@ -10,7 +11,17 @@ export default function CertificateUpload({ userId }: { userId: string }) {
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [submitOutcome, setSubmitOutcome] = useState<'pending_review' | 'approved'>('pending_review');
   const [validationHint, setValidationHint] = useState<string>('');
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const supabase = createClient();
+  const isPdf = file?.type === "application/pdf" || file?.name.toLowerCase().endsWith(".pdf");
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const handleUpload = async () => {
     if (!file) return;
@@ -50,13 +61,13 @@ export default function CertificateUpload({ userId }: { userId: string }) {
         if (!result.templateLoaded) {
           setValidationHint('Template image not loaded on server. Check CERTIFICATE_TEMPLATE_IMAGE_PATH.');
         } else if (!result.uploadedLoaded) {
-          setValidationHint('Uploaded file could not be loaded for validation. Check certificate storage read access.');
+          setValidationHint('Uploaded file could not be read for validation, so it has been left pending for admin review.');
         } else if (typeof result.similarityScore === 'number') {
           setValidationHint(
             `Auto-match score ${result.similarityScore.toFixed(3)} is below threshold ${Number(result.minSimilarity ?? 0.9).toFixed(3)}.`
           );
         } else {
-          setValidationHint('Could not compute image similarity for this file. Please retry with a clear PNG/JPG.');
+          setValidationHint('Auto image matching could not be completed for this file, so it has been left pending for admin review.');
         }
       } else {
         setValidationHint('');
@@ -98,14 +109,21 @@ export default function CertificateUpload({ userId }: { userId: string }) {
         <h3 className="text-lg font-bold">Submit External Certificate</h3>
       </div>
       <p className="text-sm text-zinc-500">
-        Upload your certificate here. PNG/JPG are auto-validated against the LXD certificate template; unmatched files will go to admin review.
+        Upload your certificate here. PDF, PNG, and JPG files are checked against the LXD certificate template, and only low-score or unreadable files stay pending for admin review.
       </p>
       
       <div className="relative group">
         <input 
           type="file" 
           accept=".pdf,.jpg,.png" 
-          onChange={(e) => setFile(e.target.files?.[0] || null)}
+          onChange={(e) => {
+            const nextFile = e.target.files?.[0] || null;
+            if (previewUrl) {
+              URL.revokeObjectURL(previewUrl);
+            }
+            setFile(nextFile);
+            setPreviewUrl(nextFile && nextFile.type.startsWith("image/") ? URL.createObjectURL(nextFile) : null);
+          }}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
         />
         <div className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl p-8 text-center group-hover:border-brand-500 transition-colors">
@@ -115,6 +133,25 @@ export default function CertificateUpload({ userId }: { userId: string }) {
           </p>
         </div>
       </div>
+
+      {previewUrl ? (
+        <div className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50">
+          <Image
+            src={previewUrl}
+            alt="Certificate preview"
+            width={1200}
+            height={900}
+            unoptimized
+            className="max-h-72 w-full object-contain bg-white"
+          />
+        </div>
+      ) : file ? (
+        <p className="text-xs text-zinc-500">
+          {isPdf
+            ? "PDF selected. We will score-check the first page of the PDF against the certificate template."
+            : "Image selected. Clear PNG/JPG certificate images usually validate best."}
+        </p>
+      ) : null}
 
       {status === 'error' && (
         <p className="text-xs text-red-500 flex items-center gap-1">

@@ -1,10 +1,10 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
-import CandidateDashboard from "./candidate/page";
-import EmployerDashboard from "./employer/page";
-import AdminDashboard from "./admin/page";
 import { getBaseRole } from "@/lib/profile-role";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
+import { loadProfile } from "@/lib/load-profile";
+
+export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -14,14 +14,29 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  let { data: profile } = await supabase
-    .from("profiles")
-    .select("role, name")
-    .eq("id", user.id)
-    .single();
+  let profile = await loadProfile<{
+    role?: string | null;
+    name?: string | null;
+    membership_status?: string | null;
+    membership_plan?: string | null;
+    membership_expires_at?: string | null;
+  }>(supabase, user.id, "role, name, membership_status, membership_plan, membership_expires_at");
 
   if (!profile) {
-    profile = await ensureUserProfile(user);
+    const metadataRole =
+      typeof user.user_metadata?.role === "string" ? user.user_metadata.role : null;
+
+    if (metadataRole) {
+      profile = {
+        role: metadataRole,
+        name: typeof user.user_metadata?.name === "string" ? user.user_metadata.name : null,
+        membership_status: null,
+        membership_plan: null,
+        membership_expires_at: null,
+      };
+    } else {
+      profile = await ensureUserProfile(user);
+    }
   }
 
   if (!profile) {
@@ -37,19 +52,8 @@ export default async function DashboardPage() {
     );
   }
 
-  const validRoles = new Set([
-    "visitor",
-    "candidate_onhold",
-    "candidate_mvp",
-    "employer_free",
-    "employer_pro",
-    "employer_premium",
-    "pro_member",
-    "admin",
-  ]);
-
   const roleStr = String(profile.role || "").toLowerCase();
-  if (!roleStr || !validRoles.has(roleStr)) {
+  if (!roleStr) {
     const repairedProfile = await ensureUserProfile(user);
     if (repairedProfile) {
       profile = repairedProfile;
@@ -59,15 +63,15 @@ export default async function DashboardPage() {
   const baseRole = getBaseRole(profile);
 
   if (baseRole === "candidate") {
-    return <CandidateDashboard profile={profile} />;
+    redirect("/dashboard/candidate");
   }
 
   if (baseRole === "employer") {
-    return <EmployerDashboard profile={profile} />;
+    redirect("/dashboard/employer");
   }
 
   if (baseRole === "admin") {
-    return <AdminDashboard profile={profile} />;
+    redirect("/dashboard/admin");
   }
 
   return (

@@ -17,6 +17,7 @@ import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { getMembershipState } from "@/lib/membership";
 import { isVerifiedCandidateRole } from "@/lib/profile-role";
+import { loadProfile } from "@/lib/load-profile";
 import CertificateUpload from "./certificate-upload";
 
 type CandidateDashboardProfile = {
@@ -28,7 +29,7 @@ type CandidateDashboardProfile = {
   [key: string]: unknown;
 };
 
-export default async function CandidateDashboard({ profile: initialProfile }: { profile?: CandidateDashboardProfile | null }) {
+export default async function CandidateDashboard() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -36,52 +37,68 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
 
   if (!user) redirect("/login");
 
-  let profile = initialProfile;
-  if (!profile) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, name, role, membership_status, membership_plan, membership_expires_at")
-      .eq("id", user.id)
-      .single();
-    profile = data;
+  let profile: CandidateDashboardProfile | null = null;
+  const needsMembershipHydration =
+    !profile ||
+    (profile.membership_status === undefined &&
+      profile.membership_plan === undefined &&
+      profile.membership_expires_at === undefined);
+
+  if (needsMembershipHydration) {
+    profile = await loadProfile<CandidateDashboardProfile>(
+      supabase,
+      user.id,
+      "id, name, role, membership_status, membership_plan, membership_expires_at"
+    );
   }
 
   if (!profile) {
     const ensuredProfile = await ensureUserProfile(user);
     if (ensuredProfile) {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id, name, role, membership_status, membership_plan, membership_expires_at")
-        .eq("id", user.id)
-        .single();
-      profile = data;
+      profile = await loadProfile<CandidateDashboardProfile>(
+        supabase,
+        user.id,
+        "id, name, role, membership_status, membership_plan, membership_expires_at"
+      );
     }
   }
 
   if (!profile) return <div>Loading profile...</div>;
 
-  const { data: candidate } = await supabase
-    .from("candidates")
-    .select("exam_status, pass_status, latest_score, reattempt_allowed")
-    .eq("user_id", user.id)
-    .single();
+  const [
+    candidateResult,
+    certificateResult,
+    recentApplicationsResult,
+    jobBoardAccess,
+  ] = await Promise.all([
+    supabase
+      .from("candidates")
+      .select("exam_status, pass_status, latest_score, reattempt_allowed")
+      .eq("user_id", user.id)
+      .single(),
+    supabase
+      .from("certificates")
+      .select("status")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single(),
+    supabase
+      .from("job_applications")
+      .select("id")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(3),
+    getJobBoardAccessForUser(supabase, user.id, profile),
+  ]);
 
-  const { data: certificate } = await supabase
-    .from("certificates")
-    .select("status")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
+  const candidate = candidateResult.data;
+  const certificate = certificateResult.data;
+  const recentApplications = recentApplicationsResult.data;
 
-  const { data: recentApplications } = await supabase
-    .from("job_applications")
-    .select("id")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(3);
-
-  const isVerified = isVerifiedCandidateRole(profile.role);
+  const hasPassedExam = candidate?.pass_status === "pass";
+  const hasFailedExam = candidate?.pass_status === "fail";
+  const isVerified = isVerifiedCandidateRole(profile.role) && hasPassedExam;
   const membership = getMembershipState(profile);
   const {
     canViewJobBoard,
@@ -89,7 +106,7 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
     isFreeAccessCandidate,
     freeApplicationsRemaining,
     lockReason,
-  } = await getJobBoardAccessForUser(supabase, user.id);
+  } = jobBoardAccess;
 
   const examStarted = Boolean(candidate?.exam_status && candidate.exam_status !== "not_started");
   const examCompleted = candidate?.exam_status === "completed";
@@ -122,7 +139,7 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
   ] as const;
 
   const examTitle =
-    candidate?.pass_status === "fail"
+    hasFailedExam
       ? "Learning Path Required"
       : isVerified
         ? "Validation Complete"
@@ -131,7 +148,7 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
           : "Skill Validation Exam";
 
   const examCopy =
-    candidate?.pass_status === "fail"
+    hasFailedExam
       ? `You scored ${candidate?.latest_score ?? 0}%. Submit a course completion certificate to unlock your reattempt.`
       : isVerified
         ? `You scored ${candidate?.latest_score ?? 0}%. Your profile is now visible for stronger-fit opportunities.`
@@ -266,7 +283,7 @@ export default async function CandidateDashboard({ profile: initialProfile }: { 
                   <p className="mt-4 max-w-2xl text-base leading-8 text-[#5b6757]">{examCopy}</p>
 
                   <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-                    {candidate?.pass_status === "fail" ? (
+                    {hasFailedExam ? (
                       certificate?.status === "pending" ? (
                         <div className="rounded-full bg-[#eef4ea] px-6 py-4 text-sm font-semibold text-[#5b6757]">
                           Certificate under review

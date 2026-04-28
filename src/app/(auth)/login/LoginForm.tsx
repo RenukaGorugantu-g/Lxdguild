@@ -5,6 +5,7 @@ import { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { AuthLogo, DividerLabel, SocialButton } from "@/components/auth/AuthShared";
 import { ArrowRight, BarChart3, BriefcaseBusiness, Eye, EyeOff, LockKeyhole, Mail, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const featureCards = [
   {
@@ -31,30 +32,53 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [supabase] = useState(() => createClient());
+  const router = useRouter();
+
+  const getDashboardHref = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return "/dashboard";
+    }
+
+    const profileResult = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const role =
+      profileResult.data?.role ||
+      (typeof user.user_metadata?.role === "string" ? user.user_metadata.role : null);
+
+    if (role === "admin") return "/dashboard/admin";
+    if (typeof role === "string" && role.startsWith("employer")) return "/dashboard/employer";
+    if (role === "pro_member") return "/dashboard/employer";
+    if (typeof role === "string" && role.startsWith("candidate")) return "/dashboard/candidate";
+    return "/dashboard";
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    const response = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, password, keepSignedIn }),
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     });
 
-    const result = (await response.json()) as { error?: string };
-
-    if (!response.ok) {
-      setError(result.error || "Unable to sign in.");
+    if (signInError) {
+      setError(signInError.message || "Unable to sign in.");
       setLoading(false);
       return;
     }
 
-    await supabase.auth.getSession();
-    window.location.href = "/dashboard";
+    const destination = await getDashboardHref();
+    router.replace(destination);
+    router.refresh();
   };
 
   return (

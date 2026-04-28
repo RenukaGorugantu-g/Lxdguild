@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { getResourceSlug } from "@/lib/resource-catalog";
 import { hasActiveMembership } from "@/lib/membership";
+import { ensureUserProfile } from "@/lib/ensure-user-profile";
 
 type MemberResourceProfile = {
   role?: string | null;
@@ -28,6 +29,8 @@ export async function GET(
     loginUrl.searchParams.set("next", `/members/resources/${slug}`);
     return NextResponse.redirect(loginUrl);
   }
+
+  await ensureUserProfile(user);
 
   if (!admin) {
     return NextResponse.json({ error: "Missing admin credentials." }, { status: 500 });

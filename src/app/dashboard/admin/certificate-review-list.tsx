@@ -1,13 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { createClient } from "@/utils/supabase/client";
+import Image from "next/image";
+import { type SVGProps, useState } from "react";
 import { Check, X, Loader2, ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-export default function CertificateReviewList({ certificates }: { certificates: any[] }) {
+type CertificateReviewItem = {
+  id: string;
+  user_id: string;
+  certificate_url?: string | null;
+  profiles?: {
+    name?: string | null;
+    email?: string | null;
+  } | null;
+};
+
+export default function CertificateReviewList({ certificates }: { certificates: CertificateReviewItem[] }) {
   const [processing, setProcessing] = useState<string | null>(null);
-  const supabase = createClient();
   const router = useRouter();
 
   const handleReview = async (certId: string, userId: string, action: 'approved' | 'rejected') => {
@@ -40,11 +49,21 @@ export default function CertificateReviewList({ certificates }: { certificates: 
   return (
     <div className="space-y-4">
       {certificates.map((cert) => (
-        <div key={cert.id} className="flex items-center justify-between p-4 border rounded-xl bg-zinc-50 dark:bg-black/20">
+        <div key={cert.id} className="flex items-center justify-between gap-4 p-4 border rounded-xl bg-zinc-50 dark:bg-black/20">
           <div className="flex items-center gap-4">
             <div className="p-2 bg-brand-50 rounded-lg">
                 <GraduationCap className="w-5 h-5 text-brand-600" />
             </div>
+            {isImageCertificate(cert.certificate_url) ? (
+              <Image
+                src={cert.certificate_url}
+                alt="Certificate preview"
+                width={96}
+                height={64}
+                unoptimized
+                className="h-16 w-24 rounded-lg border object-cover bg-white"
+              />
+            ) : null}
             <div>
               <p className="font-semibold text-sm">{cert.profiles?.name || 'Unknown User'}</p>
               <p className="text-xs text-zinc-500">{cert.profiles?.email}</p>
@@ -83,7 +102,12 @@ export default function CertificateReviewList({ certificates }: { certificates: 
   );
 }
 
-function GraduationCap(props: any) {
+function isImageCertificate(url?: string | null) {
+  if (!url) return false;
+  return /\.(png|jpg|jpeg|webp)(\?.*)?$/i.test(url);
+}
+
+function GraduationCap(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}

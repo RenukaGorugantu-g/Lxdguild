@@ -376,9 +376,9 @@ export default function ApplyModal({
                   </div>
 
                   <div className="rounded-3xl border border-zinc-200 bg-zinc-950 p-5 text-white shadow-sm">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-400">Stay in the loop</p>
-                    <p className="mt-3 text-lg font-semibold">Track this employer and role family right after apply.</p>
-                    <p className="mt-2 text-sm leading-6 text-zinc-300">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white">Stay in the loop</p>
+                    <p className="mt-3 text-lg font-semibold text-white">Track this employer and role family right after apply.</p>
+                    <p className="mt-2 text-sm leading-6 text-white">
                       This mirrors the LinkedIn-style follow-up moment so candidates do not hit a dead end after applying.
                     </p>
                   </div>

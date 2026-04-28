@@ -130,11 +130,53 @@ export default function Header() {
     };
 
     fetchUser();
-  }, [pathname, supabase]);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      const nextUser = session?.user ?? null;
+      setUser(nextUser);
+
+      if (!nextUser) {
+        setProfile(null);
+        return;
+      }
+
+      void (async () => {
+        const profileResult = await supabase
+          .from("profiles")
+          .select("name, role, verification_status, membership_status, membership_plan, membership_expires_at")
+          .eq("id", nextUser.id)
+          .single();
+
+        let nextProfile = profileResult.data;
+
+        if (profileResult.error?.code === "42703") {
+          const fallback = await supabase
+            .from("profiles")
+            .select("name, role, verification_status, membership_status")
+            .eq("id", nextUser.id)
+            .single();
+          nextProfile = fallback.data
+            ? {
+                ...fallback.data,
+                membership_plan: null,
+                membership_expires_at: null,
+              }
+            : null;
+        }
+
+        setProfile(nextProfile || deriveProfileFromUser(nextUser));
+      })();
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
 
   useEffect(() => {
     const fetchNotifications = async () => {
-      if (!user?.id) return;
+      if (!user?.id || !isNotificationsOpen) return;
 
       const response = await fetch("/api/notifications");
       if (!response.ok) return;
@@ -143,7 +185,7 @@ export default function Header() {
     };
 
     fetchNotifications();
-  }, [user]);
+  }, [isNotificationsOpen, user]);
 
   useEffect(() => {
     return () => {

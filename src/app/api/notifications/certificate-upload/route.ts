@@ -7,6 +7,46 @@ import path from 'node:path'
 
 export const runtime = 'nodejs'
 
+function detectCertificateFileKind(certificateUrl: string, filePath?: string | null) {
+  const value = `${filePath || ''} ${certificateUrl}`.toLowerCase();
+  if (value.includes('.pdf')) return 'pdf';
+  if (/\.(png|jpg|jpeg|webp)(\?|$)/i.test(value)) return 'image';
+  return 'unknown';
+}
+
+function getAdminReviewUrl(req: Request) {
+  const configuredBaseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null);
+
+  const baseUrl = configuredBaseUrl || new URL(req.url).origin;
+  return `${baseUrl}/dashboard/admin`;
+}
+
+async function unlockCandidateReattempt(supabase: Awaited<ReturnType<typeof createClient>>, userId: string) {
+  const { error: candError } = await supabase
+    .from('candidates')
+    .update({ reattempt_allowed: true })
+    .eq('user_id', userId);
+
+  if (candError) {
+    console.error('Failed to unlock candidate reattempt:', candError.message);
+  }
+
+  const { error: roleError } = await supabase
+    .from('profiles')
+    .update({
+      role: 'candidate_onhold',
+      verification_status: 'unverified',
+    })
+    .eq('id', userId);
+
+  if (roleError) {
+    console.error('Failed to keep candidate in reattempt state after certificate approval:', roleError.message);
+  }
+}
+
 async function fetchImageBuffer(url: string): Promise<Buffer | null> {
   try {
     const response = await fetch(url)
@@ -69,6 +109,57 @@ async function computeTemplateSimilarity(
   }
 }
 
+async function normalizeCertificateBufferForSimilarity(
+  sourceBuffer: Buffer,
+  fileKind: 'pdf' | 'image' | 'unknown'
+): Promise<Buffer | null> {
+  if (!sourceBuffer) return null
+
+  try {
+    if (fileKind === 'pdf') {
+      return await renderPdfFirstPageToPngBuffer(sourceBuffer)
+    }
+
+    return sourceBuffer
+  } catch {
+    return null
+  }
+}
+
+async function renderPdfFirstPageToPngBuffer(sourceBuffer: Buffer): Promise<Buffer | null> {
+  try {
+    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+    const { createCanvas } = await import('@napi-rs/canvas')
+
+    const loadingTask = pdfjs.getDocument({
+      data: new Uint8Array(sourceBuffer),
+      disableWorker: true,
+      isEvalSupported: false,
+      useWorkerFetch: false,
+    })
+
+    const pdfDocument = await loadingTask.promise
+    const page = await pdfDocument.getPage(1)
+    const baseViewport = page.getViewport({ scale: 1 })
+    const targetWidth = 1400
+    const scale = Math.max(1.5, targetWidth / Math.max(baseViewport.width, 1))
+    const viewport = page.getViewport({ scale })
+    const canvas = createCanvas(Math.ceil(viewport.width), Math.ceil(viewport.height))
+    const canvasContext = canvas.getContext('2d')
+
+    await page.render({
+      canvasContext: canvasContext as unknown as CanvasRenderingContext2D,
+      viewport,
+    }).promise
+
+    const pngBuffer = canvas.toBuffer('image/png')
+    await loadingTask.destroy()
+    return Buffer.isBuffer(pngBuffer) ? pngBuffer : Buffer.from(pngBuffer)
+  } catch {
+    return null
+  }
+}
+
 export async function POST(req: Request) {
   const body = await req.json();
   const { userId, certificateUrl, filePath } = body;
@@ -88,6 +179,7 @@ export async function POST(req: Request) {
 
   let status = 'pending';
   let similarityScore: number | null = null;
+  const fileKind = detectCertificateFileKind(certificateUrl, typeof filePath === 'string' ? filePath : null);
   const templateImageUrl = process.env.CERTIFICATE_TEMPLATE_IMAGE_URL;
   const templateImagePath =
     process.env.CERTIFICATE_TEMPLATE_IMAGE_PATH ?? 'public/certificate-template.png';
@@ -112,6 +204,9 @@ export async function POST(req: Request) {
   if (!uploadedBuffer) {
     uploadedBuffer = await fetchImageBuffer(certificateUrl);
   }
+  uploadedBuffer = uploadedBuffer
+    ? await normalizeCertificateBufferForSimilarity(uploadedBuffer, fileKind)
+    : null;
   uploadedLoaded = !!uploadedBuffer;
 
   if (templateBuffer && uploadedBuffer) {
@@ -143,24 +238,16 @@ export async function POST(req: Request) {
   }
 
   if (status === 'approved') {
-    const { error: candError } = await supabase
-      .from('candidates')
-      .update({ reattempt_allowed: true })
-      .eq('user_id', userId);
-
-    if (candError) {
-      console.error('Failed to unlock candidate reattempt:', candError.message);
-    }
-
-    const { error: roleError } = await supabase
-      .from('profiles')
-      .update({ role: 'candidate_mvp' })
-      .eq('id', userId);
-
-    if (roleError) {
-      console.error('Failed to promote candidate role after certificate approval:', roleError.message);
-    }
+    await unlockCandidateReattempt(supabase, userId);
   }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('name, email')
+    .eq('id', userId)
+    .maybeSingle();
+
+  const adminReviewUrl = getAdminReviewUrl(req);
 
   await notifyUser(userId, 'certificate_uploaded', 'Certificate submitted', `Your certificate has been submitted and is ${status}.`, {
     certificate_url: certificateUrl,
@@ -170,10 +257,15 @@ export async function POST(req: Request) {
   await notifyAdmins(
     'certificate_uploaded_admin',
     'Certificate submitted',
-    `A candidate uploaded a certificate that is currently ${status}.`,
+    `A candidate uploaded a certificate that is currently ${status}. Candidate: ${profile?.name || profile?.email || userId}. Review dashboard: ${adminReviewUrl}. Certificate: ${certificateUrl}`,
     {
       user_id: userId,
       status,
+      candidate_name: profile?.name || null,
+      candidate_email: profile?.email || null,
+      certificate_url: certificateUrl,
+      admin_review_url: adminReviewUrl,
+      file_kind: fileKind,
     }
   );
 
@@ -184,5 +276,6 @@ export async function POST(req: Request) {
     minSimilarity,
     templateLoaded,
     uploadedLoaded,
+    fileKind,
   });
 }

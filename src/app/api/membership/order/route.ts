@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
 import { createClient } from "@/utils/supabase/server";
 import { MEMBER_ANNUAL_PLAN_CODE, MEMBER_ANNUAL_PRICE_INR, hasActiveMembership } from "@/lib/membership";
+import { ensureUserProfile } from "@/lib/ensure-user-profile";
 
 type MembershipRouteProfile = {
   role?: string | null;
@@ -23,6 +24,8 @@ export async function POST() {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  await ensureUserProfile(user);
 
   const orderProfileResult = await supabase
     .from("profiles")

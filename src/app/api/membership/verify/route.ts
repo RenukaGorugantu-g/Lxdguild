@@ -8,6 +8,7 @@ import {
   addMembershipYear,
   hasActiveMembership,
 } from "@/lib/membership";
+import { ensureUserProfile } from "@/lib/ensure-user-profile";
 
 type MembershipRouteProfile = {
   role?: string | null;
@@ -30,6 +31,8 @@ export async function POST(req: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  await ensureUserProfile(user);
 
   const body = await req.json();
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
