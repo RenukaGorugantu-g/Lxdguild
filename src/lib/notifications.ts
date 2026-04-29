@@ -155,6 +155,17 @@ export async function notifyAdmins(type: string, title: string, message: string,
   const adminIds = adminIdsFromEnv.length > 0 ? adminIdsFromEnv : adminProfiles.map((admin) => admin.id).filter((value): value is string => Boolean(value))
   const adminEmails = adminEmailsFromEnv.length > 0 ? adminEmailsFromEnv : adminProfiles.map((admin) => admin.email).filter((value): value is string => Boolean(value))
 
+  if (adminEmails.length === 0) {
+    console.warn('notifyAdmins found no admin email recipients.', {
+      type,
+      title,
+      adminEmailsFromEnvCount: adminEmailsFromEnv.length,
+      adminIdsFromEnvCount: adminIdsFromEnv.length,
+      adminProfilesCount: adminProfiles.length,
+      profileQueryError: error?.message || null,
+    })
+  }
+
   if (error && adminEmails.length === 0) {
     console.error('Failed to load admin profiles and no admin emails are configured:', error.message)
     return
