@@ -262,7 +262,7 @@ export async function POST(req: Request) {
       : isInternalApply
         ? `Your application for ${job.title} at ${job.company} was submitted inside LXD Guild. The employer can now review your profile here.`
         : `We saved your application intent for ${job.title} at ${job.company}. Complete the application on the employer's official page to finish applying.`;
-  void Promise.allSettled([
+  const notificationResults = await Promise.allSettled([
     notifyUser(user.id, 'job_application', 'Application submitted', candidateMessage, {
       job_id: jobId,
       company: job.company,
@@ -309,6 +309,21 @@ export async function POST(req: Request) {
       }
     ),
   ]);
+
+  const rejectedNotifications = notificationResults
+    .map((result, index) => ({ result, index }))
+    .filter((entry): entry is { result: PromiseRejectedResult; index: number } => entry.result.status === 'rejected');
+
+  if (rejectedNotifications.length > 0) {
+    console.error('[job-application] notification delivery failed', {
+      jobId,
+      userId: user.id,
+      rejectedNotifications: rejectedNotifications.map(({ index, result }) => ({
+        index,
+        reason: result.reason instanceof Error ? result.reason.message : String(result.reason),
+      })),
+    });
+  }
 
   return NextResponse.json({
     success: true,
