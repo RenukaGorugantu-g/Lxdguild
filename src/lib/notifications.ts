@@ -74,8 +74,18 @@ export async function createNotification(userId: string, type: string, title: st
 export async function notifyUser(userId: string, type: string, title: string, message: string, data: Record<string, unknown> = {}) {
   const supabase = await getSupabaseClient()
   const { email: resolvedEmail, name, profileError } = await resolveUserEmailAndName(supabase, userId)
+  const fallbackEmail =
+    typeof data.recipient_email === 'string' && data.recipient_email.trim().length > 0
+      ? data.recipient_email.trim()
+      : ''
+  const fallbackName =
+    typeof data.recipient_name === 'string' && data.recipient_name.trim().length > 0
+      ? data.recipient_name
+      : undefined
+  const finalEmail = resolvedEmail || fallbackEmail
+  const finalName = name || fallbackName
 
-  if (profileError || !resolvedEmail) {
+  if (profileError || !finalEmail) {
     console.warn('notifyUser missing profile/email:', profileError?.message)
   } else {
     const email = buildNotificationEmail({
@@ -85,12 +95,12 @@ export async function notifyUser(userId: string, type: string, title: string, me
       message,
       data: {
         ...data,
-        name,
-        email: resolvedEmail,
+        name: finalName,
+        email: finalEmail,
       },
     })
     await sendEmail({
-      to: resolvedEmail,
+      to: finalEmail,
       subject: title,
       html: email.html,
       text: email.text,

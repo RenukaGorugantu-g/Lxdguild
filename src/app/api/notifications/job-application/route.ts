@@ -270,6 +270,8 @@ export async function POST(req: Request) {
       job_url: jobUrl,
       apply_url: externalApplyUrl,
       application_mode: isInternalApply ? 'internal' : 'external',
+      recipient_email: user.email || '',
+      recipient_name: typeof applicantProfile?.name === 'string' ? applicantProfile.name : '',
       ats_score: atsScore,
       ats_auto_decision: atsAutoDecision,
     }),
