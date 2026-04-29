@@ -44,8 +44,15 @@ type AssessmentProfile = {
 
 type AssessmentQuestion = {
   id: string;
+  question: string;
+  options: string[];
+  correct_answer: string;
+  skill_tag?: string | null;
   section_name?: string | null;
   question_set?: string | null;
+  designation_bucket?: string | null;
+  set_weight?: number | null;
+  designation_level?: string | null;
 };
 
 const BUCKET_TO_LEGACY_LEVEL: Record<DesignationBucket, string> = {

@@ -102,7 +102,7 @@ export default function Header() {
           .select("name, role, verification_status, membership_status, membership_plan, membership_expires_at")
           .eq("id", user.id)
           .single();
-        let nextProfile = profileResult.data;
+        let nextProfile: HeaderProfile | null = profileResult.data;
 
         if (profileResult.error?.code === "42703") {
           const fallback = await supabase
@@ -148,7 +148,7 @@ export default function Header() {
           .eq("id", nextUser.id)
           .single();
 
-        let nextProfile = profileResult.data;
+        let nextProfile: HeaderProfile | null = profileResult.data;
 
         if (profileResult.error?.code === "42703") {
           const fallback = await supabase

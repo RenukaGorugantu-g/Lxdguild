@@ -7,7 +7,7 @@ import ApplyModal from "./ApplyModal";
 type ApplyJob = {
   id: string;
   title: string;
-  company: string;
+  company: string | null;
   apply_url?: string | null;
 };
 

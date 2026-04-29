@@ -7,6 +7,7 @@ import { Upload, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 
 export default function CertificateUpload({ userId }: { userId: string }) {
   const [file, setFile] = useState<File | null>(null);
+  const [certificateCode, setCertificateCode] = useState("");
   const [uploading, setUploading] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [submitOutcome, setSubmitOutcome] = useState<'pending_review' | 'approved'>('pending_review');
@@ -48,7 +49,7 @@ export default function CertificateUpload({ userId }: { userId: string }) {
       const response = await fetch('/api/notifications/certificate-upload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, certificateUrl: publicUrl, filePath }),
+        body: JSON.stringify({ userId, certificateUrl: publicUrl, filePath, certificateCode }),
       });
 
       const result = await response.json();
@@ -58,7 +59,13 @@ export default function CertificateUpload({ userId }: { userId: string }) {
 
       setSubmitOutcome(result.status === 'approved' ? 'approved' : 'pending_review');
       if (result.status !== 'approved') {
-        if (!result.templateLoaded) {
+        if (result.registryReason === 'email_mismatch') {
+          setValidationHint('Certificate code exists, but the LearnDash email does not match your account email.');
+        } else if (result.registryReason === 'claimed_by_other_user') {
+          setValidationHint('This certificate code is already claimed by another account.');
+        } else if (result.registryReason === 'not_found') {
+          setValidationHint('Certificate code was not found in the LearnDash registry, so this upload is pending admin review.');
+        } else if (!result.templateLoaded) {
           setValidationHint('Template image not loaded on server. Check CERTIFICATE_TEMPLATE_IMAGE_PATH.');
         } else if (!result.uploadedLoaded) {
           setValidationHint('Uploaded file could not be read for validation, so it has been left pending for admin review.');
@@ -109,8 +116,24 @@ export default function CertificateUpload({ userId }: { userId: string }) {
         <h3 className="text-lg font-bold">Submit External Certificate</h3>
       </div>
       <p className="text-sm text-zinc-500">
-        Upload your certificate here. PDF, PNG, and JPG files are checked against the LXD certificate template, and only low-score or unreadable files stay pending for admin review.
+        Upload your certificate here and enter the certificate code from LearnDash. Matching codes can auto-approve instantly, while unmatched uploads fall back to template validation or admin review.
       </p>
+
+      <div className="space-y-2">
+        <label htmlFor="certificate-code" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          Certificate code
+        </label>
+        <input
+          id="certificate-code"
+          value={certificateCode}
+          onChange={(event) => setCertificateCode(event.target.value)}
+          placeholder="Example: CLXD202604123"
+          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-brand-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+        />
+        <p className="text-xs text-zinc-500">
+          Use the same code printed on your LearnDash certificate.
+        </p>
+      </div>
       
       <div className="relative group">
         <input 
@@ -161,7 +184,7 @@ export default function CertificateUpload({ userId }: { userId: string }) {
 
       <button
         onClick={handleUpload}
-        disabled={!file || uploading}
+        disabled={!file || !certificateCode.trim() || uploading}
         className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
       >
         {uploading ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</> : "Submit for Review"}

@@ -56,7 +56,7 @@ export default function CertificateReviewList({ certificates }: { certificates: 
             </div>
             {isImageCertificate(cert.certificate_url) ? (
               <Image
-                src={cert.certificate_url}
+                src={cert.certificate_url || ""}
                 alt="Certificate preview"
                 width={96}
                 height={64}
@@ -68,7 +68,7 @@ export default function CertificateReviewList({ certificates }: { certificates: 
               <p className="font-semibold text-sm">{cert.profiles?.name || 'Unknown User'}</p>
               <p className="text-xs text-zinc-500">{cert.profiles?.email}</p>
               <a 
-                href={cert.certificate_url} 
+                href={cert.certificate_url || undefined} 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="text-[10px] text-brand-600 hover:underline flex items-center gap-1 mt-1"

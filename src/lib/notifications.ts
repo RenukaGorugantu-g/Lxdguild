@@ -1,6 +1,7 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/utils/supabase/server'
 import { sendEmail } from './email'
+import { buildNotificationEmail } from './email-templates'
 
 function getServiceSupabase() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -13,6 +14,46 @@ async function getSupabaseClient() {
   const service = getServiceSupabase()
   if (service) return service
   return await createClient()
+}
+
+async function resolveUserEmailAndName(
+  supabase: Awaited<ReturnType<typeof getSupabaseClient>>,
+  userId: string
+) {
+  const profileQuery = await supabase
+    .from('profiles')
+    .select('email, name')
+    .eq('id', userId)
+    .single()
+
+  const profile = profileQuery.data
+  let email = typeof profile?.email === 'string' ? profile.email.trim() : ''
+  const name = typeof profile?.name === 'string' ? profile.name : undefined
+
+  const serviceSupabase = getServiceSupabase()
+  if (!email && serviceSupabase) {
+    const authUserResult = await serviceSupabase.auth.admin.getUserById(userId)
+    const authEmail = authUserResult.data.user?.email?.trim() || ''
+
+    if (authEmail) {
+      email = authEmail
+
+      const { error: backfillError } = await serviceSupabase
+        .from('profiles')
+        .update({ email: authEmail })
+        .eq('id', userId)
+
+      if (backfillError) {
+        console.warn('notifyUser could not backfill profile email:', backfillError.message)
+      }
+    }
+  }
+
+  return {
+    email,
+    name,
+    profileError: profileQuery.error,
+  }
 }
 
 export async function createNotification(userId: string, type: string, title: string, message: string, data: Record<string, unknown> = {}) {
@@ -32,20 +73,27 @@ export async function createNotification(userId: string, type: string, title: st
 
 export async function notifyUser(userId: string, type: string, title: string, message: string, data: Record<string, unknown> = {}) {
   const supabase = await getSupabaseClient()
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('email')
-    .eq('id', userId)
-    .single()
+  const { email: resolvedEmail, name, profileError } = await resolveUserEmailAndName(supabase, userId)
 
-  if (profileError || !profile?.email) {
+  if (profileError || !resolvedEmail) {
     console.warn('notifyUser missing profile/email:', profileError?.message)
   } else {
+    const email = buildNotificationEmail({
+      audience: 'user',
+      type,
+      title,
+      message,
+      data: {
+        ...data,
+        name,
+        email: resolvedEmail,
+      },
+    })
     await sendEmail({
-      to: profile.email,
+      to: resolvedEmail,
       subject: title,
-      html: `<p>${message}</p>`,
-      text: message,
+      html: email.html,
+      text: email.text,
     })
   }
 
@@ -54,11 +102,21 @@ export async function notifyUser(userId: string, type: string, title: string, me
 
 export async function notifyUserByEmail(email: string, title: string, message: string, data?: Record<string, unknown>) {
   void data
+  const renderedEmail = buildNotificationEmail({
+    audience: 'user',
+    type: typeof data?.type === 'string' ? data.type : 'generic',
+    title,
+    message,
+    data: {
+      ...data,
+      email,
+    },
+  })
   await sendEmail({
     to: email,
     subject: title,
-    html: `<p>${message}</p>`,
-    text: message,
+    html: renderedEmail.html,
+    text: renderedEmail.text,
   })
 
   if (!email) {
@@ -96,17 +154,25 @@ export async function notifyAdmins(type: string, title: string, message: string,
     adminIds.map(async (adminId) => createNotification(adminId, type, title, message, data))
   )
 
-  const detailsHtml = buildAdminDetailsHtml(data)
-
   await Promise.all(
-    adminEmails.map(async (email) =>
-      sendEmail({
-        to: email,
-        subject: `[Admin] ${title}`,
-        html: `<p>${message}</p>${detailsHtml}`,
-        text: message,
+    adminEmails.map(async (email) => {
+        const renderedEmail = buildNotificationEmail({
+          audience: 'admin',
+          type,
+          title,
+          message,
+          data: {
+            ...data,
+            email,
+          },
+        })
+        return sendEmail({
+          to: email,
+          subject: `[Admin] ${title}`,
+          html: renderedEmail.html,
+          text: renderedEmail.text,
+        })
       })
-    )
   )
 }
 
@@ -114,40 +180,4 @@ export function buildNotificationMessage(event: string, payload: Record<string, 
   return `${event} | ${Object.entries(payload)
     .map(([key, value]) => `${key}: ${value}`)
     .join(' • ')}`
-}
-
-function buildAdminDetailsHtml(data: Record<string, unknown>) {
-  const details: string[] = []
-
-  if (typeof data.candidate_name === 'string' && data.candidate_name) {
-    details.push(`<p><strong>Candidate:</strong> ${escapeHtml(data.candidate_name)}</p>`)
-  }
-  if (typeof data.candidate_email === 'string' && data.candidate_email) {
-    details.push(`<p><strong>Email:</strong> ${escapeHtml(data.candidate_email)}</p>`)
-  }
-  if (typeof data.status === 'string' && data.status) {
-    details.push(`<p><strong>Status:</strong> ${escapeHtml(data.status)}</p>`)
-  }
-  if (typeof data.file_kind === 'string' && data.file_kind) {
-    details.push(`<p><strong>File type:</strong> ${escapeHtml(data.file_kind.toUpperCase())}</p>`)
-  }
-  if (typeof data.certificate_url === 'string' && data.certificate_url) {
-    const href = escapeHtml(data.certificate_url)
-    details.push(`<p><strong>Certificate:</strong> <a href="${href}">${href}</a></p>`)
-  }
-  if (typeof data.admin_review_url === 'string' && data.admin_review_url) {
-    const href = escapeHtml(data.admin_review_url)
-    details.push(`<p><strong>Review dashboard:</strong> <a href="${href}">${href}</a></p>`)
-  }
-
-  return details.length ? `<hr /><div>${details.join('')}</div>` : ''
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
 }

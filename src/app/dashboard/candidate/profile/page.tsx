@@ -8,19 +8,31 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import ProfileForm from "./ProfileForm";
 
+type CandidateProfileRecord = {
+  id: string;
+  role?: string | null;
+  name?: string | null;
+  headline?: string | null;
+  bio?: string | null;
+  location?: string | null;
+  skills?: string[] | null;
+  experience_years?: number | null;
+  [key: string]: unknown;
+};
+
 export default async function CandidateProfilePage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
 
-  const profile = await loadProfile<Record<string, unknown>>(supabase, user.id, "*");
+  const profile = await loadProfile<CandidateProfileRecord>(supabase, user.id, "*");
 
   let resolvedProfile = profile;
   if (!resolvedProfile) {
     const ensuredProfile = await ensureUserProfile(user);
     if (ensuredProfile) {
-      resolvedProfile = await loadProfile<Record<string, unknown>>(supabase, user.id, "*");
+      resolvedProfile = await loadProfile<CandidateProfileRecord>(supabase, user.id, "*");
     }
   }
 

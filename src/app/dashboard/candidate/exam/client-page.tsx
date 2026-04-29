@@ -10,7 +10,7 @@ type Question = {
   question: string;
   options: string[];
   correct_answer: string;
-  skill_tag: string;
+  skill_tag?: string | null;
   section_name?: string | null;
   question_set?: string | null;
 };
@@ -66,12 +66,13 @@ export default function ExamClient({
     const scorecard: Record<string, { total: number, correct: number }> = {};
 
     questions.forEach((q) => {
-      if (!scorecard[q.skill_tag]) scorecard[q.skill_tag] = { total: 0, correct: 0 };
-      scorecard[q.skill_tag].total++;
+      const skillTag = q.skill_tag || "General";
+      if (!scorecard[skillTag]) scorecard[skillTag] = { total: 0, correct: 0 };
+      scorecard[skillTag].total++;
 
       if (answers[q.id] === q.correct_answer) {
         correctCount++;
-        scorecard[q.skill_tag].correct++;
+        scorecard[skillTag].correct++;
       }
     });
 
@@ -179,6 +180,22 @@ export default function ExamClient({
         }
 
         if (profileUpdateError) throw new Error(`Failed to update profile: ${profileUpdateError.message}`);
+      }
+
+      try {
+        await fetch("/api/notifications/exam-result", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId,
+            score: finalScore,
+            passStatus,
+            designationBucket,
+            targetRole,
+          }),
+        });
+      } catch (notificationError) {
+        console.error("Exam result notification failed:", notificationError);
       }
 
       // Done

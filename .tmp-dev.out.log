@@ -1,0 +1,19 @@
+
+> temp-app@0.1.0 dev
+> next dev --webpack
+
+▲ Next.js 16.2.2 (webpack)
+- Local:         http://localhost:3000
+- Network:       http://10.0.0.7:3000
+- Environments: .env.local
+✓ Ready in 1593ms
+
+○ Compiling /dashboard/resources ...
+ GET /dashboard/resources 200 in 8.7s (next.js: 6.1s, proxy.ts: 740ms, application-code: 1816ms)
+ HEAD / 200 in 2.3s (next.js: 1731ms, proxy.ts: 14ms, application-code: 582ms)
+ GET /dashboard/jobs 200 in 3.4s (next.js: 11ms, proxy.ts: 88ms, application-code: 3.3s)
+ GET /dashboard/jobs 200 in 7.5s (next.js: 2.9s, proxy.ts: 394ms, application-code: 4.2s)
+○ Compiling /dashboard/jobs/[id] ...
+ GET /dashboard/jobs/969fa843-ed75-410c-b52a-9ddd8266d5b3 200 in 9.2s (next.js: 8.4s, proxy.ts: 72ms, application-code: 750ms)
+ POST /api/notifications/job-application 200 in 4.3s (next.js: 3.6s, proxy.ts: 113ms, application-code: 536ms)
+ GET /dashboard/jobs/969fa843-ed75-410c-b52a-9ddd8266d5b3 200 in 1150ms (next.js: 185ms, proxy.ts: 257ms, application-code: 708ms)

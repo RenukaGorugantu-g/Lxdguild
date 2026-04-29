@@ -662,9 +662,9 @@ async function upsertLifecycleJobs(collected: Map<string, NormalizedJob>, nowIso
 
   const { data: deletableJobs } = await supabase
     .from("jobs")
+    .select("id")
     .eq("is_active", false)
     .neq("source", "employer")
-    .select("id")
     .lt("last_seen_at", deleteThreshold.toISOString());
 
   const deletableJobIds = (deletableJobs || []).map((job) => job.id);

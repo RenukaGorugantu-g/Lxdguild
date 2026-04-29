@@ -33,6 +33,19 @@ type EmployerCandidateCard = {
   resumes?: Array<{ id: string; file_url?: string | null; file_name?: string | null }> | null;
 };
 
+type PostedJobRow = {
+  id: string;
+  title: string;
+  company?: string | null;
+  location?: string | null;
+  created_at: string;
+  apply_url?: string | null;
+  is_active?: boolean | null;
+  deletion_request_status?: string | null;
+  deleted_at?: string | null;
+  applicant_count?: number;
+};
+
 export default async function EmployerDashboard() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -40,20 +53,11 @@ export default async function EmployerDashboard() {
     redirect("/login");
   }
 
-  let profile: EmployerDashboardProfile | null = null;
-  const needsMembershipHydration =
-    !profile ||
-    (profile.membership_status === undefined &&
-      profile.membership_plan === undefined &&
-      profile.membership_expires_at === undefined);
-
-  if (needsMembershipHydration && user) {
-    profile = await loadProfile<EmployerDashboardProfile>(
-      supabase,
-      user.id,
-      "role, name, headline, bio, location, company_name, employer_designation, membership_status, membership_plan, membership_expires_at"
-    );
-  }
+  let profile = await loadProfile<EmployerDashboardProfile>(
+    supabase,
+    user.id,
+    "role, name, headline, bio, location, company_name, employer_designation, membership_status, membership_plan, membership_expires_at"
+  );
 
   if (!profile) {
     const ensuredProfile = await ensureUserProfile(user);
@@ -195,7 +199,7 @@ export default async function EmployerDashboard() {
           </div>
         </div>
 
-        <PostedJobsSection initialJobs={postedJobs || []} />
+        <PostedJobsSection initialJobs={(postedJobs || []) as PostedJobRow[]} />
 
         <div className="premium-card p-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -395,7 +399,7 @@ async function getPostedJobs(supabase: Awaited<ReturnType<typeof createClient>>,
     .order("created_at", { ascending: false });
 
   if (!postedJobsQuery.error) {
-    return postedJobsQuery.data || [];
+    return withApplicantCounts(supabase, (postedJobsQuery.data || []) as PostedJobRow[]);
   }
 
   if (postedJobsQuery.error.code !== "42703") {
@@ -408,11 +412,14 @@ async function getPostedJobs(supabase: Awaited<ReturnType<typeof createClient>>,
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  return (fallbackJobsQuery.data || []).map((job) => ({
-    ...job,
-    deletion_request_status: null,
-    deleted_at: null,
-  }));
+  return withApplicantCounts(
+    supabase,
+    ((fallbackJobsQuery.data || []).map((job) => ({
+      ...job,
+      deletion_request_status: null,
+      deleted_at: null,
+    })) as PostedJobRow[])
+  );
 }
 
 async function getMvpCandidateCount(supabase: Awaited<ReturnType<typeof createClient>>) {
@@ -433,4 +440,30 @@ function createAdminReader() {
   return serviceRoleKey && supabaseUrl
     ? createSupabaseClient(supabaseUrl, serviceRoleKey)
     : null;
+}
+
+async function withApplicantCounts(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  jobs: PostedJobRow[]
+) {
+  if (jobs.length === 0) {
+    return jobs;
+  }
+
+  const { data: applications } = await supabase
+    .from("job_applications")
+    .select("job_id")
+    .in("job_id", jobs.map((job) => job.id));
+
+  const counts = new Map<string, number>();
+  for (const application of applications || []) {
+    const jobId = application.job_id as string | undefined;
+    if (!jobId) continue;
+    counts.set(jobId, (counts.get(jobId) || 0) + 1);
+  }
+
+  return jobs.map((job) => ({
+    ...job,
+    applicant_count: counts.get(job.id) || 0,
+  }));
 }

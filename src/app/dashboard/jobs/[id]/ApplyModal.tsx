@@ -23,7 +23,7 @@ import { normalizeExternalApplyUrl } from "@/lib/job-apply";
 type ApplyJob = {
   id: string;
   title: string;
-  company: string;
+  company: string | null;
   apply_url?: string | null;
 };
 
@@ -375,10 +375,10 @@ export default function ApplyModal({
                     </div>
                   </div>
 
-                  <div className="rounded-3xl border border-zinc-200 bg-zinc-950 p-5 text-white shadow-sm">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white">Stay in the loop</p>
-                    <p className="mt-3 text-lg font-semibold text-white">Track this employer and role family right after apply.</p>
-                    <p className="mt-2 text-sm leading-6 text-white">
+                  <div className="rounded-3xl border border-zinc-900 bg-zinc-950 p-5 !text-white shadow-sm">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] !text-white">Stay in the loop</p>
+                    <p className="mt-3 text-lg font-semibold !text-white">Track this employer and role family right after apply.</p>
+                    <p className="mt-2 text-sm leading-6 !text-white">
                       This mirrors the LinkedIn-style follow-up moment so candidates do not hit a dead end after applying.
                     </p>
                   </div>
@@ -437,7 +437,7 @@ export default function ApplyModal({
                     </div>
                     <div className="rounded-2xl bg-zinc-50 p-4">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Destination</p>
-                      <p className="mt-2 text-sm font-semibold text-zinc-900">{job.company}</p>
+                      <p className="mt-2 text-sm font-semibold text-zinc-900">{job.company || "Employer website"}</p>
                     </div>
                     <div className="rounded-2xl bg-zinc-50 p-4">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Action needed</p>
@@ -464,12 +464,12 @@ export default function ApplyModal({
                     Keep Browsing Jobs
                   </button>
                   <button
-                    onClick={() => handlePreferenceToggle("company", job.company)}
-                    disabled={savingCompany}
+                    onClick={() => job.company && handlePreferenceToggle("company", job.company)}
+                    disabled={savingCompany || !job.company}
                     className="flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white py-4 font-bold text-zinc-700 transition-all hover:bg-zinc-50 disabled:opacity-50"
                   >
                     {savingCompany ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookmarkPlus className="w-4 h-4" />}
-                    {companySaved ? "Saved Company" : "Save This Company"}
+                    {!job.company ? "Company Unavailable" : companySaved ? "Saved Company" : "Save This Company"}
                   </button>
                   <button
                     onClick={() => handlePreferenceToggle("role", roleKeyword)}

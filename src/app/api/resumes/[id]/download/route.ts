@@ -46,7 +46,11 @@ export async function GET(
         .limit(1)
         .maybeSingle();
 
-      const job = ownedApplication?.jobs;
+      const job = ownedApplication?.jobs as
+        | { user_id?: string | null }
+        | Array<{ user_id?: string | null }>
+        | null
+        | undefined;
       const ownerId = Array.isArray(job) ? job[0]?.user_id : job?.user_id;
       canAccess = ownerId === user.id;
     }

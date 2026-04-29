@@ -44,11 +44,7 @@ type JobSearchFilters = {
   normalizedQuery: string;
 };
 
-type FilterableJobQuery = {
-  ilike: (column: string, pattern: string) => FilterableJobQuery;
-  or: (filters: string) => FilterableJobQuery;
-  eq: (column: string, value: string) => FilterableJobQuery;
-};
+type FilterableJobQuery = any;
 
 const JOB_SELECT =
   "id, title, description, company, location, work_mode, employment_type, expires_at, external_posted_at, imported_at, created_at, is_active, source, job_kind";
@@ -100,7 +96,7 @@ function applyJobFilters(query: FilterableJobQuery, filters: JobSearchFilters) {
 }
 
 async function fetchJobsPage(
-  jobsReader: ReturnType<typeof createAdminClient> | Awaited<ReturnType<typeof createClient>>,
+  jobsReader: any,
   filters: JobSearchFilters,
   currentPage: number,
   pageSize: number
@@ -145,7 +141,7 @@ async function fetchJobsPage(
 }
 
 async function fetchFeaturedFreelanceJobs(
-  jobsReader: ReturnType<typeof createAdminClient> | Awaited<ReturnType<typeof createClient>>,
+  jobsReader: any,
   filters: JobSearchFilters
 ) {
   const freelanceFilters: JobSearchFilters = {
@@ -239,23 +235,23 @@ export default async function JobsDashboard({
     jobsPageResult = await fetchJobsPage(jobsReader, filters, requestedPage, pageSize);
   }
 
-  let jobsList = jobsPageResult.data.filter((job) => matchesRemoteFilter(job, remote));
-  jobsList = jobsList.filter((job) => matchesScheduleFilter(job, schedule));
+  let jobsList: JobListItem[] = (jobsPageResult.data as JobListItem[]).filter((job: JobListItem) => matchesRemoteFilter(job, remote));
+  jobsList = jobsList.filter((job: JobListItem) => matchesScheduleFilter(job, schedule));
 
   const categories = ["Instructional Designer", "eLearning Developer", "Learning Experience Designer", "L&D Manager", "Curriculum Developer"];
   const freelanceJobs = view === "freelance" ? [] : await fetchFeaturedFreelanceJobs(jobsReader, filters);
-  const featuredFreelanceIds = new Set(freelanceJobs.map((job) => job.id));
+  const featuredFreelanceIds = new Set(freelanceJobs.map((job: JobListItem) => job.id));
   const totalJobs = jobsPageResult.count;
   const totalPages = Math.max(1, Math.ceil(totalJobs / pageSize));
   const currentPage = Math.min(requestedPage, totalPages);
 
   if (requestedPage !== currentPage && totalJobs > 0) {
     jobsPageResult = await fetchJobsPage(jobsReader, filters, currentPage, pageSize);
-    jobsList = jobsPageResult.data.filter((job) => matchesRemoteFilter(job, remote));
-    jobsList = jobsList.filter((job) => matchesScheduleFilter(job, schedule));
+    jobsList = (jobsPageResult.data as JobListItem[]).filter((job: JobListItem) => matchesRemoteFilter(job, remote));
+    jobsList = jobsList.filter((job: JobListItem) => matchesScheduleFilter(job, schedule));
   }
 
-  const jobsToRender = view === "freelance" ? jobsList : jobsList.filter((job) => !featuredFreelanceIds.has(job.id));
+  const jobsToRender = view === "freelance" ? jobsList : jobsList.filter((job: JobListItem) => !featuredFreelanceIds.has(job.id));
   const paginatedJobs = jobsToRender;
   const pageTitle = view === "freelance" ? "Freelance L&D Jobs" : view === "standard" ? "Standard L&D Jobs" : "L&D Job Board";
   const pageDescription =
@@ -357,7 +353,7 @@ export default async function JobsDashboard({
                     </Link>
                   </div>
                   <div className="mt-4 grid gap-3">
-                    {freelanceJobs.map((job) => (
+                    {freelanceJobs.map((job: JobListItem) => (
                       <JobCard
                         key={job.id}
                         job={job}
@@ -410,7 +406,7 @@ export default async function JobsDashboard({
               )}
 
               <div className="grid gap-4">
-                {paginatedJobs.map((job) => (
+                {paginatedJobs.map((job: JobListItem) => (
                   <JobCard key={job.id} job={job} canApplyToJobs={canApplyToJobs} lockReason={lockReason} />
                 ))}
 

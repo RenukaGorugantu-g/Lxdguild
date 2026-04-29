@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { notifyUser } from '@/lib/notifications'
+import { getSiteUrl } from '@/lib/site-url'
 
 export async function POST(req: Request) {
   const body = await req.json()
@@ -54,6 +55,7 @@ export async function POST(req: Request) {
   const job = Array.isArray(application.jobs) ? application.jobs[0] : application.jobs
   const isAdmin = viewerProfile?.role === 'admin'
   const isJobOwner = job?.user_id === user.id
+  const jobUrl = `${getSiteUrl()}/dashboard/jobs/${application.job_id}`
 
   if (!isAdmin && !isJobOwner) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -88,13 +90,16 @@ export async function POST(req: Request) {
   await notifyUser(
     application.user_id,
     'job_application_reviewed',
-    action === 'shortlisted' ? 'You were shortlisted' : 'Application update',
+    action === 'shortlisted' ? 'Your application was accepted' : 'Your application was updated',
     action === 'shortlisted'
-      ? `Your application for ${job?.title || 'the role'} at ${job?.company || 'the company'} was shortlisted by the employer.`
+      ? `Your application for ${job?.title || 'the role'} at ${job?.company || 'the company'} was accepted for the next hiring step.`
       : `Your application for ${job?.title || 'the role'} at ${job?.company || 'the company'} was rejected by the employer.`,
     {
       application_id: applicationId,
       job_id: application.job_id,
+      title: job?.title || '',
+      company: job?.company || '',
+      job_url: jobUrl,
       status: action,
     }
   )

@@ -1,24 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, BriefcaseBusiness, Crown, ShieldCheck, Sparkles } from "lucide-react";
-import { redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
-import { getBaseRole } from "@/lib/profile-role";
 
-export default async function LandingPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (user) {
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-    const baseRole = getBaseRole(profile);
-
-    if (baseRole === "candidate") redirect("/candidate");
-    if (baseRole === "employer") redirect("/employer");
-    if (baseRole === "admin") redirect("/dashboard");
-  }
-
+export default function LandingPage() {
   const perspectiveCards = [
     {
       icon: ShieldCheck,

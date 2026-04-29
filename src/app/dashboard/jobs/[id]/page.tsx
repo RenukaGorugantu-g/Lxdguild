@@ -65,7 +65,7 @@ type JobDetailRecord = {
   deleted_at?: string | null;
 };
 
-export default async function JobDetailPage({ params }: { params: { id: string } }) {
+export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
   const { id } = await params;
   
@@ -230,7 +230,8 @@ export default async function JobDetailPage({ params }: { params: { id: string }
     .sort((a, b) => b.score - a.score)
     .slice(0, 4);
 
-  const postedDate = new Date(job.external_posted_at || job.imported_at || job.created_at).toLocaleDateString();
+  const postedDateSource = job.external_posted_at || job.imported_at || job.created_at || new Date().toISOString();
+  const postedDate = new Date(postedDateSource).toLocaleDateString();
   const expiryDate = job.expires_at ? new Date(job.expires_at).toLocaleDateString() : null;
   const isDeactivated = job.is_active === false;
   const hasPendingDeletion = job.deletion_request_status === "pending";
@@ -313,7 +314,7 @@ export default async function JobDetailPage({ params }: { params: { id: string }
                     <h3 className="text-xl font-bold mb-4">Job Description</h3>
                     <div 
                       className="text-zinc-600 dark:text-zinc-400 leading-relaxed space-y-4"
-                      dangerouslySetInnerHTML={{ __html: job.description }}
+                      dangerouslySetInnerHTML={{ __html: job.description || "" }}
                     />
                   </section>
 

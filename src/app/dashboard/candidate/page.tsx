@@ -37,20 +37,11 @@ export default async function CandidateDashboard() {
 
   if (!user) redirect("/login");
 
-  let profile: CandidateDashboardProfile | null = null;
-  const needsMembershipHydration =
-    !profile ||
-    (profile.membership_status === undefined &&
-      profile.membership_plan === undefined &&
-      profile.membership_expires_at === undefined);
-
-  if (needsMembershipHydration) {
-    profile = await loadProfile<CandidateDashboardProfile>(
-      supabase,
-      user.id,
-      "id, name, role, membership_status, membership_plan, membership_expires_at"
-    );
-  }
+  let profile = await loadProfile<CandidateDashboardProfile>(
+    supabase,
+    user.id,
+    "id, name, role, membership_status, membership_plan, membership_expires_at"
+  );
 
   if (!profile) {
     const ensuredProfile = await ensureUserProfile(user);
@@ -98,7 +89,7 @@ export default async function CandidateDashboard() {
 
   const hasPassedExam = candidate?.pass_status === "pass";
   const hasFailedExam = candidate?.pass_status === "fail";
-  const isVerified = isVerifiedCandidateRole(profile.role) && hasPassedExam;
+  const isVerified = isVerifiedCandidateRole(profile.role);
   const membership = getMembershipState(profile);
   const {
     canViewJobBoard,
@@ -139,19 +130,19 @@ export default async function CandidateDashboard() {
   ] as const;
 
   const examTitle =
-    hasFailedExam
-      ? "Learning Path Required"
-      : isVerified
-        ? "Validation Complete"
+    isVerified
+      ? "Validation Complete"
+      : hasFailedExam
+        ? "Learning Path Required"
         : examCompleted
           ? "Assessment Reviewed"
           : "Skill Validation Exam";
 
   const examCopy =
-    hasFailedExam
-      ? `You scored ${candidate?.latest_score ?? 0}%. Submit a course completion certificate to unlock your reattempt.`
-      : isVerified
-        ? `You scored ${candidate?.latest_score ?? 0}%. Your profile is now visible for stronger-fit opportunities.`
+    isVerified
+      ? `You scored ${candidate?.latest_score ?? 0}%. Your profile is now visible for stronger-fit opportunities.`
+      : hasFailedExam
+        ? `You scored ${candidate?.latest_score ?? 0}%. Submit a course completion certificate to unlock your reattempt.`
         : "Our assessment measures your practical L&D readiness and unlocks recommendations, resources, and marketplace access.";
 
   return (
@@ -283,7 +274,7 @@ export default async function CandidateDashboard() {
                   <p className="mt-4 max-w-2xl text-base leading-8 text-[#5b6757]">{examCopy}</p>
 
                   <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-                    {hasFailedExam ? (
+                    {!isVerified && hasFailedExam ? (
                       certificate?.status === "pending" ? (
                         <div className="rounded-full bg-[#eef4ea] px-6 py-4 text-sm font-semibold text-[#5b6757]">
                           Certificate under review

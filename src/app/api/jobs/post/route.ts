@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { buildInternalApplyValue } from "@/lib/job-apply";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { isAdminRole, isEmployerRole } from "@/lib/profile-role";
+import { getSiteUrl } from "@/lib/site-url";
 
 function hasMissingColumn(message: string, column: string) {
   return (
@@ -12,6 +13,7 @@ function hasMissingColumn(message: string, column: string) {
 }
 
 function notifyJobPosted(userId: string, title: string, company: string, jobId?: string | null) {
+  const jobUrl = jobId ? `${getSiteUrl()}/dashboard/jobs/${jobId}` : `${getSiteUrl()}/dashboard/employer`;
   queueMicrotask(() => {
     void import("@/lib/notifications")
       .then(({ notifyUser, notifyAdmins }) =>
@@ -21,13 +23,13 @@ function notifyJobPosted(userId: string, title: string, company: string, jobId?:
             "job_posted",
             "Job posted successfully",
             `Your job posting for ${title} at ${company} is live. Candidates will be notified when they apply.`,
-            { job_id: jobId, title, company }
+            { job_id: jobId, title, company, job_url: jobUrl, employer_job_url: jobUrl }
           ),
           notifyAdmins(
             "job_posted_admin",
             "Employer posted a new job",
             `An employer posted a new job: ${title} at ${company}.`,
-            { job_id: jobId, title, company }
+            { job_id: jobId, title, company, job_url: jobUrl, employer_job_url: jobUrl }
           ),
         ])
       )
@@ -38,6 +40,7 @@ function notifyJobPosted(userId: string, title: string, company: string, jobId?:
 }
 
 function notifyLegacyJobPosted(userId: string, title: string, company: string, jobId?: string | null) {
+  const jobUrl = jobId ? `${getSiteUrl()}/dashboard/jobs/${jobId}` : `${getSiteUrl()}/dashboard/employer`;
   queueMicrotask(() => {
     void import("@/lib/notifications")
       .then(({ notifyUser, notifyAdmins }) =>
@@ -47,13 +50,13 @@ function notifyLegacyJobPosted(userId: string, title: string, company: string, j
             "job_posted",
             "Job posted successfully",
             `Your job posting for ${title} at ${company} is live. Apply the latest jobs migrations to enable expiry and freshness tracking.`,
-            { job_id: jobId, title, company }
+            { job_id: jobId, title, company, job_url: jobUrl, employer_job_url: jobUrl }
           ),
           notifyAdmins(
             "job_posted_admin",
             "Employer posted a new job",
             `An employer posted a new job: ${title} at ${company}. The database is missing job lifecycle columns, so the job was saved in compatibility mode.`,
-            { job_id: jobId, title, company }
+            { job_id: jobId, title, company, job_url: jobUrl, employer_job_url: jobUrl }
           ),
         ])
       )

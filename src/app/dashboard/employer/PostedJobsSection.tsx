@@ -14,6 +14,7 @@ type PostedJob = {
   is_active?: boolean | null;
   deletion_request_status?: string | null;
   deleted_at?: string | null;
+  applicant_count?: number;
 };
 
 type DeleteResponse = {
@@ -98,10 +99,10 @@ export default function PostedJobsSection({ initialJobs }: { initialJobs: Posted
                     <h3 className="text-lg font-semibold text-white">{job.title}</h3>
                     <StatusPill job={job} />
                   </div>
-                  <p className="text-sm text-[#cde3e1]/72">
-                    {job.company} · {job.location}
+                  <p className="text-sm text-[#cde3e1]/72">{[job.company, job.location].filter(Boolean).join(" | ")}</p>
+                  <p className="mt-2 text-xs text-[#cde3e1]/48">
+                    Posted on {new Date(job.created_at).toLocaleDateString()} | {job.applicant_count || 0} applicant{job.applicant_count === 1 ? "" : "s"}
                   </p>
-                  <p className="mt-2 text-xs text-[#cde3e1]/48">Posted on {new Date(job.created_at).toLocaleDateString()}</p>
                 </div>
                 <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
                   <Link
@@ -112,9 +113,9 @@ export default function PostedJobsSection({ initialJobs }: { initialJobs: Posted
                   </Link>
                   <Link
                     href={`/dashboard/jobs/${job.id}`}
-                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/12"
+                    className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-700 transition hover:bg-brand-50"
                   >
-                    View Job
+                    Review Applicants
                   </Link>
                   <button
                     type="button"

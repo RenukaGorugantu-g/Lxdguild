@@ -50,7 +50,7 @@ export default async function CandidateApplicationsPage({
   }
 
   const applicationsQuery = await query;
-  let applications = applicationsQuery.data;
+  let applications: ApplicationRow[] | null = (applicationsQuery.data as ApplicationRow[] | null) ?? null;
 
   if (applicationsQuery.error?.code === "42703") {
     let fallbackQuery = supabase

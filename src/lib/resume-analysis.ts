@@ -98,7 +98,8 @@ export async function scoreResumeWithMlService({
   }
 
   const formData = new FormData();
-  const blob = new Blob([buffer], { type: mimeType || "application/octet-stream" });
+  const blobPart = new Uint8Array(buffer);
+  const blob = new Blob([blobPart], { type: mimeType || "application/octet-stream" });
   formData.append("file", blob, fileName);
   if (jobDescription) {
     formData.append("jd", jobDescription);

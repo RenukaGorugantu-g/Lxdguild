@@ -14,6 +14,10 @@ export default async function AdminDashboard() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  if (!user) {
+    return <div>Loading profile...</div>;
+  }
+
   let profile: AdminProfile | null = null;
   if (!profile && user) {
     const { data } = await supabase

@@ -5,6 +5,7 @@ import { getJobBoardAccessForUser } from '@/lib/job-board-access'
 import { notifyUser, notifyAdmins } from '@/lib/notifications'
 import { isInternalApplyValue, normalizeExternalApplyUrl } from '@/lib/job-apply'
 import { ensureUserProfile } from '@/lib/ensure-user-profile'
+import { getSiteUrl } from '@/lib/site-url'
 import {
   decideApplicationStatus,
   downloadResumeBuffer,
@@ -131,6 +132,12 @@ export async function POST(req: Request) {
   }
 
   const normalizedResumeUrl = resumeUrl || null;
+  const jobUrl = `${getSiteUrl()}/dashboard/jobs/${jobId}`;
+  const { data: applicantProfile } = await supabase
+    .from('profiles')
+    .select('name, skills')
+    .eq('id', user.id)
+    .single();
   let applicationStatus = 'applied';
   let reviewedAt: string | null = null;
   let shortlistedAt: string | null = null;
@@ -154,7 +161,7 @@ export async function POST(req: Request) {
           .select('id, user_id, file_url, file_path, file_name, mime_type')
           .eq('id', resumeId)
           .single(),
-        supabase.from('profiles').select('skills').eq('id', user.id).single(),
+        Promise.resolve({ data: applicantProfile }),
       ]);
 
       if (resume && resume.user_id === user.id) {
@@ -260,6 +267,7 @@ export async function POST(req: Request) {
       job_id: jobId,
       company: job.company,
       title: job.title,
+      job_url: jobUrl,
       apply_url: externalApplyUrl,
       application_mode: isInternalApply ? 'internal' : 'external',
       ats_score: atsScore,
@@ -270,6 +278,12 @@ export async function POST(req: Request) {
           notifyUser(job.user_id, 'job_application_received', 'New candidate applied', `A candidate has applied for ${job.title} at ${job.company}. ATS score: ${atsScore ?? 'n/a'}.`, {
             job_id: jobId,
             applicant_id: user.id,
+            candidate_name: typeof applicantProfile?.name === 'string' ? applicantProfile.name : '',
+            candidate_email: user.email || '',
+            company: job.company,
+            title: job.title,
+            job_url: jobUrl,
+            employer_job_url: jobUrl,
             ats_score: atsScore,
             ats_auto_decision: atsAutoDecision,
           }),
@@ -282,6 +296,12 @@ export async function POST(req: Request) {
       {
         job_id: jobId,
         applicant_id: user.id,
+        candidate_name: typeof applicantProfile?.name === 'string' ? applicantProfile.name : '',
+        candidate_email: user.email || '',
+        company: job.company,
+        title: job.title,
+        job_url: jobUrl,
+        employer_job_url: jobUrl,
         ats_score: atsScore,
         ats_auto_decision: atsAutoDecision,
       }

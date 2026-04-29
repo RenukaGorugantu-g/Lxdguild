@@ -55,7 +55,7 @@ export default function ApplicationReviewActions({
         disabled={!!loadingAction}
         className="text-xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-200 disabled:opacity-60"
       >
-        {loadingAction === "shortlisted" ? "Shortlisting..." : status === "shortlisted" ? "Shortlisted" : "Shortlist"}
+        {loadingAction === "shortlisted" ? "Accepting..." : status === "shortlisted" ? "Accepted" : "Accept Candidate"}
       </button>
       <button
         type="button"
@@ -63,7 +63,7 @@ export default function ApplicationReviewActions({
         disabled={!!loadingAction}
         className="text-xs px-2.5 py-1 rounded-full bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-60"
       >
-        {loadingAction === "rejected" ? "Rejecting..." : status === "rejected" ? "Rejected" : "Reject"}
+        {loadingAction === "rejected" ? "Rejecting..." : status === "rejected" ? "Rejected" : "Reject Candidate"}
       </button>
     </div>
   );

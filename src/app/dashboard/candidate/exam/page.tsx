@@ -9,6 +9,19 @@ import {
 import { redirect } from "next/navigation";
 import ExamClient from "./client-page";
 
+type ExamQuestionRow = {
+  id: string;
+  question: string;
+  options: string[];
+  correct_answer: string;
+  skill_tag?: string | null;
+  section_name?: string | null;
+  designation_bucket?: string | null;
+  question_set?: string | null;
+  set_weight?: number | null;
+  designation_level?: string | null;
+};
+
 export default async function ExamPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -55,7 +68,7 @@ export default async function ExamPage() {
     .eq("designation_bucket", designationBucket)
     .eq("question_set", targetSet);
 
-  let questions = bucketQuery.data || [];
+  let questions: ExamQuestionRow[] = (bucketQuery.data as ExamQuestionRow[] | null) || [];
 
   if (bucketQuery.error?.code === "42703") {
     const legacyQuestions = await supabase
@@ -68,8 +81,9 @@ export default async function ExamPage() {
       section_name: question.skill_tag || "General",
       designation_bucket: designationBucket,
       question_set: "set1",
+      set_weight: null,
       designation_level: level,
-    }));
+    })) as ExamQuestionRow[];
   } else if (!questions.length) {
     const fallbackQuestions = await supabase
       .from("exam_questions")
@@ -81,7 +95,7 @@ export default async function ExamPage() {
       ...question,
       section_name: question.section_name || question.skill_tag || "General",
       question_set: question.question_set || "set1",
-    }));
+    })) as ExamQuestionRow[];
   }
 
   const weightedQuestions = buildRoleMatchedAssessment(questions, designationBucket, DEFAULT_TOTAL_QUESTIONS);
