@@ -215,7 +215,7 @@ export default function LandingPage() {
         <footer className="marketing-footer px-6 py-8">
           <div className="marketing-container flex flex-col gap-5 text-xs text-[#7a8677] sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-bold text-[#111827]">LXD Guild</p>
+              <img src="https://lxdguild.com/img/z-1.webp" alt="LXD Guild" className="h-12 w-auto" />
               <p className="mt-1">Empowering professionals through technology, learning, and community.</p>
             </div>
             <div className="flex flex-wrap gap-5">

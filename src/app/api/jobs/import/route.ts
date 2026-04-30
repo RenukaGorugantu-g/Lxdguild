@@ -26,7 +26,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const result = await syncJobFeed();
+    const result = await syncJobFeed({ trigger: "manual" });
 
     if (isJson) {
       return NextResponse.json(result);

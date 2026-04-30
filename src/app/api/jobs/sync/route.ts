@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await syncJobFeed();
+    const result = await syncJobFeed({ trigger: "cron" });
     return NextResponse.json({ success: true, ...result });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown sync error";

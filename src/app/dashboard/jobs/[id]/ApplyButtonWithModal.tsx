@@ -42,7 +42,8 @@ export default function ApplyButtonWithModal({
   isCompanySaved,
   isRoleFollowed,
   canApply = true,
-  lockReason = "Write the assessment to unlock job applications."
+  lockReason = "Write the assessment to unlock job applications.",
+  backToJobsHref,
 }: { 
   job: ApplyJob, 
   profile: CandidateProfile, 
@@ -53,7 +54,8 @@ export default function ApplyButtonWithModal({
   isCompanySaved: boolean,
   isRoleFollowed: boolean,
   canApply?: boolean,
-  lockReason?: string
+  lockReason?: string,
+  backToJobsHref: string
 }) {
   const [showModal, setShowModal] = useState(false);
   const [applied, setApplied] = useState(alreadyApplied);
@@ -108,6 +110,7 @@ export default function ApplyButtonWithModal({
           onQuotaReached={(reason) => {
             setButtonLockReason(reason);
           }}
+          backToJobsHref={backToJobsHref}
         />
       )}
     </>

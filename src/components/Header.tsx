@@ -29,6 +29,8 @@ import {
   X,
 } from "lucide-react";
 
+const BRAND_LOGO_URL = "https://lxdguild.com/img/z-1.webp";
+
 type HeaderProfile = {
   name?: string | null;
   role?: string | null;
@@ -287,13 +289,8 @@ export default function Header() {
               : "border border-white/10 bg-[linear-gradient(180deg,rgba(9,23,55,0.96),rgba(9,23,55,0.88))] shadow-[0_24px_80px_rgba(3,10,26,0.45)]"
           }`}
         >
-          <Link href={brandHref} className="group flex items-center gap-3">
-            <div className="leading-tight">
-              <span className={`block text-lg font-extrabold tracking-[0.03em] ${isPublicMarketingRoute ? "text-[#138d1a]" : "text-white"}`}>LXD Guild</span>
-              <span className={`hidden text-[10px] font-semibold uppercase tracking-[0.26em] sm:block ${isPublicMarketingRoute ? "text-[#74826e]" : "text-[#cde3e1]/72"}`}>
-                Career ecosystem
-              </span>
-            </div>
+          <Link href={brandHref} className="group flex items-center" aria-label="LXD Guild home">
+            <img src={BRAND_LOGO_URL} alt="LXD Guild" className="h-11 w-auto sm:h-12" />
           </Link>
 
           <nav className="hidden items-center gap-2 lg:flex">

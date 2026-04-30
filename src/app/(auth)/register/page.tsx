@@ -41,10 +41,15 @@ function RegisterPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [requiresEmailVerification, setRequiresEmailVerification] = useState(false);
 
   const supabase = createClient();
   const candidateBucket = getBucketForTargetRole(candidateTargetRole);
   const name = `${firstName} ${lastName}`.trim();
+  const emailRedirectTo =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/login`
+      : undefined;
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +66,7 @@ function RegisterPageContent() {
       email,
       password,
       options: {
+        emailRedirectTo,
         data: {
           name,
           role: selectedRole,
@@ -78,6 +84,8 @@ function RegisterPageContent() {
       setLoading(false);
       return;
     }
+
+    setRequiresEmailVerification(!data.session);
 
     await fetch("/api/notifications/register", {
       method: "POST",
@@ -107,9 +115,19 @@ function RegisterPageContent() {
               <AuthLogo compact />
             </div>
             <p className="mt-8 text-[12px] font-semibold uppercase tracking-[0.24em] text-[#748068]">Registration complete</p>
-            <h1 className="mt-4 text-[2.8rem] font-semibold tracking-[-0.05em] text-[#20252f]">Check your email</h1>
+            <h1 className="mt-4 text-[2.8rem] font-semibold tracking-[-0.05em] text-[#20252f]">
+              {requiresEmailVerification ? "Check your email" : "Account created"}
+            </h1>
             <p className="mx-auto mt-5 max-w-[520px] text-[1rem] leading-8 text-[#5f6876]">
-              We&apos;ve sent a verification link to <span className="font-semibold text-[#2a3039]">{email}</span>. Confirm your inbox and then sign in to continue.
+              {requiresEmailVerification ? (
+                <>
+                  We&apos;ve sent a verification link to <span className="font-semibold text-[#2a3039]">{email}</span>. Confirm your inbox and then sign in to continue.
+                </>
+              ) : (
+                <>
+                  Your account is active and ready. You can sign in right away with <span className="font-semibold text-[#2a3039]">{email}</span>.
+                </>
+              )}
             </p>
             <Link
               href="/login"

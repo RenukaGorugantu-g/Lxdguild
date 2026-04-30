@@ -1,5 +1,7 @@
 import { getSiteUrl } from "./site-url";
 
+const BRAND_LOGO_URL = "https://lxdguild.com/img/z-1.webp";
+
 type NotificationAudience = "user" | "admin";
 
 type NotificationTemplateInput = {
@@ -25,6 +27,10 @@ type EmailTheme = {
   accent: string;
   accentSoft: string;
   panel: string;
+  headerStart: string;
+  headerEnd: string;
+  border: string;
+  textMuted: string;
 };
 
 type TemplateSection = {
@@ -36,6 +42,9 @@ type TemplateContent = {
   preheader: string;
   heading: string;
   intro: string;
+  kicker?: string | null;
+  heroNote?: string | null;
+  layoutVariant?: "editorial" | "celebration" | "urgent" | "support";
   status?: string | null;
   summary?: string | null;
   checklist?: string[];
@@ -92,16 +101,19 @@ function buildContent({
     preheader: message,
     heading: title,
     intro: message,
+    kicker: theme.eyebrow,
+    heroNote: null,
+    layoutVariant: "editorial",
     status: data.status ? beautifyStatus(data.status) : null,
     summary: null,
     checklist: [],
-      details: buildDetailRows(type, data, audience),
-      cta: getPrimaryCta(type, data, audience),
-      footer,
-      theme,
-      spotlight: [],
-      resources: [],
-    };
+    details: buildDetailRows(type, data, audience),
+    cta: getPrimaryCta(type, data, audience),
+    footer,
+    theme,
+    spotlight: [],
+    resources: [],
+  };
 
   switch (type) {
     case "user_registered":
@@ -109,6 +121,9 @@ function buildContent({
         ...defaults,
         preheader: "Your LXD Guild account is ready.",
         heading: "Welcome to LXD Guild",
+        kicker: "Your journey starts here",
+        heroNote: "Build your profile. Prove your skills. Unlock sharper opportunities.",
+        layoutVariant: "celebration",
         intro: `Your ${beautifyRole(data.role || "member")} account has been created successfully. We now have the information needed to guide your learning and hiring journey.`,
         summary:
           audience === "admin"
@@ -126,12 +141,12 @@ function buildContent({
           audience === "user" && (data.role || "").startsWith("candidate")
             ? [
                 {
-                  icon: "◆",
+                  icon: "CV",
                   title: "Assessment-first visibility",
                   copy: "Your Guild assessment helps us map you to stronger-fit L&D opportunities and a sharper professional learning path.",
                 },
                 {
-                  icon: "★",
+                  icon: "PRO",
                   title: "Membership unlocks more",
                   copy: "Explore membership to access premium resources, learning support, and deeper Guild tools once you are ready.",
                 },
@@ -139,12 +154,12 @@ function buildContent({
             : audience === "user"
               ? [
                   {
-                    icon: "◌",
+                    icon: "POST",
                     title: "Post faster",
                     copy: "Publish a role, review applicants, and track every hiring touchpoint inside one workflow.",
                   },
                   {
-                    icon: "▲",
+                    icon: "VIP",
                     title: "Need MVP talent?",
                     copy: "If you want verified MVP candidates and richer hiring support, reach out and we will guide you through the right plan.",
                   },
@@ -185,6 +200,12 @@ function buildContent({
         ...defaults,
         preheader: data.pass_status === "pass" ? "You passed your LXD Guild assessment." : "Your LXD Guild assessment result is ready.",
         heading: data.pass_status === "pass" ? "Assessment Passed" : "Assessment Result Ready",
+        kicker: data.pass_status === "pass" ? "You unlocked a new stage" : "Your scorecard is ready",
+        heroNote:
+          data.pass_status === "pass"
+            ? "This result increases your trust signal across the Guild ecosystem."
+            : "This is not a dead end. It is your clearest map for what to strengthen next.",
+        layoutVariant: data.pass_status === "pass" ? "celebration" : "support",
         intro:
           data.pass_status === "pass"
             ? `You scored ${data.score || "0"}% and unlocked MVP candidate status for the ${data.designation_bucket || "selected"} track.`
@@ -198,21 +219,22 @@ function buildContent({
           data.pass_status === "pass"
             ? ["Open your scorecard to review your breakdown.", "Browse matching jobs from the candidate dashboard."]
             : ["Review your scorecard.", "Complete the suggested course path.", "Submit your course certificate to unlock your reattempt."],
-        spotlight: data.pass_status === "pass"
-          ? [
-              {
-                icon: "✓",
-                title: "You are now visible",
-                copy: "Your verified status helps you appear with stronger trust signals across the Guild experience.",
-              },
-            ]
-          : [
-              {
-                icon: "△",
-                title: "What to strengthen next",
-                copy: data.recommendation_rationale || "Your score suggests focused work on core L&D capability before the next attempt.",
-              },
-            ],
+        spotlight:
+          data.pass_status === "pass"
+            ? [
+                {
+                  icon: "MVP",
+                  title: "You are now visible",
+                  copy: "Your verified status helps you appear with stronger trust signals across the Guild experience.",
+                },
+              ]
+            : [
+                {
+                  icon: "NEXT",
+                  title: "What to strengthen next",
+                  copy: data.recommendation_rationale || "Your score suggests focused work on core L&D capability before the next attempt.",
+                },
+              ],
         resources: compactResources([
           buildResource(data.recommended_course_1_title, data.recommended_course_1_link, "Recommended learning path"),
           buildResource(data.recommended_course_2_title, data.recommended_course_2_link, "Continue building capability"),
@@ -241,7 +263,7 @@ function buildContent({
           audience === "user"
             ? [
                 {
-                  icon: "◌",
+                  icon: "ATS",
                   title: "Applicant tracking included",
                   copy: "Every candidate application now flows into your employer view with ATS context and status actions.",
                 },
@@ -252,17 +274,75 @@ function buildContent({
     case "job_application":
       return {
         ...defaults,
-        preheader: "Your job application has been recorded.",
-        heading: "Application Submitted",
-        intro: message,
+        preheader:
+          data.application_mode === "external"
+            ? "Finish your application on the employer site."
+            : "Your application is now with the employer.",
+        heading:
+          data.application_mode === "external"
+            ? "Finish Your Application"
+            : "Application Submitted",
+        kicker:
+          data.application_mode === "external"
+            ? "One more step to complete"
+            : "You are officially in motion",
+        heroNote:
+          data.application_mode === "external"
+            ? "The employer still needs the final submission on their own site."
+            : "Your profile is now visible to the hiring team in their review flow.",
+        layoutVariant: data.application_mode === "external" ? "urgent" : "celebration",
+        intro:
+          data.application_mode === "external"
+            ? `You started your application for ${data.title || "the role"} at ${data.company || "the employer"}. Complete the final step on the employer's page so your application goes through fully.`
+            : `Your application for ${data.title || "the role"} at ${data.company || "the employer"} is now inside the employer review queue on LXD Guild.`,
         summary:
           data.application_mode === "external"
-            ? "LXD Guild has tracked your intent to apply. If this role uses an employer-hosted application, make sure you finish the form on their site too."
-            : "Your application is now inside the employer review queue on LXD Guild.",
+            ? "We saved your application intent in LXD Guild so you can return and track your progress, but you still need to finish the employer form."
+            : "You are officially in the employer's pipeline. Keep your profile polished while they review your fit.",
         checklist:
           data.application_mode === "external"
-            ? ["Complete the employer's application form if one opens.", "Return to LXD Guild to track future updates."]
-            : ["Check your applications dashboard for updates.", "Keep your profile and resume current while the employer reviews your fit."],
+            ? [
+                "Open the employer application and complete every required field.",
+                "Use the same resume and contact details for consistency.",
+                "Return to LXD Guild later to track updates and next steps.",
+              ]
+            : [
+                "Watch your applications dashboard for shortlist or rejection updates.",
+                "Keep your resume, headline, and portfolio links current.",
+                "Be ready for a recruiter follow-up if the employer moves fast.",
+              ],
+        spotlight:
+          data.application_mode === "external"
+            ? [
+                {
+                  icon: "01",
+                  title: "Important",
+                  copy: "This role finishes on the employer's own site. Until that final form is submitted, the application may remain incomplete.",
+                },
+              ]
+            : [
+                {
+                  icon: "LIVE",
+                  title: "You are in the review flow",
+                  copy: "Your profile, resume, and match context are now available to the employer inside the LXD Guild hiring workflow.",
+                },
+              ],
+        resources:
+          data.application_mode === "external"
+            ? [
+                {
+                  title: "Review the role once more",
+                  copy: "Double-check the job context before completing the employer's page.",
+                  href: data.job_url || `${getSiteUrl()}/dashboard/jobs`,
+                },
+              ]
+            : [
+                {
+                  title: "Track this application",
+                  copy: "Open your applications dashboard to follow every employer update.",
+                  href: `${getSiteUrl()}/dashboard/candidate/applications`,
+                },
+              ],
       };
 
     case "job_application_received":
@@ -270,14 +350,16 @@ function buildContent({
         ...defaults,
         preheader: "A new candidate has applied to your job.",
         heading: "New Candidate Application",
+        kicker: "Fresh candidate interest",
+        heroNote: "Review fast while intent is high and momentum is still on your side.",
         intro: `${data.candidate_name || data.candidate_email || "A candidate"} has applied for ${data.title || "your role"} at ${data.company || "your company"}.`,
         summary: "Open the applicants view to review their resume, ATS fit, and decide whether to accept or reject the application.",
         checklist: ["Open the job's applicant list.", "Review the candidate profile and ATS notes.", "Record the next step so the candidate gets an update email immediately."],
         spotlight: [
           {
-            icon: "◆",
+            icon: "FLOW",
             title: "Designed for employer flow",
-            copy: "You can move from application to accept/reject without losing the trail of notifications or status changes.",
+            copy: "You can move from application to accept or reject without losing the trail of notifications or status changes.",
           },
         ],
       };
@@ -287,6 +369,12 @@ function buildContent({
         ...defaults,
         preheader: data.status === "shortlisted" ? "You moved to the next hiring step." : "Your job application has been updated.",
         heading: data.status === "shortlisted" ? "You Moved Forward" : "Application Update",
+        kicker: data.status === "shortlisted" ? "Momentum is building" : "Keep your momentum anyway",
+        heroNote:
+          data.status === "shortlisted"
+            ? "This employer wants to continue the conversation with you."
+            : "One no should not interrupt your larger opportunity path.",
+        layoutVariant: data.status === "shortlisted" ? "celebration" : "support",
         intro:
           data.status === "shortlisted"
             ? `Your application for ${data.title || "the role"} at ${data.company || "the company"} has been accepted for the next hiring step.`
@@ -313,6 +401,12 @@ function buildContent({
         ...defaults,
         preheader: data.status === "approved" ? "Your certificate was verified." : "Your certificate is under review.",
         heading: data.status === "approved" ? "Certificate Approved" : "Certificate Submitted",
+        kicker: data.status === "approved" ? "Access restored" : "We received your proof",
+        heroNote:
+          data.status === "approved"
+            ? "You can now return to your validation journey with the next gate unlocked."
+            : "Our team or validation flow is now checking the details you submitted.",
+        layoutVariant: data.status === "approved" ? "celebration" : "support",
         intro:
           data.status === "approved"
             ? "Your certificate has been verified successfully."
@@ -333,6 +427,12 @@ function buildContent({
         ...defaults,
         preheader: `Your certificate was ${beautifyStatus(data.status || "reviewed")}.`,
         heading: data.status === "approved" ? "Certificate Approved" : "Certificate Review Complete",
+        kicker: data.status === "approved" ? "You can move ahead now" : "Your review is complete",
+        heroNote:
+          data.status === "approved"
+            ? "Your candidate journey is open again."
+            : "Check the notes below and take the next best step.",
+        layoutVariant: data.status === "approved" ? "celebration" : "support",
         intro:
           data.status === "approved"
             ? "Your certificate was approved and your candidate reattempt is now unlocked."
@@ -362,77 +462,161 @@ function buildContent({
 }
 
 function renderEmailHtml(content: TemplateContent) {
+  const heroAccentColor =
+    content.layoutVariant === "celebration"
+      ? "#e8ff87"
+      : content.layoutVariant === "urgent"
+        ? "#ffd38a"
+        : content.layoutVariant === "support"
+          ? "#c7f0ff"
+          : "#e8ff87";
+
+  const heroBodyTone =
+    content.layoutVariant === "support"
+      ? "rgba(230,240,247,0.95)"
+      : "rgba(255,255,255,0.92)";
+
+  const ctaBg =
+    content.layoutVariant === "urgent"
+      ? "#ffd38a"
+      : content.layoutVariant === "support"
+        ? "#c7f0ff"
+        : content.theme.accent;
+
+  const ctaTextColor =
+    content.layoutVariant === "urgent" || content.layoutVariant === "support"
+      ? "#081225"
+      : "#081225";
+
+  const leadCardHtml = content.summary
+    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:18px;border-collapse:separate;border-spacing:0;background:linear-gradient(135deg,#f8fafc 0%,#ffffff 100%);border:1px solid ${content.theme.border};border-radius:24px;">
+        <tr>
+          <td style="padding:20px 22px;">
+            <div style="font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${content.theme.accent};">What matters now</div>
+            <div style="margin-top:10px;font-size:18px;line-height:1.7;color:#1f2937;">
+              ${escapeHtml(content.summary)}
+            </div>
+          </td>
+        </tr>
+      </table>`
+    : "";
+
+  const factCards = content.details.slice(0, 4);
+  const remainingDetails = factCards.length ? content.details.slice(4) : content.details;
+
+  const factCardsHtml = factCards.length
+    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:22px;border-collapse:separate;border-spacing:12px 12px;">
+        <tr>
+          ${factCards
+            .map(
+              (detail) => `<td valign="top" width="${Math.max(25, Math.floor(100 / factCards.length))}%" style="background:${content.theme.panel};border:1px solid ${content.theme.border};padding:16px 14px;border-radius:18px;">
+                <div style="font-size:11px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:#64748b;">${escapeHtml(detail.label)}</div>
+                <div style="margin-top:8px;font-size:15px;line-height:1.6;font-weight:700;color:#0f172a;">${escapeHtml(detail.value)}</div>
+              </td>`
+            )
+            .join("")}
+        </tr>
+      </table>`
+    : "";
+
   const checklistHtml = content.checklist?.length
-    ? `<div style="margin:24px 0 0;padding:20px;border-radius:20px;background:${content.theme.panel};">
-        <p style="margin:0 0 12px;font-size:12px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:${content.theme.accent};">Next Steps</p>
-        <ul style="margin:0;padding-left:18px;color:#334155;font-size:14px;line-height:1.7;">
-          ${content.checklist.map((item) => `<li style="margin:0 0 8px;">${escapeHtml(item)}</li>`).join("")}
-        </ul>
-      </div>`
+    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:22px;border-collapse:separate;border-spacing:0;background:${content.theme.panel};border:1px solid ${content.theme.border};border-radius:24px;">
+        <tr>
+          <td style="padding:22px 24px;">
+            <div style="margin:0 0 12px;font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${content.theme.accent};">Next Steps</div>
+            <ul style="margin:0;padding-left:18px;color:#334155;font-size:14px;line-height:1.8;">
+              ${content.checklist.map((item) => `<li style="margin:0 0 8px;">${escapeHtml(item)}</li>`).join("")}
+            </ul>
+          </td>
+        </tr>
+      </table>`
     : "";
 
   const spotlightHtml = content.spotlight?.length
-    ? `<div style="margin:24px 0 0;display:grid;gap:12px;">
+    ? `<div style="margin:22px 0 0;">
         ${content.spotlight
           .map(
-            (item) => `<div style="padding:18px;border-radius:20px;background:${content.theme.panel};border:1px solid #dbe3ea;">
-              <div style="display:flex;align-items:flex-start;gap:12px;">
-                <div style="flex-shrink:0;height:34px;width:34px;border-radius:999px;background:${content.theme.accent};color:#ffffff;font-size:16px;font-weight:700;line-height:34px;text-align:center;">${escapeHtml(item.icon)}</div>
-                <div>
-                  <p style="margin:0;font-size:15px;font-weight:700;color:#0f172a;">${escapeHtml(item.title)}</p>
-                  <p style="margin:8px 0 0;font-size:14px;line-height:1.7;color:#475569;">${escapeHtml(item.copy)}</p>
-                </div>
-              </div>
-            </div>`
+            (item) => `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;border-collapse:separate;border-spacing:0;background:${content.theme.panel};border:1px solid ${content.theme.border};border-radius:22px;">
+              <tr>
+                <td style="padding:18px;">
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+                    <tr>
+                      <td width="64" style="vertical-align:top;">
+                        <div style="width:46px;height:46px;border-radius:14px;background:${content.theme.accent};color:#ffffff;font-size:11px;font-weight:800;line-height:46px;text-align:center;letter-spacing:0.08em;">${escapeHtml(item.icon)}</div>
+                      </td>
+                      <td style="vertical-align:top;">
+                        <p style="margin:0;font-size:15px;font-weight:700;color:#0f172a;">${escapeHtml(item.title)}</p>
+                        <p style="margin:8px 0 0;font-size:14px;line-height:1.8;color:#475569;">${escapeHtml(item.copy)}</p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>`
           )
           .join("")}
       </div>`
     : "";
 
   const resourcesHtml = content.resources?.length
-    ? `<div style="margin:24px 0 0;">
-        <p style="margin:0 0 12px;font-size:12px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#64748b;">Suggested Next Moves</p>
-        <div style="display:grid;gap:12px;">
+    ? `<div style="margin:22px 0 0;">
+        <p style="margin:0 0 12px;font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#64748b;">Suggested Next Moves</p>
+        <div>
           ${content.resources
             .map(
-              (item) => `<div style="padding:18px;border-radius:20px;border:1px solid #dbe3ea;background:#ffffff;">
-                <p style="margin:0;font-size:15px;font-weight:700;color:#0f172a;">${escapeHtml(item.title)}</p>
-                <p style="margin:8px 0 0;font-size:14px;line-height:1.7;color:#475569;">${escapeHtml(item.copy)}</p>
-                ${item.href ? `<div style="margin-top:12px;"><a href="${escapeHtml(item.href)}" style="color:${content.theme.accent};font-size:13px;font-weight:700;text-decoration:none;">Open resource</a></div>` : ""}
-              </div>`
+              (item) => `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;border-collapse:separate;border-spacing:0;background:#ffffff;border:1px solid ${content.theme.border};border-radius:22px;">
+                <tr>
+                  <td style="padding:18px;">
+                    <p style="margin:0;font-size:15px;font-weight:700;color:#0f172a;">${escapeHtml(item.title)}</p>
+                    <p style="margin:8px 0 0;font-size:14px;line-height:1.8;color:#475569;">${escapeHtml(item.copy)}</p>
+                    ${item.href ? `<div style="margin-top:12px;"><a href="${escapeHtml(item.href)}" style="color:${content.theme.accent};font-size:13px;font-weight:800;text-decoration:none;">Open resource</a></div>` : ""}
+                  </td>
+                </tr>
+              </table>`
             )
             .join("")}
         </div>
       </div>`
     : "";
 
-  const detailsHtml = content.details.length
-    ? `<div style="margin:24px 0 0;padding:20px;border:1px solid #dbe3ea;border-radius:20px;background:#ffffff;">
-        <p style="margin:0 0 12px;font-size:12px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#64748b;">Snapshot</p>
-        ${content.details
-          .map(
-            (detail) =>
-              `<div style="margin:0 0 10px;"><strong style="color:#0f172a;">${escapeHtml(detail.label)}:</strong> <span style="color:#334155;">${escapeHtml(detail.value)}</span></div>`
-          )
-          .join("")}
+  const detailsHtml = remainingDetails.length
+    ? `<div style="margin:22px 0 0;">
+        <p style="margin:0 0 12px;font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#64748b;">Snapshot</p>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-spacing:0;background:#ffffff;border:1px solid ${content.theme.border};border-radius:24px;">
+          <tr>
+            <td style="padding:22px 24px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+          ${remainingDetails
+            .map(
+              (detail) =>
+                `<tr>
+                  <td style="padding:10px 0;border-bottom:1px solid #eef2f7;font-size:13px;font-weight:700;color:#64748b;vertical-align:top;width:34%;">${escapeHtml(detail.label)}</td>
+                  <td style="padding:10px 0;border-bottom:1px solid #eef2f7;font-size:14px;line-height:1.7;color:#0f172a;vertical-align:top;">${escapeHtml(detail.value)}</td>
+                </tr>`
+            )
+            .join("")}
+        </table>
+            </td>
+          </tr>
+        </table>
       </div>`
     : "";
 
   const statusHtml = content.status
-    ? `<div style="margin:18px 0 0;">
-        <span style="display:inline-block;padding:8px 14px;border-radius:999px;background:${content.theme.accentSoft};color:${content.theme.accent};font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">
+    ? `<div style="margin:0 0 14px;">
+        <span style="display:inline-block;padding:8px 14px;border-radius:999px;background:${content.theme.accentSoft};color:${content.theme.accent};font-size:12px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;">
           ${escapeHtml(content.status)}
         </span>
       </div>`
     : "";
 
   const summaryHtml = content.summary
-    ? `<p style="margin:18px 0 0;font-size:15px;line-height:1.7;color:#475569;">${escapeHtml(content.summary)}</p>`
+    ? ``
     : "";
 
   const ctaHtml = content.cta
-    ? `<div style="margin:28px 0 0;">
-        <a href="${escapeHtml(content.cta.href)}" style="display:inline-block;padding:14px 22px;border-radius:999px;background:${content.theme.accent};color:#ffffff;text-decoration:none;font-weight:700;">
+    ? `<div style="margin:22px 0 0;">
+        <a href="${escapeHtml(content.cta.href)}" style="display:inline-block;padding:15px 24px;border-radius:0;background:${ctaBg};color:${ctaTextColor};text-decoration:none;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;box-shadow:0 10px 24px rgba(15,118,110,0.18);min-width:260px;text-align:center;">
           ${escapeHtml(content.cta.label)}
         </a>
       </div>`
@@ -442,43 +626,113 @@ function renderEmailHtml(content: TemplateContent) {
 <html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${escapeHtml(content.heading)}</title>
   </head>
-  <body style="margin:0;padding:0;background:#edf3f6;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+  <body style="margin:0;padding:0;background:#e7d1c8;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
     <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;">
       ${escapeHtml(content.preheader)}
     </span>
-    <div style="max-width:680px;margin:0 auto;padding:32px 16px;">
-      <div style="background:#ffffff;border-radius:30px;overflow:hidden;border:1px solid #d8e2e8;box-shadow:0 18px 50px rgba(15,23,42,0.08);">
-        <div style="padding:30px 30px 22px;background:linear-gradient(135deg,#081225 0%,${content.theme.accent} 100%);color:#ffffff;">
-          <div style="display:flex;align-items:center;gap:12px;">
-            <div style="height:44px;width:44px;border-radius:14px;background:rgba(255,255,255,0.16);text-align:center;line-height:44px;font-size:14px;font-weight:800;letter-spacing:0.12em;">LXD</div>
-            <div>
-              <div style="font-size:16px;font-weight:800;letter-spacing:0.04em;">LXD Guild</div>
-              <div style="font-size:11px;opacity:0.8;letter-spacing:0.16em;text-transform:uppercase;">Learning Experience Talent Network</div>
-            </div>
-          </div>
-          <div style="font-size:11px;letter-spacing:0.2em;text-transform:uppercase;opacity:0.85;font-weight:700;">${escapeHtml(content.theme.eyebrow)}</div>
-          <h1 style="margin:16px 0 0;font-size:30px;line-height:1.18;">${escapeHtml(content.heading)}</h1>
-        </div>
-        <div style="padding:30px;">
-          <p style="margin:0;font-size:16px;line-height:1.8;color:#334155;">${escapeHtml(content.intro)}</p>
-          ${statusHtml}
-          ${summaryHtml}
-          ${ctaHtml}
-          ${detailsHtml}
-          ${spotlightHtml}
-          ${resourcesHtml}
-          ${checklistHtml}
-          <div style="margin:28px 0 0;padding-top:20px;border-top:1px solid #e2e8f0;">
-            <p style="margin:0;font-size:12px;line-height:1.7;color:#64748b;">${escapeHtml(content.footer)}</p>
-            <p style="margin:12px 0 0;font-size:12px;line-height:1.7;color:#64748b;">
-              Website: <a href="${escapeHtml(getSiteUrl())}" style="color:${content.theme.accent};text-decoration:none;">${escapeHtml(getSiteUrl())}</a>
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background:#e7d1c8;border-collapse:collapse;">
+      <tr>
+        <td align="center" style="padding:24px 12px;">
+          <table role="presentation" width="650" border="0" cellpadding="0" cellspacing="0" style="width:100%;max-width:650px;border-collapse:collapse;">
+            <tr>
+              <td align="center" style="padding-bottom:12px;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#6b7280;">
+                LXD Guild Notification
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#08131f;background-image:linear-gradient(135deg,${content.theme.headerStart} 0%,${content.theme.headerEnd} 100%);padding:22px 32px 72px;border-top:1px solid #2d3a45;border-bottom:1px solid #2d3a45;">
+                <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                  <tr>
+                    <td align="left" style="padding-bottom:18px;">
+                      <a href="${escapeHtml(getSiteUrl())}" style="text-decoration:none;">
+                        <img src="${BRAND_LOGO_URL}" alt="LXD Guild" width="150" style="display:block;height:auto;border:0;max-width:150px;" />
+                      </a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td align="center" style="padding-bottom:12px;">
+                      <div style="display:inline-block;padding:8px 14px;background:rgba(255,255,255,0.12);color:#ffffff;font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;">
+                        ${escapeHtml(content.kicker || content.theme.eyebrow)}
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td align="center" style="padding-bottom:10px;">
+                      <div style="font-family:Georgia,'Times New Roman',serif;font-size:54px;line-height:1.02;color:${heroAccentColor};font-style:italic;">
+                        ${escapeHtml(content.heading)}
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td align="center">
+                      <div style="max-width:520px;margin:0 auto;font-size:18px;line-height:1.7;color:${heroBodyTone};">
+                        ${escapeHtml(content.intro)}
+                      </div>
+                    </td>
+                  </tr>
+                  ${content.heroNote ? `<tr><td align="center" style="padding-top:18px;"><div style="max-width:460px;margin:0 auto;padding:12px 16px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);font-size:13px;line-height:1.7;color:${heroBodyTone};">${escapeHtml(content.heroNote)}</div></td></tr>` : ""}
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#08131f;padding:0 0 24px;">
+                <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                  <tr>
+                    <td style="padding:0 28px;">
+                      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-top:-42px;border-collapse:separate;border-spacing:0;background:#ffffff;">
+                        <tr>
+                          <td style="padding:28px 26px 16px;">
+                            ${statusHtml}
+                            ${leadCardHtml}
+                            ${ctaHtml}
+                            ${factCardsHtml}
+                            ${detailsHtml}
+                            ${spotlightHtml}
+                            ${resourcesHtml}
+                            ${checklistHtml}
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#08131f;padding:0 28px 28px;">
+                <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#0b1826;">
+                  <tr>
+                    <td style="padding:22px 24px;">
+                      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                        <tr>
+                          <td style="vertical-align:top;">
+                            <a href="${escapeHtml(getSiteUrl())}" style="display:inline-block;text-decoration:none;">
+                              <img src="${BRAND_LOGO_URL}" alt="LXD Guild" width="120" style="display:block;height:auto;border:0;max-width:120px;" />
+                            </a>
+                            <div style="margin-top:12px;font-size:12px;line-height:1.8;color:#d4dde3;max-width:390px;">
+                              ${escapeHtml(content.footer)}
+                            </div>
+                          </td>
+                          <td align="right" style="vertical-align:top;">
+                            <div style="font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#e8ff87;">Visit</div>
+                            <div style="margin-top:8px;">
+                              <a href="${escapeHtml(getSiteUrl())}" style="color:#ffffff;font-size:13px;font-weight:800;text-decoration:none;">${escapeHtml(getSiteUrl())}</a>
+                            </div>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
   </body>
 </html>`;
 }
@@ -575,9 +829,13 @@ function getTheme(audience: NotificationAudience, type: string): EmailTheme {
   if (audience === "admin") {
     return {
       eyebrow: "LXD Guild Admin Alert",
-      accent: "#7c3aed",
-      accentSoft: "#ede9fe",
-      panel: "#f5f3ff",
+      accent: "#0f766e",
+      accentSoft: "#ccfbf1",
+      panel: "#f0fdfa",
+      headerStart: "#081225",
+      headerEnd: "#0f766e",
+      border: "#cfe8e4",
+      textMuted: "#5b6b78",
     };
   }
 
@@ -587,6 +845,10 @@ function getTheme(audience: NotificationAudience, type: string): EmailTheme {
       accent: "#0f766e",
       accentSoft: "#ccfbf1",
       panel: "#f0fdfa",
+      headerStart: "#0b1b34",
+      headerEnd: "#0f766e",
+      border: "#cfe8e4",
+      textMuted: "#5b6b78",
     };
   }
 
@@ -596,6 +858,10 @@ function getTheme(audience: NotificationAudience, type: string): EmailTheme {
       accent: "#0f766e",
       accentSoft: "#d1fae5",
       panel: "#ecfdf5",
+      headerStart: "#081225",
+      headerEnd: "#14845f",
+      border: "#d5eadf",
+      textMuted: "#5b6b78",
     };
   }
 
@@ -604,6 +870,10 @@ function getTheme(audience: NotificationAudience, type: string): EmailTheme {
     accent: "#0f766e",
     accentSoft: "#d1fae5",
     panel: "#f8fafc",
+    headerStart: "#081225",
+    headerEnd: "#14532d",
+    border: "#dbe7eb",
+    textMuted: "#5b6b78",
   };
 }
 
@@ -632,18 +902,18 @@ function normalizeData(data: Record<string, unknown>) {
 }
 
 function buildResource(title?: string, href?: string, copy?: string) {
-  if (!title) return null
+  if (!title) return null;
   return {
     title,
     href: href || null,
     copy: copy || "Continue learning through this recommended next step.",
-  }
+  };
 }
 
 function compactResources(
   items: Array<{ title: string; href: string | null; copy: string } | null>
 ): Array<{ title: string; href: string | null; copy: string }> {
-  return items.filter((item): item is { title: string; href: string | null; copy: string } => item !== null)
+  return items.filter((item): item is { title: string; href: string | null; copy: string } => item !== null);
 }
 
 function escapeHtml(value: string) {

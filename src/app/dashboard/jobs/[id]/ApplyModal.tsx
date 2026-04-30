@@ -66,6 +66,7 @@ export default function ApplyModal({
   onClose,
   onSuccess,
   onQuotaReached,
+  backToJobsHref,
 }: {
   job: ApplyJob;
   profile: CandidateProfile;
@@ -78,6 +79,7 @@ export default function ApplyModal({
   onClose: () => void;
   onSuccess: () => void;
   onQuotaReached?: (reason: string) => void;
+  backToJobsHref: string;
 }) {
   const initialApplyUrl = normalizeExternalApplyUrl(job.apply_url);
   const isInternalApply = !initialApplyUrl;
@@ -458,7 +460,7 @@ export default function ApplyModal({
                     </button>
                   )}
                   <button
-                    onClick={() => router.push("/dashboard/jobs")}
+                    onClick={() => router.push(backToJobsHref)}
                     className="w-full rounded-2xl bg-zinc-100 py-4 font-bold text-zinc-700 transition-all hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
                   >
                     Keep Browsing Jobs

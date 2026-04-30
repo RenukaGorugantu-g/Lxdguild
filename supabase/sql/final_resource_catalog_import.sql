@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS resource_category_map (
   updated_file_url TEXT
 );
 
+ALTER TABLE public.resource_category_map ENABLE ROW LEVEL SECURITY;
+
 CREATE OR REPLACE FUNCTION public.resource_title_from_url(resource_url TEXT)
 RETURNS TEXT
 LANGUAGE sql

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { BookOpen } from "lucide-react";
+
+const BRAND_LOGO_URL = "https://lxdguild.com/img/z-1.webp";
 
 const SocialLinkedIn = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
@@ -89,14 +90,8 @@ export default function Footer() {
       <div className="mx-auto max-w-7xl px-6 py-14">
         <div className="grid grid-cols-2 gap-10 md:grid-cols-5">
           <div className="col-span-2 space-y-6">
-            <Link href="/" className="group flex w-fit items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] text-[#091737] shadow-[0_18px_40px_rgba(52,205,47,0.24)]">
-                <BookOpen className="h-5 w-5" />
-              </div>
-              <div>
-                <span className="block text-lg font-bold tracking-tight text-white">LXD Guild</span>
-                <span className="text-[9px] font-medium uppercase tracking-[0.22em] text-[#cde3e1]/70">Verified Talent Marketplace</span>
-              </div>
+            <Link href="/" className="group flex w-fit items-center" aria-label="LXD Guild home">
+              <img src={BRAND_LOGO_URL} alt="LXD Guild" className="h-14 w-auto" />
             </Link>
 
             <p className="max-w-xs text-sm leading-relaxed text-[#cde3e1]/72">

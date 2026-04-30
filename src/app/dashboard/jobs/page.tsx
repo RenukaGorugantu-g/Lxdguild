@@ -49,6 +49,27 @@ type FilterableJobQuery = any;
 const JOB_SELECT =
   "id, title, description, company, location, work_mode, employment_type, expires_at, external_posted_at, imported_at, created_at, is_active, source, job_kind";
 
+function buildJobDetailHref(
+  jobId: string,
+  filters: {
+    category?: string;
+    view?: string;
+    remote?: string;
+    schedule?: string;
+    normalizedQuery?: string;
+    page?: number;
+  }
+) {
+  const params = new URLSearchParams();
+  if (filters.normalizedQuery) params.set("q", filters.normalizedQuery);
+  if (filters.category) params.set("category", filters.category);
+  if (filters.view && filters.view !== "all") params.set("view", filters.view);
+  if (filters.remote && filters.remote !== "all") params.set("remote", filters.remote);
+  if (filters.schedule && filters.schedule !== "all") params.set("schedule", filters.schedule);
+  if (filters.page && filters.page > 1) params.set("page", String(filters.page));
+  return `/dashboard/jobs/${jobId}${params.toString() ? `?${params.toString()}` : ""}`;
+}
+
 function normalizeJobText(...values: Array<string | null | undefined>) {
   return values.filter(Boolean).join(" ").toLowerCase();
 }
@@ -360,6 +381,7 @@ export default async function JobsDashboard({
                         canApplyToJobs={canApplyToJobs}
                         compact
                         lockReason={lockReason}
+                        detailHref={buildJobDetailHref(job.id, { category, view, remote, schedule, normalizedQuery, page: currentPage })}
                       />
                     ))}
                   </div>
@@ -407,7 +429,13 @@ export default async function JobsDashboard({
 
               <div className="grid gap-4">
                 {paginatedJobs.map((job: JobListItem) => (
-                  <JobCard key={job.id} job={job} canApplyToJobs={canApplyToJobs} lockReason={lockReason} />
+                  <JobCard
+                    key={job.id}
+                    job={job}
+                    canApplyToJobs={canApplyToJobs}
+                    lockReason={lockReason}
+                    detailHref={buildJobDetailHref(job.id, { category, view, remote, schedule, normalizedQuery, page: currentPage })}
+                  />
                 ))}
 
                 {jobsList.length === 0 && (
@@ -472,11 +500,13 @@ function JobCard({
   canApplyToJobs,
   compact = false,
   lockReason,
+  detailHref,
 }: {
   job: JobListItem;
   canApplyToJobs: boolean;
   compact?: boolean;
   lockReason?: string | null;
+  detailHref: string;
 }) {
   const expiryDate = job.expires_at ? new Date(job.expires_at).toLocaleDateString() : null;
   const freshnessDate = new Date(job.external_posted_at || job.imported_at || job.created_at || new Date().toISOString()).toLocaleDateString();
@@ -525,7 +555,7 @@ function JobCard({
         </div>
 
         <div className="flex flex-col items-end gap-2">
-          <Link href={`/dashboard/jobs/${job.id}`} className="marketing-secondary whitespace-nowrap">
+          <Link href={detailHref} className="marketing-secondary whitespace-nowrap">
             {canApplyToJobs ? "View Details" : "View Role"}
           </Link>
           {!canApplyToJobs && (

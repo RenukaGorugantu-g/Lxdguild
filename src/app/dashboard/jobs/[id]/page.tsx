@@ -65,9 +65,16 @@ type JobDetailRecord = {
   deleted_at?: string | null;
 };
 
-export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function JobDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ category?: string; view?: string; remote?: string; schedule?: string; page?: string; q?: string }>;
+}) {
   const supabase = await createClient();
   const { id } = await params;
+  const { category, view, remote, schedule, page, q } = await searchParams;
   
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -235,11 +242,19 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   const expiryDate = job.expires_at ? new Date(job.expires_at).toLocaleDateString() : null;
   const isDeactivated = job.is_active === false;
   const hasPendingDeletion = job.deletion_request_status === "pending";
+  const returnParams = new URLSearchParams();
+  if (q) returnParams.set("q", q);
+  if (category) returnParams.set("category", category);
+  if (view) returnParams.set("view", view);
+  if (remote) returnParams.set("remote", remote);
+  if (schedule) returnParams.set("schedule", schedule);
+  if (page && page !== "1") returnParams.set("page", page);
+  const backToJobsHref = `/dashboard/jobs${returnParams.toString() ? `?${returnParams.toString()}` : ""}`;
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black pt-28 pb-16 px-6">
       <div className="max-w-4xl mx-auto">
-        <Link href="/dashboard/jobs" className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-brand-600 transition-colors mb-8 group">
+        <Link href={backToJobsHref} className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-brand-600 transition-colors mb-8 group">
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Job Board
         </Link>
 
@@ -293,6 +308,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                       lockReason ||
                       "Write the assessment to unlock job applications."
                     }
+                    backToJobsHref={backToJobsHref}
                   />
                   <p className="text-[10px] text-center text-zinc-400 uppercase tracking-widest font-bold">
                     {isFreeAccessCandidate && freeApplicationsRemaining > 0

@@ -118,9 +118,98 @@ type SyncCounters = {
   imported: number;
   refreshed: number;
   expired: number;
+  hardDeleted: number;
   skipped: boolean;
   reason?: string;
 };
+
+type SyncTrigger = "cron" | "manual" | "stale" | "unknown";
+
+type SyncRunRecord = {
+  id: string;
+};
+
+async function startSyncRun(trigger: SyncTrigger) {
+  const supabase = createAdminClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from("job_feed_sync_runs")
+    .insert({
+      trigger_source: trigger,
+      status: "running",
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    if (isMissingSchemaError(error)) return null;
+    throw error;
+  }
+
+  return data as SyncRunRecord;
+}
+
+async function getJobInventoryCounts(supportsLifecycle: boolean) {
+  const supabase = createAdminClient();
+  if (!supabase) return { activeJobsCount: null, totalJobsCount: null };
+
+  const totalJobsQuery = supabase.from("jobs").select("*", { count: "exact", head: true });
+  const activeJobsQuery = supportsLifecycle
+    ? supabase.from("jobs").select("*", { count: "exact", head: true }).eq("is_active", true)
+    : null;
+
+  const [totalJobsResult, activeJobsResult] = await Promise.all([
+    totalJobsQuery,
+    activeJobsQuery,
+  ]);
+
+  return {
+    activeJobsCount: supportsLifecycle ? activeJobsResult?.count ?? null : null,
+    totalJobsCount: totalJobsResult.count ?? null,
+  };
+}
+
+async function finishSyncRun(
+  runId: string | null | undefined,
+  payload: {
+    status: "success" | "warning" | "failed" | "skipped";
+    imported: number;
+    refreshed: number;
+    expired: number;
+    hardDeleted: number;
+    message?: string;
+    errorMessage?: string;
+    supportsLifecycle: boolean;
+  }
+) {
+  if (!runId) return;
+
+  const supabase = createAdminClient();
+  if (!supabase) return;
+
+  const { activeJobsCount, totalJobsCount } = await getJobInventoryCounts(payload.supportsLifecycle);
+
+  const { error } = await supabase
+    .from("job_feed_sync_runs")
+    .update({
+      status: payload.status,
+      completed_at: new Date().toISOString(),
+      imported_count: payload.imported,
+      refreshed_count: payload.refreshed,
+      expired_count: payload.expired,
+      hard_deleted_count: payload.hardDeleted,
+      active_jobs_count: activeJobsCount,
+      total_jobs_count: totalJobsCount,
+      message: payload.message ?? null,
+      error_message: payload.errorMessage ?? null,
+    })
+    .eq("id", runId);
+
+  if (error && !isMissingSchemaError(error)) {
+    throw error;
+  }
+}
 
 function isMissingSchemaError(error: unknown) {
   if (!error || typeof error !== "object") return false;
@@ -390,14 +479,16 @@ async function fetchJSearchIndeedJobs(query: string, nowIso: string): Promise<No
   return fetchJSearchJobs(query, nowIso, "standard", "indeed");
 }
 
-export async function syncJobFeed() {
+export async function syncJobFeed(options?: { trigger?: SyncTrigger }) {
   const supabase = createAdminClient();
   if (!supabase) {
-    return { imported: 0, refreshed: 0, expired: 0, skipped: true, reason: "Missing service role credentials." };
+    return { imported: 0, refreshed: 0, expired: 0, hardDeleted: 0, skipped: true, reason: "Missing service role credentials." };
   }
 
   const nowIso = new Date().toISOString();
   const supportsLifecycle = await hasJobFeedLifecycleSchema();
+  const trigger = options?.trigger ?? "unknown";
+  const syncRun = await startSyncRun(trigger);
 
   try {
     if (supportsLifecycle) {
@@ -448,6 +539,7 @@ export async function syncJobFeed() {
         imported: 0,
         refreshed: 0,
         expired: 0,
+        hardDeleted: 0,
         skipped: true,
         reason: "No jobs were returned from any configured source, so existing listings were left unchanged.",
       } satisfies SyncCounters;
@@ -463,6 +555,16 @@ export async function syncJobFeed() {
             updated_at: nowIso,
           });
       }
+
+      await finishSyncRun(syncRun?.id, {
+        status: "warning",
+        imported: emptyResult.imported,
+        refreshed: emptyResult.refreshed,
+        expired: emptyResult.expired,
+        hardDeleted: emptyResult.hardDeleted,
+        message: emptyResult.reason,
+        supportsLifecycle,
+      });
 
       return emptyResult;
     }
@@ -483,6 +585,16 @@ export async function syncJobFeed() {
         });
     }
 
+    await finishSyncRun(syncRun?.id, {
+      status: result.skipped ? "skipped" : "success",
+      imported: result.imported,
+      refreshed: result.refreshed,
+      expired: result.expired,
+      hardDeleted: result.hardDeleted,
+      message: result.reason ?? `Imported ${result.imported}, refreshed ${result.refreshed}, expired ${result.expired}, deleted ${result.hardDeleted}.`,
+      supportsLifecycle,
+    });
+
     return result;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown sync error";
@@ -496,6 +608,16 @@ export async function syncJobFeed() {
           updated_at: nowIso,
         });
     }
+    await finishSyncRun(syncRun?.id, {
+      status: "failed",
+      imported: 0,
+      refreshed: 0,
+      expired: 0,
+      hardDeleted: 0,
+      errorMessage: message,
+      message: "Job sync failed.",
+      supportsLifecycle,
+    });
     throw error;
   }
 }
@@ -506,7 +628,7 @@ export async function syncJobFeedIfStale() {
 
   const supportsLifecycle = await hasJobFeedLifecycleSchema();
   if (!supportsLifecycle) {
-    const result = await syncJobFeed();
+    const result = await syncJobFeed({ trigger: "stale" });
     return { ran: true, ...result, mode: "legacy" as const };
   }
 
@@ -525,7 +647,7 @@ export async function syncJobFeedIfStale() {
     return { ran: false, reason: "Feed still fresh." };
   }
 
-  const result = await syncJobFeed();
+  const result = await syncJobFeed({ trigger: "stale" });
   return { ran: true, ...result };
 }
 
@@ -551,7 +673,7 @@ async function hasJobFeedLifecycleSchema() {
 async function upsertLegacyJobs(collected: Map<string, NormalizedJob>): Promise<SyncCounters> {
   const supabase = createAdminClient();
   if (!supabase) {
-    return { imported: 0, refreshed: 0, expired: 0, skipped: true, reason: "Missing service role credentials." };
+    return { imported: 0, refreshed: 0, expired: 0, hardDeleted: 0, skipped: true, reason: "Missing service role credentials." };
   }
 
   let imported = 0;
@@ -591,13 +713,13 @@ async function upsertLegacyJobs(collected: Map<string, NormalizedJob>): Promise<
     }
   }
 
-  return { imported, refreshed, expired: 0, skipped: false };
+  return { imported, refreshed, expired: 0, hardDeleted: 0, skipped: false };
 }
 
 async function upsertLifecycleJobs(collected: Map<string, NormalizedJob>, nowIso: string): Promise<SyncCounters> {
   const supabase = createAdminClient();
   if (!supabase) {
-    return { imported: 0, refreshed: 0, expired: 0, skipped: true, reason: "Missing service role credentials." };
+    return { imported: 0, refreshed: 0, expired: 0, hardDeleted: 0, skipped: true, reason: "Missing service role credentials." };
   }
 
   let imported = 0;
@@ -669,6 +791,7 @@ async function upsertLifecycleJobs(collected: Map<string, NormalizedJob>, nowIso
 
   const deletableJobIds = (deletableJobs || []).map((job) => job.id);
 
+  let hardDeleted = 0;
   if (deletableJobIds.length) {
     const { data: appliedRows } = await supabase
       .from("job_applications")
@@ -679,6 +802,7 @@ async function upsertLifecycleJobs(collected: Map<string, NormalizedJob>, nowIso
     const safeToDelete = deletableJobIds.filter((jobId) => !appliedJobIds.has(jobId));
 
     if (safeToDelete.length) {
+      hardDeleted = safeToDelete.length;
       await supabase
         .from("jobs")
         .delete()
@@ -686,5 +810,5 @@ async function upsertLifecycleJobs(collected: Map<string, NormalizedJob>, nowIso
     }
   }
 
-  return { imported, refreshed, expired, skipped: false };
+  return { imported, refreshed, expired, hardDeleted, skipped: false };
 }
