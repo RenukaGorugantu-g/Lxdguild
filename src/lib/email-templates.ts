@@ -1,16 +1,36 @@
 import { getSiteUrl } from "./site-url";
 
-const BRAND_LOGO_URL = "https://lxdguild.com/img/z-1.webp";
+const BRAND_LOGO_PATH = "/lxd-guild-email-logo.png";
 const ACADEMY_URL = "https://lxdguildacademy.com";
 const LXDVERSE_URL = "https://lxdguild.com";
 const CONTACT_EMAIL = "mailto:lxdguild@gmail.com";
 
 const EMAIL_SOCIAL_LINKS = [
-  { label: "in", name: "LinkedIn", href: "https://in.linkedin.com/company/lxd-guild" },
-  { label: "YT", name: "YouTube", href: "https://www.youtube.com/@lxdguild" },
-  { label: "IG", name: "Instagram", href: "https://www.instagram.com/lxd_guild/" },
-  { label: "X", name: "X", href: "https://x.com/GuildLxd20077" },
-  { label: "f", name: "Facebook", href: "https://www.facebook.com/100648556092707/" },
+  {
+    name: "LinkedIn",
+    href: "https://in.linkedin.com/company/lxd-guild",
+    icon: "https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-only-logo-white/linkedin@2x.png",
+  },
+  {
+    name: "YouTube",
+    href: "https://www.youtube.com/@lxdguild",
+    icon: "https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-only-logo-white/youtube@2x.png",
+  },
+  {
+    name: "Instagram",
+    href: "https://www.instagram.com/lxd_guild/",
+    icon: "https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-only-logo-white/instagram@2x.png",
+  },
+  {
+    name: "X",
+    href: "https://x.com/GuildLxd20077",
+    icon: "https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-only-logo-white/twitter@2x.png",
+  },
+  {
+    name: "Facebook",
+    href: "https://www.facebook.com/100648556092707/",
+    icon: "https://app-rsrc.getbee.io/public/resources/social-networks-icon-sets/t-only-logo-white/facebook@2x.png",
+  },
 ] as const;
 
 type NotificationAudience = "user" | "admin";
@@ -505,6 +525,7 @@ function buildContent({
 }
 
 function renderEmailHtml(content: TemplateContent) {
+  const brandLogoUrl = `${getSiteUrl()}${BRAND_LOGO_PATH}`;
   const heroAccentColor =
     content.layoutVariant === "celebration"
       ? "#f5f0c5"
@@ -652,7 +673,7 @@ function renderEmailHtml(content: TemplateContent) {
     : "";
 
   const socialLinksHtml = EMAIL_SOCIAL_LINKS.map(
-    (link) => `<a href="${escapeHtml(link.href)}" style="display:inline-block;margin-right:8px;margin-bottom:8px;padding:10px 0;width:38px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.14);color:#f8fafc;font-size:12px;font-weight:800;text-align:center;text-decoration:none;letter-spacing:0.04em;" aria-label="${escapeHtml(link.name)}">${escapeHtml(link.label)}</a>`
+    (link) => `<a href="${escapeHtml(link.href)}" style="display:inline-block;margin-right:8px;margin-bottom:8px;padding:10px;width:18px;height:18px;border-radius:999px;background:rgba(248,244,241,0.08);border:1px solid rgba(248,244,241,0.16);text-decoration:none;" aria-label="${escapeHtml(link.name)}"><img src="${escapeHtml(link.icon)}" alt="${escapeHtml(link.name)}" width="18" height="18" style="display:block;width:18px;height:18px;border:0;" /></a>`
   ).join("");
 
   const footerLinksHtml = [
@@ -765,7 +786,7 @@ function renderEmailHtml(content: TemplateContent) {
                   <tr>
                     <td align="center" style="padding-bottom:18px;">
                       <a href="${escapeHtml(getSiteUrl())}" style="display:inline-block;padding:12px 18px;border-radius:18px;background:rgba(248,244,241,0.95);text-decoration:none;box-shadow:0 10px 24px rgba(8,18,37,0.18);">
-                        <img src="${BRAND_LOGO_URL}" alt="LXD Guild" width="158" style="display:block;height:auto;border:0;max-width:158px;" />
+                        <img src="${brandLogoUrl}" alt="LXD Guild" width="190" style="display:block;height:auto;border:0;max-width:190px;" />
                       </a>
                     </td>
                   </tr>
@@ -827,7 +848,7 @@ function renderEmailHtml(content: TemplateContent) {
                         <tr>
                           <td class="footer-stack" style="vertical-align:top;">
                             <a href="${escapeHtml(getSiteUrl())}" style="display:inline-block;padding:10px 14px;border-radius:14px;background:rgba(248,244,241,0.92);text-decoration:none;">
-                              <img src="${BRAND_LOGO_URL}" alt="LXD Guild" width="126" style="display:block;height:auto;border:0;max-width:126px;" />
+                              <img src="${brandLogoUrl}" alt="LXD Guild" width="150" style="display:block;height:auto;border:0;max-width:150px;" />
                             </a>
                             <div style="margin-top:12px;font-size:12px;line-height:1.8;color:#d4dde3;max-width:390px;">
                               ${escapeHtml(content.footer)}
