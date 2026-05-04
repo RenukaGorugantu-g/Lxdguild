@@ -507,36 +507,33 @@ function buildContent({
 function renderEmailHtml(content: TemplateContent) {
   const heroAccentColor =
     content.layoutVariant === "celebration"
-      ? "#e8ff87"
+      ? "#f5f0c5"
       : content.layoutVariant === "urgent"
-        ? "#ffd38a"
+        ? "#ffd9a0"
         : content.layoutVariant === "support"
-          ? "#c7f0ff"
-          : "#e8ff87";
+          ? "#d6eef9"
+          : "#f5f0c5";
 
   const heroBodyTone =
     content.layoutVariant === "support"
-      ? "rgba(230,240,247,0.95)"
-      : "rgba(255,255,255,0.92)";
+      ? "rgba(236,244,249,0.96)"
+      : "rgba(247,242,234,0.92)";
 
   const ctaBg =
     content.layoutVariant === "urgent"
-      ? "#ffd38a"
+      ? "#f0b861"
       : content.layoutVariant === "support"
-        ? "#c7f0ff"
+        ? "#b8dcea"
         : content.theme.accent;
 
-  const ctaTextColor =
-    content.layoutVariant === "urgent" || content.layoutVariant === "support"
-      ? "#081225"
-      : "#081225";
+  const ctaTextColor = "#081225";
 
   const leadCardHtml = content.summary
-    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:18px;border-collapse:separate;border-spacing:0;background:linear-gradient(145deg,#ffffff 0%,${content.theme.panel} 100%);border:1px solid ${content.theme.border};border-radius:24px;box-shadow:0 12px 30px rgba(15,23,42,0.05);">
+    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:22px;border-collapse:separate;border-spacing:0;background:#f8f3ec;border:1px solid ${content.theme.border};border-radius:24px;box-shadow:0 12px 26px rgba(15,23,42,0.05);">
         <tr>
-          <td style="padding:20px 22px;">
+          <td style="padding:22px 24px;border-left:4px solid ${content.theme.accent};">
             <div style="font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${content.theme.accent};">What matters now</div>
-            <div style="margin-top:10px;font-size:18px;line-height:1.7;color:#1f2937;">
+            <div style="margin-top:10px;font-size:17px;line-height:1.75;color:#273443;">
               ${escapeHtml(content.summary)}
             </div>
           </td>
@@ -546,28 +543,37 @@ function renderEmailHtml(content: TemplateContent) {
 
   const factCards = content.details.slice(0, 4);
   const remainingDetails = factCards.length ? content.details.slice(4) : content.details;
+  const factCardRows = chunkItems(factCards, 2);
 
-  const factCardsHtml = factCards.length
-    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:22px;border-collapse:separate;border-spacing:12px 12px;">
-        <tr>
-          ${factCards
+  const factCardsHtml = factCardRows.length
+    ? `<div style="margin-top:24px;">
+        <div style="margin:0 0 12px;font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#6b7280;">Quick snapshot</div>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-spacing:10px 10px;">
+          ${factCardRows
             .map(
-              (detail) => `<td class="stack-card" valign="top" width="${Math.max(25, Math.floor(100 / factCards.length))}%" style="background:#ffffff;border:1px solid ${content.theme.border};padding:18px 16px;border-radius:18px;box-shadow:0 10px 22px rgba(15,23,42,0.04);">
-                <div style="font-size:10px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#7c8a97;">${escapeHtml(detail.label)}</div>
-                <div style="margin-top:9px;font-size:15px;line-height:1.65;font-weight:700;color:#0f172a;">${escapeHtml(detail.value)}</div>
-              </td>`
+              (row) => `<tr>
+                ${row
+                  .map(
+                    (detail) => `<td class="stack-card" valign="top" width="50%" style="background:#fffdf9;border:1px solid ${content.theme.border};padding:18px 17px;border-radius:18px;box-shadow:0 8px 18px rgba(15,23,42,0.04);">
+                      <div style="font-size:10px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#7b8794;">${escapeHtml(detail.label)}</div>
+                      <div style="margin-top:9px;font-size:15px;line-height:1.65;font-weight:700;color:#13202d;">${escapeHtml(detail.value)}</div>
+                    </td>`
+                  )
+                  .join("")}
+                ${row.length === 1 ? `<td class="stack-card" width="50%" style="font-size:0;line-height:0;">&nbsp;</td>` : ""}
+              </tr>`
             )
             .join("")}
-        </tr>
-      </table>`
+        </table>
+      </div>`
     : "";
 
   const checklistHtml = content.checklist?.length
-    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:22px;border-collapse:separate;border-spacing:0;background:${content.theme.panel};border:1px solid ${content.theme.border};border-radius:24px;">
+    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:24px;border-collapse:separate;border-spacing:0;background:#f8f3ec;border:1px solid ${content.theme.border};border-radius:24px;">
         <tr>
           <td style="padding:22px 24px;">
-            <div style="margin:0 0 12px;font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${content.theme.accent};">Next Steps</div>
-            <ul style="margin:0;padding-left:18px;color:#334155;font-size:14px;line-height:1.8;">
+            <div style="margin:0 0 12px;font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${content.theme.accent};">Next steps</div>
+            <ul style="margin:0;padding-left:18px;color:#334155;font-size:14px;line-height:1.85;">
               ${content.checklist.map((item) => `<li style="margin:0 0 8px;">${escapeHtml(item)}</li>`).join("")}
             </ul>
           </td>
@@ -579,16 +585,16 @@ function renderEmailHtml(content: TemplateContent) {
     ? `<div style="margin:22px 0 0;">
         ${content.spotlight
           .map(
-            (item) => `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;border-collapse:separate;border-spacing:0;background:${content.theme.panel};border:1px solid ${content.theme.border};border-radius:22px;">
+            (item) => `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;border-collapse:separate;border-spacing:0;background:#f8f3ec;border:1px solid ${content.theme.border};border-radius:22px;">
               <tr>
                 <td style="padding:18px;">
                   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
                     <tr>
                       <td width="64" style="vertical-align:top;">
-                        <div style="width:46px;height:46px;border-radius:14px;background:${content.theme.accent};color:#ffffff;font-size:11px;font-weight:800;line-height:46px;text-align:center;letter-spacing:0.08em;">${escapeHtml(item.icon)}</div>
+                        <div style="width:46px;height:46px;border-radius:14px;background:${content.theme.accent};color:#ffffff;font-size:11px;font-weight:800;line-height:46px;text-align:center;letter-spacing:0.08em;box-shadow:0 10px 18px rgba(15,23,42,0.14);">${escapeHtml(item.icon)}</div>
                       </td>
                       <td style="vertical-align:top;">
-                        <p style="margin:0;font-size:15px;font-weight:700;color:#0f172a;">${escapeHtml(item.title)}</p>
+                        <p style="margin:0;font-size:15px;font-weight:700;color:#13202d;">${escapeHtml(item.title)}</p>
                         <p style="margin:8px 0 0;font-size:14px;line-height:1.8;color:#475569;">${escapeHtml(item.copy)}</p>
                       </td>
                     </tr>
@@ -603,14 +609,14 @@ function renderEmailHtml(content: TemplateContent) {
 
   const resourcesHtml = content.resources?.length
     ? `<div style="margin:22px 0 0;">
-        <p style="margin:0 0 12px;font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#64748b;">Suggested Next Moves</p>
+        <p style="margin:0 0 12px;font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#64748b;">Suggested next moves</p>
         <div>
           ${content.resources
             .map(
-              (item) => `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;border-collapse:separate;border-spacing:0;background:${content.theme.panel};border:1px solid ${content.theme.border};border-radius:22px;">
+              (item) => `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;border-collapse:separate;border-spacing:0;background:#fffdf9;border:1px solid ${content.theme.border};border-radius:22px;">
                 <tr>
                   <td style="padding:18px;">
-                    <p style="margin:0;font-size:15px;font-weight:700;color:#0f172a;">${escapeHtml(item.title)}</p>
+                    <p style="margin:0;font-size:15px;font-weight:700;color:#13202d;">${escapeHtml(item.title)}</p>
                     <p style="margin:8px 0 0;font-size:14px;line-height:1.8;color:#475569;">${escapeHtml(item.copy)}</p>
                     ${item.href ? `<div style="margin-top:12px;"><a href="${escapeHtml(item.href)}" style="color:${content.theme.accent};font-size:13px;font-weight:800;text-decoration:none;">Open resource</a></div>` : ""}
                   </td>
@@ -624,8 +630,8 @@ function renderEmailHtml(content: TemplateContent) {
 
   const detailsHtml = remainingDetails.length
     ? `<div style="margin:22px 0 0;">
-        <p style="margin:0 0 12px;font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#64748b;">Snapshot</p>
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-spacing:0;background:#fcfdfd;border:1px solid ${content.theme.border};border-radius:24px;">
+        <p style="margin:0 0 12px;font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#64748b;">Details</p>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-spacing:0;background:#fffdf9;border:1px solid ${content.theme.border};border-radius:24px;">
           <tr>
             <td style="padding:22px 24px;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
@@ -662,19 +668,15 @@ function renderEmailHtml(content: TemplateContent) {
 
   const statusHtml = content.status
     ? `<div style="margin:0 0 14px;">
-        <span style="display:inline-block;padding:8px 14px;border-radius:999px;background:${content.theme.accentSoft};color:${content.theme.accent};font-size:12px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;">
+        <span style="display:inline-block;padding:8px 14px;border-radius:999px;background:${content.theme.accentSoft};color:${content.theme.accent};font-size:12px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;border:1px solid ${content.theme.border};">
           ${escapeHtml(content.status)}
         </span>
       </div>`
     : "";
 
-  const summaryHtml = content.summary
-    ? ``
-    : "";
-
   const ctaHtml = content.cta
-    ? `<div style="margin:22px 0 0;">
-        <a class="cta-button" href="${escapeHtml(content.cta.href)}" style="display:inline-block;padding:15px 24px;border-radius:12px;background:${ctaBg};color:${ctaTextColor};text-decoration:none;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;box-shadow:0 10px 24px rgba(15,118,110,0.18);min-width:260px;text-align:center;">
+    ? `<div style="margin:24px 0 0;">
+        <a class="cta-button" href="${escapeHtml(content.cta.href)}" style="display:inline-block;padding:16px 28px;border-radius:999px;background:${ctaBg};color:${ctaTextColor};text-decoration:none;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;box-shadow:0 14px 28px rgba(15,23,42,0.14);min-width:260px;text-align:center;">
           ${escapeHtml(content.cta.label)}
         </a>
       </div>`
@@ -693,24 +695,24 @@ function renderEmailHtml(content: TemplateContent) {
         }
 
         .outer-pad {
-          padding: 16px 10px !important;
+          padding: 12px 8px !important;
         }
 
         .hero-pad {
-          padding: 18px 18px 42px !important;
+          padding: 20px 18px 36px !important;
         }
 
         .body-pad {
-          padding: 0 14px 18px !important;
+          padding: 0 0 18px !important;
         }
 
         .content-pad {
-          padding: 22px 18px 14px !important;
+          padding: 22px 18px 16px !important;
         }
 
         .hero-title {
-          font-size: 38px !important;
-          line-height: 1.08 !important;
+          font-size: 40px !important;
+          line-height: 1.05 !important;
         }
 
         .hero-copy {
@@ -731,41 +733,45 @@ function renderEmailHtml(content: TemplateContent) {
           width: 100% !important;
         }
 
+        .content-shell {
+          margin-top: -14px !important;
+        }
+
         .footer-stack-right {
           display: block !important;
           width: 100% !important;
-          padding-top: 18px !important;
+          padding-top: 22px !important;
           text-align: left !important;
         }
       }
     </style>
   </head>
-    <body style="margin:0;padding:0;background:#ece6e1;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+    <body style="margin:0;padding:0;background:#eee5db;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
     <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;">
       ${escapeHtml(content.preheader)}
     </span>
-    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background:#ece6e1;border-collapse:collapse;">
+    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background:#eee5db;border-collapse:collapse;">
       <tr>
         <td class="outer-pad" align="center" style="padding:26px 12px;">
-          <table class="shell" role="presentation" width="650" border="0" cellpadding="0" cellspacing="0" style="width:100%;max-width:650px;border-collapse:separate;border-spacing:0;background:#f7f3ef;border:1px solid #d7cbc2;border-radius:32px;overflow:hidden;box-shadow:0 22px 50px rgba(15,23,42,0.08);">
+          <table class="shell" role="presentation" width="700" border="0" cellpadding="0" cellspacing="0" style="width:100%;max-width:700px;border-collapse:separate;border-spacing:0;background:#f6efe6;border:1px solid #dbcfc4;border-radius:30px;overflow:hidden;box-shadow:0 22px 50px rgba(15,23,42,0.08);">
             <tr>
-              <td align="center" style="padding-bottom:12px;font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#6b7280;">
-                <div style="padding-top:18px;">LXD Guild Notification</div>
+              <td align="center" style="padding:16px 20px 10px;font-size:10px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:#6b7280;">
+                LXD Guild Notification
               </td>
             </tr>
             <tr>
-              <td class="hero-pad" style="background:#08131f;background-image:linear-gradient(135deg,${content.theme.headerStart} 0%,${content.theme.headerEnd} 100%);padding:26px 32px 54px;border-top:1px solid #2d3a45;border-bottom:1px solid #2d3a45;">
+              <td class="hero-pad" style="background-color:${content.theme.headerStart};background-image:radial-gradient(circle at top right, rgba(255,222,173,0.16) 0%, rgba(255,222,173,0) 34%),linear-gradient(135deg,${content.theme.headerStart} 0%,${content.theme.headerEnd} 100%);padding:28px 34px 54px;border-top:1px solid rgba(255,255,255,0.06);border-bottom:1px solid rgba(255,255,255,0.08);">
                 <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                   <tr>
-                    <td align="left" style="padding-bottom:18px;">
-                      <a href="${escapeHtml(getSiteUrl())}" style="display:inline-block;padding:10px 14px;border-radius:16px;background:rgba(248,244,241,0.96);text-decoration:none;box-shadow:0 10px 24px rgba(8,18,37,0.18);">
-                        <img src="${BRAND_LOGO_URL}" alt="LXD Guild" width="150" style="display:block;height:auto;border:0;max-width:150px;" />
+                    <td align="center" style="padding-bottom:18px;">
+                      <a href="${escapeHtml(getSiteUrl())}" style="display:inline-block;padding:12px 18px;border-radius:18px;background:rgba(248,244,241,0.95);text-decoration:none;box-shadow:0 10px 24px rgba(8,18,37,0.18);">
+                        <img src="${BRAND_LOGO_URL}" alt="LXD Guild" width="158" style="display:block;height:auto;border:0;max-width:158px;" />
                       </a>
                     </td>
                   </tr>
                   <tr>
                     <td align="center" style="padding-bottom:12px;">
-                      <div style="display:inline-block;padding:8px 14px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.12);color:#ffffff;font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;">
+                      <div style="display:inline-block;padding:8px 14px;background:rgba(247,242,234,0.14);border:1px solid rgba(247,242,234,0.18);color:#ffffff;font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;border-radius:8px;">
                         ${escapeHtml(content.kicker || content.theme.eyebrow)}
                       </div>
                     </td>
@@ -784,21 +790,21 @@ function renderEmailHtml(content: TemplateContent) {
                       </div>
                     </td>
                   </tr>
-                  ${content.heroNote ? `<tr><td align="center" style="padding-top:18px;"><div style="max-width:460px;margin:0 auto;padding:12px 16px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);font-size:13px;line-height:1.7;color:${heroBodyTone};">${escapeHtml(content.heroNote)}</div></td></tr>` : ""}
+                  ${content.heroNote ? `<tr><td align="center" style="padding-top:18px;"><div style="max-width:480px;margin:0 auto;padding:12px 16px;border:1px solid rgba(247,242,234,0.16);background:rgba(247,242,234,0.08);font-size:13px;line-height:1.75;color:${heroBodyTone};border-radius:16px;">${escapeHtml(content.heroNote)}</div></td></tr>` : ""}
+                  ${ctaHtml ? `<tr><td align="center">${ctaHtml}</td></tr>` : ""}
                 </table>
               </td>
             </tr>
             <tr>
-              <td class="body-pad" style="background:#f7f3ef;padding:0 0 22px;">
+              <td class="body-pad" style="background:#f6efe6;padding:0 0 22px;">
                 <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                   <tr>
-                    <td style="padding:0 20px;">
-                      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-top:-18px;border-collapse:separate;border-spacing:0;background:#fbf9f7;border:1px solid #ddd2cc;border-radius:26px;box-shadow:0 20px 46px rgba(15,23,42,0.08);">
+                    <td style="padding:0 18px;">
+                      <table class="content-shell" role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-top:-20px;border-collapse:separate;border-spacing:0;background:#f9f4ed;border:1px solid #ddd2c7;border-radius:26px;box-shadow:0 20px 46px rgba(15,23,42,0.08);">
                         <tr>
                           <td class="content-pad" style="padding:28px 26px 16px;">
                             ${statusHtml}
                             ${leadCardHtml}
-                            ${ctaHtml}
                             ${factCardsHtml}
                             ${detailsHtml}
                             ${spotlightHtml}
@@ -813,15 +819,15 @@ function renderEmailHtml(content: TemplateContent) {
               </td>
             </tr>
             <tr>
-              <td style="background:#f7f3ef;padding:0 20px 20px;">
+              <td style="background:#f6efe6;padding:0 18px 18px;">
                 <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#0d1823;border:1px solid #1f3344;border-radius:22px;box-shadow:0 14px 30px rgba(15,23,42,0.12);">
                   <tr>
                     <td style="padding:22px 24px;">
                       <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                         <tr>
                           <td class="footer-stack" style="vertical-align:top;">
-                            <a href="${escapeHtml(getSiteUrl())}" style="display:inline-block;padding:8px 10px;border-radius:14px;background:rgba(248,244,241,0.92);text-decoration:none;">
-                              <img src="${BRAND_LOGO_URL}" alt="LXD Guild" width="120" style="display:block;height:auto;border:0;max-width:120px;" />
+                            <a href="${escapeHtml(getSiteUrl())}" style="display:inline-block;padding:10px 14px;border-radius:14px;background:rgba(248,244,241,0.92);text-decoration:none;">
+                              <img src="${BRAND_LOGO_URL}" alt="LXD Guild" width="126" style="display:block;height:auto;border:0;max-width:126px;" />
                             </a>
                             <div style="margin-top:12px;font-size:12px;line-height:1.8;color:#d4dde3;max-width:390px;">
                               ${escapeHtml(content.footer)}
@@ -831,7 +837,7 @@ function renderEmailHtml(content: TemplateContent) {
                             </div>
                           </td>
                           <td class="footer-stack-right" align="right" style="vertical-align:top;">
-                            <div style="font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#e8ff87;">Connect</div>
+                            <div style="font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#f5f0c5;">Explore</div>
                             <div style="margin-top:10px;max-width:220px;">
                               ${footerLinksHtml}
                             </div>
@@ -1037,6 +1043,16 @@ function compactResources(
   items: Array<{ title: string; href: string | null; copy: string } | null>
 ): Array<{ title: string; href: string | null; copy: string }> {
   return items.filter((item): item is { title: string; href: string | null; copy: string } => item !== null);
+}
+
+function chunkItems<T>(items: T[], size: number) {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+
+  return chunks;
 }
 
 function escapeHtml(value: string) {
