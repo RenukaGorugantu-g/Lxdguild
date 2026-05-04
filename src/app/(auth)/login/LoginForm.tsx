@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { AuthLogo, DividerLabel, SocialButton } from "@/components/auth/AuthShared";
-import { ArrowRight, BarChart3, BriefcaseBusiness, Eye, EyeOff, LockKeyhole, Mail, Users } from "lucide-react";
+import { AuthLogo } from "@/components/auth/AuthShared";
+import { ArrowRight, BarChart3, Eye, EyeOff, LockKeyhole, Mail, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const featureCards = [
@@ -205,14 +205,6 @@ export default function LoginForm() {
                 {!loading ? <ArrowRight className="h-4.5 w-4.5" /> : null}
               </button>
             </form>
-
-            <div className="mt-8 space-y-6">
-              <DividerLabel label="Or Continue With" />
-              <div className="grid gap-3 sm:grid-cols-2">
-                <SocialButton icon={Mail} label="Google" />
-                <SocialButton icon={BriefcaseBusiness} label="SSO" />
-              </div>
-            </div>
 
             <p className="mt-8 text-center text-[15px] text-[#606a77]">
               New to the ecosystem?{" "}

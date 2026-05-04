@@ -1,6 +1,17 @@
 import { getSiteUrl } from "./site-url";
 
 const BRAND_LOGO_URL = "https://lxdguild.com/img/z-1.webp";
+const ACADEMY_URL = "https://lxdguildacademy.com";
+const LXDVERSE_URL = "https://lxdguild.com";
+const CONTACT_EMAIL = "mailto:lxdguild@gmail.com";
+
+const EMAIL_SOCIAL_LINKS = [
+  { label: "in", name: "LinkedIn", href: "https://in.linkedin.com/company/lxd-guild" },
+  { label: "YT", name: "YouTube", href: "https://www.youtube.com/@lxdguild" },
+  { label: "IG", name: "Instagram", href: "https://www.instagram.com/lxd_guild/" },
+  { label: "X", name: "X", href: "https://x.com/GuildLxd20077" },
+  { label: "f", name: "Facebook", href: "https://www.facebook.com/100648556092707/" },
+] as const;
 
 type NotificationAudience = "user" | "admin";
 
@@ -489,7 +500,7 @@ function renderEmailHtml(content: TemplateContent) {
       : "#081225";
 
   const leadCardHtml = content.summary
-    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:18px;border-collapse:separate;border-spacing:0;background:linear-gradient(135deg,#f8fafc 0%,#ffffff 100%);border:1px solid ${content.theme.border};border-radius:24px;">
+    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:18px;border-collapse:separate;border-spacing:0;background:linear-gradient(135deg,${content.theme.panel} 0%,#ffffff 100%);border:1px solid ${content.theme.border};border-radius:24px;">
         <tr>
           <td style="padding:20px 22px;">
             <div style="font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${content.theme.accent};">What matters now</div>
@@ -509,7 +520,7 @@ function renderEmailHtml(content: TemplateContent) {
         <tr>
           ${factCards
             .map(
-              (detail) => `<td valign="top" width="${Math.max(25, Math.floor(100 / factCards.length))}%" style="background:${content.theme.panel};border:1px solid ${content.theme.border};padding:16px 14px;border-radius:18px;">
+              (detail) => `<td class="stack-card" valign="top" width="${Math.max(25, Math.floor(100 / factCards.length))}%" style="background:${content.theme.panel};border:1px solid ${content.theme.border};padding:16px 14px;border-radius:18px;">
                 <div style="font-size:11px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:#64748b;">${escapeHtml(detail.label)}</div>
                 <div style="margin-top:8px;font-size:15px;line-height:1.6;font-weight:700;color:#0f172a;">${escapeHtml(detail.value)}</div>
               </td>`
@@ -564,7 +575,7 @@ function renderEmailHtml(content: TemplateContent) {
         <div>
           ${content.resources
             .map(
-              (item) => `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;border-collapse:separate;border-spacing:0;background:#ffffff;border:1px solid ${content.theme.border};border-radius:22px;">
+              (item) => `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;border-collapse:separate;border-spacing:0;background:${content.theme.panel};border:1px solid ${content.theme.border};border-radius:22px;">
                 <tr>
                   <td style="padding:18px;">
                     <p style="margin:0;font-size:15px;font-weight:700;color:#0f172a;">${escapeHtml(item.title)}</p>
@@ -582,7 +593,7 @@ function renderEmailHtml(content: TemplateContent) {
   const detailsHtml = remainingDetails.length
     ? `<div style="margin:22px 0 0;">
         <p style="margin:0 0 12px;font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#64748b;">Snapshot</p>
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-spacing:0;background:#ffffff;border:1px solid ${content.theme.border};border-radius:24px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-spacing:0;background:#fcfdfd;border:1px solid ${content.theme.border};border-radius:24px;">
           <tr>
             <td style="padding:22px 24px;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
@@ -602,6 +613,21 @@ function renderEmailHtml(content: TemplateContent) {
       </div>`
     : "";
 
+  const socialLinksHtml = EMAIL_SOCIAL_LINKS.map(
+    (link) => `<a href="${escapeHtml(link.href)}" style="display:inline-block;margin-right:8px;margin-bottom:8px;padding:10px 0;width:38px;border-radius:999px;background:rgba(232,255,135,0.12);border:1px solid rgba(232,255,135,0.22);color:#f8fafc;font-size:12px;font-weight:800;text-align:center;text-decoration:none;letter-spacing:0.04em;" aria-label="${escapeHtml(link.name)}">${escapeHtml(link.label)}</a>`
+  ).join("");
+
+  const footerLinksHtml = [
+    { label: "Academy", href: ACADEMY_URL },
+    { label: "LXDVerse", href: LXDVERSE_URL },
+    { label: "lxdguild@gmail.com", href: CONTACT_EMAIL },
+  ]
+    .map(
+      (link) =>
+        `<a href="${escapeHtml(link.href)}" style="display:inline-block;margin-right:16px;margin-bottom:8px;color:#f8fafc;font-size:13px;font-weight:700;text-decoration:none;">${escapeHtml(link.label)}</a>`
+    )
+    .join("");
+
   const statusHtml = content.status
     ? `<div style="margin:0 0 14px;">
         <span style="display:inline-block;padding:8px 14px;border-radius:999px;background:${content.theme.accentSoft};color:${content.theme.accent};font-size:12px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;">
@@ -616,7 +642,7 @@ function renderEmailHtml(content: TemplateContent) {
 
   const ctaHtml = content.cta
     ? `<div style="margin:22px 0 0;">
-        <a href="${escapeHtml(content.cta.href)}" style="display:inline-block;padding:15px 24px;border-radius:0;background:${ctaBg};color:${ctaTextColor};text-decoration:none;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;box-shadow:0 10px 24px rgba(15,118,110,0.18);min-width:260px;text-align:center;">
+        <a class="cta-button" href="${escapeHtml(content.cta.href)}" style="display:inline-block;padding:15px 24px;border-radius:12px;background:${ctaBg};color:${ctaTextColor};text-decoration:none;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;box-shadow:0 10px 24px rgba(15,118,110,0.18);min-width:260px;text-align:center;">
           ${escapeHtml(content.cta.label)}
         </a>
       </div>`
@@ -628,26 +654,79 @@ function renderEmailHtml(content: TemplateContent) {
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${escapeHtml(content.heading)}</title>
+    <style>
+      @media only screen and (max-width: 680px) {
+        .shell {
+          width: 100% !important;
+        }
+
+        .outer-pad {
+          padding: 16px 10px !important;
+        }
+
+        .hero-pad {
+          padding: 18px 18px 42px !important;
+        }
+
+        .body-pad {
+          padding: 0 14px 18px !important;
+        }
+
+        .content-pad {
+          padding: 22px 18px 14px !important;
+        }
+
+        .hero-title {
+          font-size: 38px !important;
+          line-height: 1.08 !important;
+        }
+
+        .hero-copy {
+          font-size: 16px !important;
+          line-height: 1.65 !important;
+        }
+
+        .cta-button {
+          display: block !important;
+          width: 100% !important;
+          min-width: 0 !important;
+          box-sizing: border-box !important;
+        }
+
+        .stack-card,
+        .footer-stack {
+          display: block !important;
+          width: 100% !important;
+        }
+
+        .footer-stack-right {
+          display: block !important;
+          width: 100% !important;
+          padding-top: 18px !important;
+          text-align: left !important;
+        }
+      }
+    </style>
   </head>
-  <body style="margin:0;padding:0;background:#e7d1c8;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+  <body style="margin:0;padding:0;background:#ead9d2;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
     <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;">
       ${escapeHtml(content.preheader)}
     </span>
-    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background:#e7d1c8;border-collapse:collapse;">
+    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background:#ead9d2;border-collapse:collapse;">
       <tr>
-        <td align="center" style="padding:24px 12px;">
-          <table role="presentation" width="650" border="0" cellpadding="0" cellspacing="0" style="width:100%;max-width:650px;border-collapse:collapse;">
+        <td class="outer-pad" align="center" style="padding:26px 12px;">
+          <table class="shell" role="presentation" width="650" border="0" cellpadding="0" cellspacing="0" style="width:100%;max-width:650px;border-collapse:separate;border-spacing:0;background:#f8f4f1;border:1px solid #d9c7bf;border-radius:32px;overflow:hidden;">
             <tr>
               <td align="center" style="padding-bottom:12px;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#6b7280;">
-                LXD Guild Notification
+                <div style="padding-top:18px;">LXD Guild Notification</div>
               </td>
             </tr>
             <tr>
-              <td style="background:#08131f;background-image:linear-gradient(135deg,${content.theme.headerStart} 0%,${content.theme.headerEnd} 100%);padding:22px 32px 72px;border-top:1px solid #2d3a45;border-bottom:1px solid #2d3a45;">
+              <td class="hero-pad" style="background:#08131f;background-image:linear-gradient(135deg,${content.theme.headerStart} 0%,${content.theme.headerEnd} 100%);padding:24px 32px 50px;border-top:1px solid #2d3a45;border-bottom:1px solid #2d3a45;">
                 <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                   <tr>
                     <td align="left" style="padding-bottom:18px;">
-                      <a href="${escapeHtml(getSiteUrl())}" style="text-decoration:none;">
+                      <a href="${escapeHtml(getSiteUrl())}" style="display:inline-block;padding:10px 14px;border-radius:16px;background:rgba(248,244,241,0.94);text-decoration:none;">
                         <img src="${BRAND_LOGO_URL}" alt="LXD Guild" width="150" style="display:block;height:auto;border:0;max-width:150px;" />
                       </a>
                     </td>
@@ -661,14 +740,14 @@ function renderEmailHtml(content: TemplateContent) {
                   </tr>
                   <tr>
                     <td align="center" style="padding-bottom:10px;">
-                      <div style="font-family:Georgia,'Times New Roman',serif;font-size:54px;line-height:1.02;color:${heroAccentColor};font-style:italic;">
+                      <div class="hero-title" style="font-family:Georgia,'Times New Roman',serif;font-size:54px;line-height:1.02;color:${heroAccentColor};font-style:italic;">
                         ${escapeHtml(content.heading)}
                       </div>
                     </td>
                   </tr>
                   <tr>
                     <td align="center">
-                      <div style="max-width:520px;margin:0 auto;font-size:18px;line-height:1.7;color:${heroBodyTone};">
+                      <div class="hero-copy" style="max-width:520px;margin:0 auto;font-size:18px;line-height:1.7;color:${heroBodyTone};">
                         ${escapeHtml(content.intro)}
                       </div>
                     </td>
@@ -678,13 +757,13 @@ function renderEmailHtml(content: TemplateContent) {
               </td>
             </tr>
             <tr>
-              <td style="background:#08131f;padding:0 0 24px;">
+              <td class="body-pad" style="background:#f8f4f1;padding:0 0 22px;">
                 <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                   <tr>
-                    <td style="padding:0 28px;">
-                      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-top:-42px;border-collapse:separate;border-spacing:0;background:#ffffff;">
+                    <td style="padding:0 20px;">
+                      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-top:-18px;border-collapse:separate;border-spacing:0;background:#f8f4f1;border:1px solid #ddd2cc;border-radius:26px;box-shadow:0 18px 42px rgba(15,23,42,0.08);">
                         <tr>
-                          <td style="padding:28px 26px 16px;">
+                          <td class="content-pad" style="padding:28px 26px 16px;">
                             ${statusHtml}
                             ${leadCardHtml}
                             ${ctaHtml}
@@ -702,24 +781,27 @@ function renderEmailHtml(content: TemplateContent) {
               </td>
             </tr>
             <tr>
-              <td style="background:#08131f;padding:0 28px 28px;">
-                <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#0b1826;">
+              <td style="background:#f8f4f1;padding:0 20px 20px;">
+                <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#0d1823;border:1px solid #1f3344;border-radius:22px;">
                   <tr>
                     <td style="padding:22px 24px;">
                       <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                         <tr>
-                          <td style="vertical-align:top;">
-                            <a href="${escapeHtml(getSiteUrl())}" style="display:inline-block;text-decoration:none;">
+                          <td class="footer-stack" style="vertical-align:top;">
+                            <a href="${escapeHtml(getSiteUrl())}" style="display:inline-block;padding:8px 10px;border-radius:14px;background:rgba(248,244,241,0.92);text-decoration:none;">
                               <img src="${BRAND_LOGO_URL}" alt="LXD Guild" width="120" style="display:block;height:auto;border:0;max-width:120px;" />
                             </a>
                             <div style="margin-top:12px;font-size:12px;line-height:1.8;color:#d4dde3;max-width:390px;">
                               ${escapeHtml(content.footer)}
                             </div>
+                            <div style="margin-top:16px;">
+                              ${socialLinksHtml}
+                            </div>
                           </td>
-                          <td align="right" style="vertical-align:top;">
-                            <div style="font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#e8ff87;">Visit</div>
-                            <div style="margin-top:8px;">
-                              <a href="${escapeHtml(getSiteUrl())}" style="color:#ffffff;font-size:13px;font-weight:800;text-decoration:none;">${escapeHtml(getSiteUrl())}</a>
+                          <td class="footer-stack-right" align="right" style="vertical-align:top;">
+                            <div style="font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#e8ff87;">Explore</div>
+                            <div style="margin-top:10px;max-width:220px;">
+                              ${footerLinksHtml}
                             </div>
                           </td>
                         </tr>
