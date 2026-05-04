@@ -3,81 +3,39 @@ import { createAdminClient } from "@/utils/supabase/admin";
 const JOB_FEED_KEYWORDS = [
   "Instructional Designer",
   "Senior Instructional Designer",
-  "Lead Instructional Designer",
-  "Instructional Design Manager",
   "Instructional Systems Designer",
   "Learning Strategist",
   "Learning Experience Designer",
-  "Learning Experience Architect",
   "eLearning Developer",
-  "Senior eLearning Developer",
-  "Digital Learning Developer",
-  "Online Learning Developer",
   "Curriculum Developer",
-  "Curriculum Designer",
-  "Curriculum Specialist",
   "Learning Designer",
   "L&D Specialist",
-  "Learning and Development Specialist",
   "Learning and Development Manager",
-  "Learning and Development Partner",
-  "L&D Manager",
   "Learning Consultant",
-  "Training Designer",
-  "Training Specialist",
-  "Training Manager",
-  "Training Facilitator",
-  "Training Developer",
-  "Talent Development Specialist",
-  "Talent Development Manager",
-  "Enablement Designer",
-  "Sales Enablement",
-  "Sales Enablement Manager",
-  "Revenue Enablement",
-  "Learning Program Manager",
-  "Content Developer",
   "Assessment Designer",
   "Instructional Technologist",
-  "Learning Content Developer",
-  "Learning Program Specialist",
-  "Learning Experience Manager",
-  "Corporate Trainer",
-  "LMS Administrator",
-  "LMS Specialist",
-  "Learning Operations Specialist",
 ];
 
 const JOOBLE_LOCATIONS = [
-  "India",
-  "United States",
   "Remote",
-  "United Kingdom",
-  "Canada",
-  "Australia",
-  "Singapore",
-  "United Arab Emirates",
 ];
-const ADZUNA_COUNTRIES = ["in", "us", "gb", "ca", "au", "sg"];
+const ADZUNA_COUNTRIES = ["in", "us"];
 const STALE_AFTER_HOURS = 24;
 const DEACTIVATE_AFTER_DAYS = 30;
 const HARD_DELETE_AFTER_DAYS = 60;
-const MAX_SOURCE_PAGES = 8;
+const MAX_SOURCE_PAGES = 1;
 const RESULTS_PER_PAGE = 50;
 const JSEARCH_RESULTS_PER_PAGE = 10;
+const SOURCE_TIMEOUT_MS = 12000;
 const FREELANCE_SEARCH_QUERIES = [
   "instructional designer freelance remote",
-  "instructional designer contract remote",
   "elearning developer freelance remote",
-  "learning designer freelance remote",
-  "training consultant freelance remote",
 ];
 const JSEARCH_STANDARD_QUERIES = [
   "Instructional Designer",
   "eLearning Developer",
   "Learning Experience Designer",
   "Curriculum Developer",
-  "Learning and Development Manager",
-  "Training Manager",
 ];
 const RELEVANCE_TOKENS = [
   "instructional",
@@ -278,6 +236,20 @@ function isRelevantLndRole(title: string, description: string, keyword: string) 
   return RELEVANCE_TOKENS.some((token) => haystack.includes(token));
 }
 
+async function fetchWithTimeout(url: string, init?: RequestInit) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), SOURCE_TIMEOUT_MS);
+
+  try {
+    return await fetch(url, {
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function fetchAdzunaJobs(
   keyword: string,
   country: string,
@@ -289,7 +261,7 @@ async function fetchAdzunaJobs(
 
   for (let page = 1; page <= MAX_SOURCE_PAGES; page += 1) {
     const url = `https://api.adzuna.com/v1/api/jobs/${country}/search/${page}?app_id=${appId}&app_key=${appKey}&what=${encodeURIComponent(keyword)}&results_per_page=${RESULTS_PER_PAGE}&content-type=application/json&sort_by=date`;
-    const resp = await fetch(url, { cache: "no-store" });
+    const resp = await fetchWithTimeout(url, { cache: "no-store" });
     if (!resp.ok) continue;
 
     const data = await resp.json();
@@ -336,7 +308,7 @@ async function fetchJoobleJobs(keyword: string, location: string, nowIso: string
   const results: NormalizedJob[] = [];
 
   for (let page = 1; page <= MAX_SOURCE_PAGES; page += 1) {
-    const resp = await fetch(`https://jooble.org/api/${apiKey}`, {
+    const resp = await fetchWithTimeout(`https://jooble.org/api/${apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       cache: "no-store",
@@ -400,7 +372,7 @@ async function fetchJSearchJobs(
   if (!rapidApiKey) return [];
 
   const url = `https://jsearch.p.rapidapi.com/search?query=${encodeURIComponent(query)}&page=1&num_pages=1`;
-  const resp = await fetch(url, {
+  const resp = await fetchWithTimeout(url, {
     headers: {
       "x-rapidapi-key": rapidApiKey,
       "x-rapidapi-host": "jsearch.p.rapidapi.com",
@@ -504,31 +476,24 @@ export async function syncJobFeed(options?: { trigger?: SyncTrigger }) {
 
     const collected = new Map<string, NormalizedJob>();
 
-    for (const keyword of JOB_FEED_KEYWORDS) {
-      for (const country of ADZUNA_COUNTRIES) {
-        const jobs = await fetchAdzunaJobs(keyword, country, nowIso);
-        for (const job of jobs) {
-          collected.set(job.apply_url, job);
-        }
-      }
+    const adzunaRequests = JOB_FEED_KEYWORDS.flatMap((keyword) =>
+      ADZUNA_COUNTRIES.map((country) => fetchAdzunaJobs(keyword, country, nowIso))
+    );
+    const joobleRequests = JOB_FEED_KEYWORDS
+      .slice(0, 4)
+      .flatMap((keyword) => JOOBLE_LOCATIONS.map((location) => fetchJoobleJobs(keyword, location, nowIso)));
+    const jsearchRequests = [
+      ...FREELANCE_SEARCH_QUERIES.map((query) => fetchJSearchFreelanceJobs(query, nowIso)),
+      ...JSEARCH_STANDARD_QUERIES.map((query) => fetchJSearchIndeedJobs(query, nowIso)),
+    ];
 
-      for (const location of JOOBLE_LOCATIONS) {
-        const jobs = await fetchJoobleJobs(keyword, location, nowIso);
-        for (const job of jobs) {
-          collected.set(job.apply_url, job);
-        }
-      }
-    }
+    const sourceResults = await Promise.all([
+      ...adzunaRequests,
+      ...joobleRequests,
+      ...jsearchRequests,
+    ]);
 
-    for (const query of FREELANCE_SEARCH_QUERIES) {
-      const jobs = await fetchJSearchFreelanceJobs(query, nowIso);
-      for (const job of jobs) {
-        collected.set(job.apply_url, job);
-      }
-    }
-
-    for (const query of JSEARCH_STANDARD_QUERIES) {
-      const jobs = await fetchJSearchIndeedJobs(query, nowIso);
+    for (const jobs of sourceResults) {
       for (const job of jobs) {
         collected.set(job.apply_url, job);
       }

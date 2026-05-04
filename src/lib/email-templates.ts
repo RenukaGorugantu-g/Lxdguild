@@ -467,6 +467,38 @@ function buildContent({
             : "The role remains active and visible to candidates.",
       };
 
+    case "contact_submission":
+      return {
+        ...defaults,
+        preheader: "We received your message.",
+        heading: "Message Received",
+        kicker: "We will get back to you soon",
+        heroNote: "Your note is now with the LXD Guild team.",
+        layoutVariant: "celebration",
+        intro: `Thanks for reaching out. We received your message about ${data.subject || "your request"} and will reply as soon as possible.`,
+        summary: "We have saved your message details below so you have a clear record of what was submitted.",
+        checklist: [
+          "Watch your inbox for our reply.",
+          "If your request is urgent, you can also reach us directly at lxdguild@gmail.com.",
+        ],
+      };
+
+    case "contact_submission_admin":
+      return {
+        ...defaults,
+        preheader: "A new contact request has arrived.",
+        heading: "New Contact Request",
+        kicker: "Inbox update",
+        heroNote: "A website visitor has submitted the contact form and is waiting for a response.",
+        layoutVariant: "editorial",
+        intro: `${data.name || "A visitor"} sent a new contact request regarding ${data.subject || "a general enquiry"}.`,
+        summary: "Review the enquiry details below and reply to the sender from the admin inbox.",
+        checklist: [
+          "Review the message details.",
+          "Reply to the sender at the email provided below.",
+        ],
+      };
+
     default:
       return defaults;
   }
@@ -853,6 +885,8 @@ function buildDetailRows(type: string, data: Record<string, string>, audience: N
   if (data.certificate_url && audience === "admin") rows.push({ label: "Certificate URL", value: data.certificate_url });
   if (data.validation_source && audience === "admin") rows.push({ label: "Validation source", value: beautifyStatus(data.validation_source) });
   if (data.validation_notes && audience === "admin") rows.push({ label: "Validation notes", value: data.validation_notes });
+  if (data.subject) rows.push({ label: "Subject", value: data.subject });
+  if (data.message) rows.push({ label: "Message", value: data.message });
 
   if (type === "job_posted" && data.job_url) {
     rows.push({ label: "Listing", value: data.job_url });
@@ -898,6 +932,13 @@ function getPrimaryCta(type: string, data: Record<string, string>, audience: Not
 
   if (type === "certificate_uploaded" || type === "certificate_reviewed") {
     return { label: "Open Candidate Dashboard", href: `${getSiteUrl()}/dashboard/candidate` };
+  }
+
+  if (type === "contact_submission" || type === "contact_submission_admin") {
+    return {
+      label: type === "contact_submission" ? "Contact LXD Guild" : "Reply to Sender",
+      href: type === "contact_submission" ? CONTACT_EMAIL : `mailto:${data.email || "lxdguild@gmail.com"}`,
+    };
   }
 
   if (type === "job_delete_approved" || type === "job_delete_rejected") {

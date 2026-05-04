@@ -29,7 +29,7 @@ function lxdg_learndash_certificate_id_shortcode($atts) {
     $month = date('m', $completion_date);
     $year = date('Y', $completion_date);
 
-    return 'CLXD' . $year . $month . $user_id;
+    return 'CLXD' . $year . $month  . $user_id;
 }
 
 add_action('learndash_course_completed', 'lxdg_sync_certificate_to_supabase', 20, 1);

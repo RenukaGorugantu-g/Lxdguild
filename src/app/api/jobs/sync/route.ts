@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { syncJobFeed } from "@/lib/job-feed";
 
 export const runtime = "nodejs";
+export const maxDuration = 300;
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
