@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { notifyUser, notifyAdmins } from '@/lib/notifications'
 import { claimCertificateRegistryEntry, verifyCertificateCodeForUser } from '@/lib/certificate-registry'
+import { getSiteUrl } from '@/lib/site-url'
 import sharp from 'sharp'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
@@ -16,12 +17,7 @@ function detectCertificateFileKind(certificateUrl: string, filePath?: string | n
 }
 
 function getAdminReviewUrl(req: Request) {
-  const configuredBaseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
-
-  const baseUrl = configuredBaseUrl || new URL(req.url).origin
+  const baseUrl = getSiteUrl() || new URL(req.url).origin
   return `${baseUrl}/dashboard/admin`
 }
 
