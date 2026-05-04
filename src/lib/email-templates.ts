@@ -1,6 +1,7 @@
 import { getSiteUrl } from "./site-url";
 
-const BRAND_LOGO_PATH = "/lxd-guild-email-logo.png";
+const BRAND_LOGO_URL =
+  "https://cdn.jsdelivr.net/gh/RenukaGorugantu-g/Lxdguild@main/public/lxd-guild-email-logo.png";
 const ACADEMY_URL = "https://lxdguildacademy.com";
 const LXDVERSE_URL = "https://lxdguild.com";
 const CONTACT_EMAIL = "mailto:lxdguild@gmail.com";
@@ -525,7 +526,6 @@ function buildContent({
 }
 
 function renderEmailHtml(content: TemplateContent) {
-  const brandLogoUrl = `${getSiteUrl()}${BRAND_LOGO_PATH}`;
   const heroAccentColor =
     content.layoutVariant === "celebration"
       ? "#f5f0c5"
@@ -786,7 +786,7 @@ function renderEmailHtml(content: TemplateContent) {
                   <tr>
                     <td align="center" style="padding-bottom:18px;">
                       <a href="${escapeHtml(getSiteUrl())}" style="display:inline-block;padding:12px 18px;border-radius:18px;background:rgba(248,244,241,0.95);text-decoration:none;box-shadow:0 10px 24px rgba(8,18,37,0.18);">
-                        <img src="${brandLogoUrl}" alt="LXD Guild" width="190" style="display:block;height:auto;border:0;max-width:190px;" />
+                        <img src="${BRAND_LOGO_URL}" alt="LXD Guild" width="190" style="display:block;height:auto;border:0;max-width:190px;" />
                       </a>
                     </td>
                   </tr>
@@ -848,7 +848,7 @@ function renderEmailHtml(content: TemplateContent) {
                         <tr>
                           <td class="footer-stack" style="vertical-align:top;">
                             <a href="${escapeHtml(getSiteUrl())}" style="display:inline-block;padding:10px 14px;border-radius:14px;background:rgba(248,244,241,0.92);text-decoration:none;">
-                              <img src="${brandLogoUrl}" alt="LXD Guild" width="150" style="display:block;height:auto;border:0;max-width:150px;" />
+                              <img src="${BRAND_LOGO_URL}" alt="LXD Guild" width="150" style="display:block;height:auto;border:0;max-width:150px;" />
                             </a>
                             <div style="margin-top:12px;font-size:12px;line-height:1.8;color:#d4dde3;max-width:390px;">
                               ${escapeHtml(content.footer)}
