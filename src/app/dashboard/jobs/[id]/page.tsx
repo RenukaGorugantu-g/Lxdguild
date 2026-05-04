@@ -17,11 +17,6 @@ type ApplicantRow = {
   resume_url: string | null;
   created_at: string;
   user_id: string;
-  ats_score?: number | null;
-  ats_summary?: string | null;
-  ats_auto_decision?: string | null;
-  ats_matched_keywords?: string[] | null;
-  ats_missing_keywords?: string[] | null;
 };
 
 type ApplicantProfile = {
@@ -64,6 +59,48 @@ type JobDetailRecord = {
   deletion_request_status?: string | null;
   deleted_at?: string | null;
 };
+
+function isMissingColumnError(message?: string | null) {
+  const normalized = message || "";
+  return (
+    normalized.includes("Could not find") ||
+    normalized.includes("does not exist") ||
+    normalized.includes("schema cache")
+  );
+}
+
+async function getApplicantsForJob(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  jobId: string
+) {
+  const fullQuery = await supabase
+    .from("job_applications")
+    .select("id, status, resume_id, resume_url, created_at, user_id")
+    .eq("job_id", jobId)
+    .order("created_at", { ascending: false });
+
+  if (!fullQuery.error) {
+    return fullQuery;
+  }
+
+  if (fullQuery.error.code !== "42703" && !isMissingColumnError(fullQuery.error.message)) {
+    return fullQuery;
+  }
+
+  const legacyQuery = await supabase
+    .from("job_applications")
+    .select("id, status, resume_url, created_at, user_id")
+    .eq("job_id", jobId)
+    .order("created_at", { ascending: false });
+
+  return {
+    ...legacyQuery,
+    data: (legacyQuery.data || []).map((application) => ({
+      ...application,
+      resume_id: null,
+    })),
+  };
+}
 
 export default async function JobDetailPage({
   params,
@@ -179,11 +216,7 @@ export default async function JobDetailPage({
   const followedRole = followedRoleQuery.error?.code === "42P01" ? null : followedRoleQuery.data;
 
   const { data: applicants } = isJobOwner
-      ? await supabase
-        .from("job_applications")
-        .select("id, status, resume_id, resume_url, created_at, user_id, ats_score, ats_summary, ats_auto_decision, ats_matched_keywords, ats_missing_keywords")
-        .eq("job_id", id)
-        .order("created_at", { ascending: false })
+    ? await getApplicantsForJob(supabase, id)
     : { data: null };
 
   const applicantUserIds = ((applicants || []) as ApplicantRow[]).map((app) => app.user_id).filter(Boolean);
@@ -346,47 +379,29 @@ export default async function JobDetailPage({
                           {(applicants as ApplicantRow[]).map((app) => {
                             const applicantProfile = applicantProfilesById.get(app.user_id);
                             return (
-                            <li key={app.id} className="p-4 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
-                              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-                                <div>
-                                  <p className="font-semibold text-zinc-900 dark:text-white">{applicantProfile?.name || "Candidate"}</p>
-                                  <p className="text-sm text-zinc-500">{applicantProfile?.headline || applicantProfile?.email || 'Candidate application'}</p>
-                                </div>
-                                <span className={`text-xs uppercase tracking-widest px-2.5 py-1 rounded-full border ${getStatusPillClasses(app.status)}`}>
-                                  {app.status}
-                                </span>
-                              </div>
-                              <ApplicationReviewActions applicationId={app.id} currentStatus={app.status} />
-                              {typeof app.ats_score === "number" && (
-                                <div className="mt-3 rounded-2xl bg-white px-4 py-3 text-sm text-zinc-700">
-                                  <p className="font-semibold text-zinc-900">ATS match: {Math.round(app.ats_score)}%</p>
-                                  {app.ats_summary ? <p className="mt-1 text-xs leading-5 text-zinc-500">{app.ats_summary}</p> : null}
-                                  <div className="mt-3 flex flex-wrap gap-2">
-                                    {app.ats_matched_keywords?.slice(0, 4).map((keyword) => (
-                                      <span key={keyword} className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700">
-                                        {keyword}
-                                      </span>
-                                    ))}
-                                    {app.ats_missing_keywords?.slice(0, 4).map((keyword) => (
-                                      <span key={keyword} className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
-                                        Missing: {keyword}
-                                      </span>
-                                    ))}
+                              <li key={app.id} className="p-4 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
+                                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                                  <div>
+                                    <p className="font-semibold text-zinc-900 dark:text-white">{applicantProfile?.name || "Candidate"}</p>
+                                    <p className="text-sm text-zinc-500">{applicantProfile?.headline || applicantProfile?.email || "Candidate application"}</p>
                                   </div>
+                                  <span className={`text-xs uppercase tracking-widest px-2.5 py-1 rounded-full border ${getStatusPillClasses(app.status)}`}>
+                                    {app.status}
+                                  </span>
                                 </div>
-                              )}
-                              {(app.resume_id || app.resume_url) && (
-                                <a
-                                  href={app.resume_id ? `/api/resumes/${app.resume_id}/download` : app.resume_url || undefined}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="text-sm text-brand-600 hover:underline mt-3 block"
-                                >
-                                  View resume
-                                </a>
-                              )}
-                              <p className="text-xs text-zinc-400 mt-3">Applied on {new Date(app.created_at).toLocaleDateString()}</p>
-                            </li>
+                                <ApplicationReviewActions applicationId={app.id} currentStatus={app.status} />
+                                {(app.resume_id || app.resume_url) && (
+                                  <a
+                                    href={app.resume_id ? `/api/resumes/${app.resume_id}/download` : app.resume_url || undefined}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-sm text-brand-600 hover:underline mt-3 block"
+                                  >
+                                    View resume
+                                  </a>
+                                )}
+                                <p className="text-xs text-zinc-400 mt-3">Applied on {new Date(app.created_at).toLocaleDateString()}</p>
+                              </li>
                             );
                           })}
                         </ul>

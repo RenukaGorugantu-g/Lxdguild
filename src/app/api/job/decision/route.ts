@@ -4,7 +4,7 @@ export const runtime = "nodejs";
 
 export async function POST() {
   return NextResponse.json(
-    { error: "Resume ATS analysis is currently disabled." },
+    { error: "ATS decision overrides are currently disabled." },
     { status: 410 }
   );
 }

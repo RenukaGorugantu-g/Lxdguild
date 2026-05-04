@@ -41,12 +41,16 @@ type ResumeRecord = {
   file_name?: string | null;
   file_path?: string | null;
   mime_type?: string | null;
-  ats_score?: number | null;
-  ats_summary?: string | null;
-  ats_recommendations?: string[] | null;
-  ats_missing_skills?: string[] | null;
-  ats_analysis_status?: string | null;
 };
+
+function isMissingColumnError(message?: string | null) {
+  const normalized = message || "";
+  return (
+    normalized.includes("Could not find") ||
+    normalized.includes("does not exist") ||
+    normalized.includes("schema cache")
+  );
+}
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
@@ -66,6 +70,61 @@ function getErrorMessage(error: unknown) {
 function isSupportedResumeFile(file: File) {
   const extension = file.name.split(".").pop()?.toLowerCase();
   return ["pdf", "docx"].includes(extension || "");
+}
+
+async function insertResumeRecord(
+  supabase: ReturnType<typeof createClient>,
+  payload: {
+    user_id: string;
+    file_url: string;
+    file_name: string;
+    file_path: string;
+    mime_type: string | null;
+  }
+) {
+  const fullInsert = await supabase
+    .from("resumes")
+    .insert(payload)
+    .select()
+    .single();
+
+  if (!fullInsert.error) {
+    return fullInsert;
+  }
+
+  if (fullInsert.error.code !== "42703" && !isMissingColumnError(fullInsert.error.message)) {
+    return fullInsert;
+  }
+
+  const mediumInsert = await supabase
+    .from("resumes")
+    .insert({
+      user_id: payload.user_id,
+      file_url: payload.file_url,
+      file_name: payload.file_name,
+      file_path: payload.file_path,
+      mime_type: payload.mime_type,
+    })
+    .select()
+    .single();
+
+  if (!mediumInsert.error) {
+    return mediumInsert;
+  }
+
+  if (mediumInsert.error.code !== "42703" && !isMissingColumnError(mediumInsert.error.message)) {
+    return mediumInsert;
+  }
+
+  return supabase
+    .from("resumes")
+    .insert({
+      user_id: payload.user_id,
+      file_url: payload.file_url,
+      file_name: payload.file_name,
+    })
+    .select()
+    .single();
 }
 
 export default function ProfileForm({
@@ -139,39 +198,17 @@ export default function ProfileForm({
       const { data: { publicUrl } } = supabase.storage.from('resumes').getPublicUrl(filePath);
 
       // 2. Insert into resumes table
-      const { data: resumeData, error: dbError } = await supabase
-        .from("resumes")
-        .insert({
-          user_id: profile.id,
-          file_url: publicUrl,
-          file_name: file.name,
-          file_path: filePath,
-          mime_type: file.type || null,
-          ats_analysis_status: "pending",
-        })
-        .select()
-        .single();
+      const { data: resumeData, error: dbError } = await insertResumeRecord(supabase, {
+        user_id: profile.id,
+        file_url: publicUrl,
+        file_name: file.name,
+        file_path: filePath,
+        mime_type: file.type || null,
+      });
 
       if (dbError) throw new Error(dbError.message || "Resume record could not be created.");
       setResumes((current) => [...current, resumeData]);
-
-      const analysisResponse = await fetch("/api/resume-score", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeId: resumeData.id }),
-      });
-      const analysisResult = await analysisResponse.json();
-
-      if (!analysisResponse.ok) {
-        throw new Error(analysisResult.error || "Resume was uploaded but ATS analysis failed.");
-      }
-
-      if (analysisResult.resume) {
-        setResumes((current) =>
-          current.map((resume) => (resume.id === analysisResult.resume.id ? analysisResult.resume : resume))
-        );
-      }
-      alert("Resume uploaded and analyzed!");
+      alert("Resume uploaded successfully!");
     } catch (err: unknown) {
       alert("Error uploading resume: " + getErrorMessage(err));
     } finally {
@@ -303,34 +340,6 @@ export default function ProfileForm({
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                </div>
-
-                <div className="rounded-2xl bg-[#f6faf3] px-4 py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#6b7a65]">ATS analysis</p>
-                    <span className="text-sm font-bold text-[#138d1a]">
-                      {resume.ats_analysis_status === "completed" && typeof resume.ats_score === "number"
-                        ? `${Math.round(resume.ats_score)}%`
-                        : resume.ats_analysis_status === "failed"
-                          ? "Failed"
-                          : "Pending"}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-[#53604f]">
-                    {resume.ats_summary ||
-                      (resume.ats_analysis_status === "failed"
-                        ? "We could not analyze this resume yet."
-                        : "We are checking ATS formatting, skill alignment, and resume readability.")}
-                  </p>
-                  {resume.ats_recommendations?.length ? (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {resume.ats_recommendations.slice(0, 3).map((item) => (
-                        <span key={item} className="rounded-full bg-white px-3 py-1 text-xs font-medium text-[#43513f]">
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
                 </div>
 
               </div>

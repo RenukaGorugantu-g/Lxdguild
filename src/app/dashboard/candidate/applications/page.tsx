@@ -18,9 +18,6 @@ type ApplicationRow = {
   id: string;
   status: string;
   created_at: string;
-  ats_score?: number | null;
-  ats_summary?: string | null;
-  ats_auto_decision?: string | null;
   jobs: ApplicationJob | ApplicationJob[] | null;
 };
 
@@ -41,7 +38,7 @@ export default async function CandidateApplicationsPage({
 
   let query = supabase
     .from("job_applications")
-    .select("id, status, created_at, ats_score, ats_summary, ats_auto_decision, jobs(id, title, company, location, apply_url, is_active, expires_at)")
+    .select("id, status, created_at, jobs(id, title, company, location, apply_url, is_active, expires_at)")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -64,12 +61,7 @@ export default async function CandidateApplicationsPage({
     }
 
     const fallbackApplications = await fallbackQuery;
-    applications = (fallbackApplications.data || []).map((application) => ({
-      ...application,
-      ats_score: null,
-      ats_summary: null,
-      ats_auto_decision: null,
-    })) as ApplicationRow[];
+    applications = (fallbackApplications.data || []) as ApplicationRow[];
   }
 
   return (
@@ -131,16 +123,6 @@ export default async function CandidateApplicationsPage({
                       </span>
                     </div>
                     <div className="mt-4 flex flex-wrap gap-3">
-                      {typeof application.ats_score === "number" && (
-                        <span className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-sm font-medium text-blue-800">
-                          ATS Match {Math.round(application.ats_score)}%
-                        </span>
-                      )}
-                      {application.ats_auto_decision === "manual_review" && application.ats_summary && (
-                        <span className="inline-flex items-center gap-2 rounded-xl bg-zinc-100 px-3 py-2 text-sm font-medium text-zinc-700">
-                          Manual review: {application.ats_summary}
-                        </span>
-                      )}
                       {job?.id && (
                         <Link
                           href={`/dashboard/jobs/${job.id}`}

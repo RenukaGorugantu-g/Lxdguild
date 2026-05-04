@@ -532,7 +532,7 @@ function renderEmailHtml(content: TemplateContent) {
       : "#081225";
 
   const leadCardHtml = content.summary
-    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:18px;border-collapse:separate;border-spacing:0;background:linear-gradient(135deg,${content.theme.panel} 0%,#ffffff 100%);border:1px solid ${content.theme.border};border-radius:24px;">
+    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:18px;border-collapse:separate;border-spacing:0;background:linear-gradient(145deg,#ffffff 0%,${content.theme.panel} 100%);border:1px solid ${content.theme.border};border-radius:24px;box-shadow:0 12px 30px rgba(15,23,42,0.05);">
         <tr>
           <td style="padding:20px 22px;">
             <div style="font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${content.theme.accent};">What matters now</div>
@@ -552,9 +552,9 @@ function renderEmailHtml(content: TemplateContent) {
         <tr>
           ${factCards
             .map(
-              (detail) => `<td class="stack-card" valign="top" width="${Math.max(25, Math.floor(100 / factCards.length))}%" style="background:${content.theme.panel};border:1px solid ${content.theme.border};padding:16px 14px;border-radius:18px;">
-                <div style="font-size:11px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:#64748b;">${escapeHtml(detail.label)}</div>
-                <div style="margin-top:8px;font-size:15px;line-height:1.6;font-weight:700;color:#0f172a;">${escapeHtml(detail.value)}</div>
+              (detail) => `<td class="stack-card" valign="top" width="${Math.max(25, Math.floor(100 / factCards.length))}%" style="background:#ffffff;border:1px solid ${content.theme.border};padding:18px 16px;border-radius:18px;box-shadow:0 10px 22px rgba(15,23,42,0.04);">
+                <div style="font-size:10px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#7c8a97;">${escapeHtml(detail.label)}</div>
+                <div style="margin-top:9px;font-size:15px;line-height:1.65;font-weight:700;color:#0f172a;">${escapeHtml(detail.value)}</div>
               </td>`
             )
             .join("")}
@@ -646,7 +646,7 @@ function renderEmailHtml(content: TemplateContent) {
     : "";
 
   const socialLinksHtml = EMAIL_SOCIAL_LINKS.map(
-    (link) => `<a href="${escapeHtml(link.href)}" style="display:inline-block;margin-right:8px;margin-bottom:8px;padding:10px 0;width:38px;border-radius:999px;background:rgba(232,255,135,0.12);border:1px solid rgba(232,255,135,0.22);color:#f8fafc;font-size:12px;font-weight:800;text-align:center;text-decoration:none;letter-spacing:0.04em;" aria-label="${escapeHtml(link.name)}">${escapeHtml(link.label)}</a>`
+    (link) => `<a href="${escapeHtml(link.href)}" style="display:inline-block;margin-right:8px;margin-bottom:8px;padding:10px 0;width:38px;border-radius:999px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.14);color:#f8fafc;font-size:12px;font-weight:800;text-align:center;text-decoration:none;letter-spacing:0.04em;" aria-label="${escapeHtml(link.name)}">${escapeHtml(link.label)}</a>`
   ).join("");
 
   const footerLinksHtml = [
@@ -740,32 +740,32 @@ function renderEmailHtml(content: TemplateContent) {
       }
     </style>
   </head>
-  <body style="margin:0;padding:0;background:#ead9d2;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+    <body style="margin:0;padding:0;background:#ece6e1;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
     <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;">
       ${escapeHtml(content.preheader)}
     </span>
-    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background:#ead9d2;border-collapse:collapse;">
+    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background:#ece6e1;border-collapse:collapse;">
       <tr>
         <td class="outer-pad" align="center" style="padding:26px 12px;">
-          <table class="shell" role="presentation" width="650" border="0" cellpadding="0" cellspacing="0" style="width:100%;max-width:650px;border-collapse:separate;border-spacing:0;background:#f8f4f1;border:1px solid #d9c7bf;border-radius:32px;overflow:hidden;">
+          <table class="shell" role="presentation" width="650" border="0" cellpadding="0" cellspacing="0" style="width:100%;max-width:650px;border-collapse:separate;border-spacing:0;background:#f7f3ef;border:1px solid #d7cbc2;border-radius:32px;overflow:hidden;box-shadow:0 22px 50px rgba(15,23,42,0.08);">
             <tr>
-              <td align="center" style="padding-bottom:12px;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:#6b7280;">
+              <td align="center" style="padding-bottom:12px;font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#6b7280;">
                 <div style="padding-top:18px;">LXD Guild Notification</div>
               </td>
             </tr>
             <tr>
-              <td class="hero-pad" style="background:#08131f;background-image:linear-gradient(135deg,${content.theme.headerStart} 0%,${content.theme.headerEnd} 100%);padding:24px 32px 50px;border-top:1px solid #2d3a45;border-bottom:1px solid #2d3a45;">
+              <td class="hero-pad" style="background:#08131f;background-image:linear-gradient(135deg,${content.theme.headerStart} 0%,${content.theme.headerEnd} 100%);padding:26px 32px 54px;border-top:1px solid #2d3a45;border-bottom:1px solid #2d3a45;">
                 <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                   <tr>
                     <td align="left" style="padding-bottom:18px;">
-                      <a href="${escapeHtml(getSiteUrl())}" style="display:inline-block;padding:10px 14px;border-radius:16px;background:rgba(248,244,241,0.94);text-decoration:none;">
+                      <a href="${escapeHtml(getSiteUrl())}" style="display:inline-block;padding:10px 14px;border-radius:16px;background:rgba(248,244,241,0.96);text-decoration:none;box-shadow:0 10px 24px rgba(8,18,37,0.18);">
                         <img src="${BRAND_LOGO_URL}" alt="LXD Guild" width="150" style="display:block;height:auto;border:0;max-width:150px;" />
                       </a>
                     </td>
                   </tr>
                   <tr>
                     <td align="center" style="padding-bottom:12px;">
-                      <div style="display:inline-block;padding:8px 14px;background:rgba(255,255,255,0.12);color:#ffffff;font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;">
+                      <div style="display:inline-block;padding:8px 14px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.12);color:#ffffff;font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;">
                         ${escapeHtml(content.kicker || content.theme.eyebrow)}
                       </div>
                     </td>
@@ -779,7 +779,7 @@ function renderEmailHtml(content: TemplateContent) {
                   </tr>
                   <tr>
                     <td align="center">
-                      <div class="hero-copy" style="max-width:520px;margin:0 auto;font-size:18px;line-height:1.7;color:${heroBodyTone};">
+                      <div class="hero-copy" style="max-width:520px;margin:0 auto;font-size:18px;line-height:1.75;color:${heroBodyTone};">
                         ${escapeHtml(content.intro)}
                       </div>
                     </td>
@@ -789,11 +789,11 @@ function renderEmailHtml(content: TemplateContent) {
               </td>
             </tr>
             <tr>
-              <td class="body-pad" style="background:#f8f4f1;padding:0 0 22px;">
+              <td class="body-pad" style="background:#f7f3ef;padding:0 0 22px;">
                 <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                   <tr>
                     <td style="padding:0 20px;">
-                      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-top:-18px;border-collapse:separate;border-spacing:0;background:#f8f4f1;border:1px solid #ddd2cc;border-radius:26px;box-shadow:0 18px 42px rgba(15,23,42,0.08);">
+                      <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-top:-18px;border-collapse:separate;border-spacing:0;background:#fbf9f7;border:1px solid #ddd2cc;border-radius:26px;box-shadow:0 20px 46px rgba(15,23,42,0.08);">
                         <tr>
                           <td class="content-pad" style="padding:28px 26px 16px;">
                             ${statusHtml}
@@ -813,8 +813,8 @@ function renderEmailHtml(content: TemplateContent) {
               </td>
             </tr>
             <tr>
-              <td style="background:#f8f4f1;padding:0 20px 20px;">
-                <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#0d1823;border:1px solid #1f3344;border-radius:22px;">
+              <td style="background:#f7f3ef;padding:0 20px 20px;">
+                <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#0d1823;border:1px solid #1f3344;border-radius:22px;box-shadow:0 14px 30px rgba(15,23,42,0.12);">
                   <tr>
                     <td style="padding:22px 24px;">
                       <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
@@ -831,7 +831,7 @@ function renderEmailHtml(content: TemplateContent) {
                             </div>
                           </td>
                           <td class="footer-stack-right" align="right" style="vertical-align:top;">
-                            <div style="font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#e8ff87;">Explore</div>
+                            <div style="font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#e8ff87;">Connect</div>
                             <div style="margin-top:10px;max-width:220px;">
                               ${footerLinksHtml}
                             </div>

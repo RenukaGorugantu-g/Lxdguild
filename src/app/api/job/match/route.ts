@@ -4,7 +4,7 @@ export const runtime = "nodejs";
 
 export async function POST() {
   return NextResponse.json(
-    { error: "Resume ATS analysis is currently disabled." },
+    { error: "Resume-to-job matching is currently disabled." },
     { status: 410 }
   );
 }
