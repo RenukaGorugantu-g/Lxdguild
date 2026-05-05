@@ -15,7 +15,7 @@ function lxdg_learndash_certificate_id_shortcode($atts) {
     $atts = shortcode_atts(array(
         'course_id' => 0,
     ), $atts);
-
+    
     $user_id = get_current_user_id();
     if (!$user_id || !$atts['course_id']) {
         return '';

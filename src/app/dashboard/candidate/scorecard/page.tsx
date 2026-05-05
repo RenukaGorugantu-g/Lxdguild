@@ -2,11 +2,13 @@ import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { Award, BookOpen, ChevronRight, AlertTriangle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import AssessmentBadgeShare from "./AssessmentBadgeShare";
 import {
   COURSE_PROFICIENCY_THRESHOLD,
   getCourseRecommendations,
   PASS_THRESHOLD,
 } from "@/lib/assessment";
+import { getSiteUrl } from "@/lib/site-url";
 
 export default async function ScorecardPage() {
   const supabase = await createClient();
@@ -46,13 +48,25 @@ export default async function ScorecardPage() {
   const designationBucket = attempt.designation_bucket || "Intermediate";
   const numericScore = Number(attempt.score || 0);
   const recommendationPlan = getCourseRecommendations(designationBucket, numericScore);
-
   const courseCodes = recommendationPlan.courses.map((course) => course.code);
-  const { data: courseRows } = await supabase
-    .from("courses")
-    .select("course_code, title, external_link")
-    .in("course_code", courseCodes)
-    .neq("course_code", "C5");
+  const [profileResponse, courseRowsResponse] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("name, candidate_target_role")
+      .eq("id", user.id)
+      .maybeSingle(),
+    supabase
+      .from("courses")
+      .select("course_code, title, external_link")
+      .in("course_code", courseCodes)
+      .neq("course_code", "C5"),
+  ]);
+
+  const profile = profileResponse.data;
+  const courseRows = courseRowsResponse.data;
+  const candidateName = profile?.name || user.email?.split("@")[0] || "LXD Guild Candidate";
+  const targetRole = profile?.candidate_target_role || "Learning & Development Professional";
+  const shareUrl = `${getSiteUrl()}/candidate`;
 
   const courseLinkMap = new Map(
     (courseRows || []).map((course) => [course.course_code as string, {
@@ -199,6 +213,16 @@ export default async function ScorecardPage() {
 
         </div>
 
+        <AssessmentBadgeShare
+          candidateName={candidateName}
+          targetRole={targetRole}
+          designationBucket={designationBucket}
+          score={numericScore}
+          isPass={isPass}
+          weakSkills={weakSkills}
+          shareUrl={shareUrl}
+        />
+
         {!isPass && (
           <div className="p-6 bg-brand-50 dark:bg-brand-900/10 border border-brand-100 dark:border-brand-900/30 rounded-2xl text-center">
             <p className="text-sm font-medium text-brand-900 dark:text-brand-400 mb-2">Ready to reattempt?</p>
@@ -210,4 +234,3 @@ export default async function ScorecardPage() {
     </div>
   );
 }
-
