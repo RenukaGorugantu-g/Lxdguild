@@ -56,6 +56,24 @@ export async function GET(
     }
 
     if (!canAccess) {
+      const { data: candidateOwnedApplication } = await supabase
+        .from("job_applications")
+        .select("id, jobs!inner(user_id)")
+        .eq("user_id", resume.user_id)
+        .eq("jobs.user_id", user.id)
+        .limit(1)
+        .maybeSingle();
+
+      const candidateJob = candidateOwnedApplication?.jobs as
+        | { user_id?: string | null }
+        | Array<{ user_id?: string | null }>
+        | null
+        | undefined;
+      const candidateOwnerId = Array.isArray(candidateJob) ? candidateJob[0]?.user_id : candidateJob?.user_id;
+      canAccess = candidateOwnerId === user.id;
+    }
+
+    if (!canAccess) {
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
 

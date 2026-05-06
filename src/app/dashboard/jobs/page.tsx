@@ -301,6 +301,10 @@ export default async function JobsDashboard({
     <div className="marketing-page min-h-screen">
       <div className="marketing-section pt-32 pb-16">
         <div className="marketing-container space-y-8">
+          <div className="lg:hidden">
+            <JobSidebar categories={categories} />
+          </div>
+
           <section className="grid items-center gap-6 lg:grid-cols-[0.95fr_1.05fr]">
             <div className="space-y-6">
               <div className="marketing-kicker">Curated opportunities</div>
@@ -354,7 +358,9 @@ export default async function JobsDashboard({
           </section>
 
           <section className="flex flex-col gap-8 lg:flex-row">
-            <JobSidebar categories={categories} />
+            <div className="hidden lg:block">
+              <JobSidebar categories={categories} />
+            </div>
 
             <div className="flex-1 space-y-4">
               {view !== "freelance" && freelanceJobs.length > 0 && (

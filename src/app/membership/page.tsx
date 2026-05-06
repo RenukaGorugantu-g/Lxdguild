@@ -206,7 +206,7 @@ export default async function PublicMembershipPage() {
               </article>
               <article className="marketing-grid-card p-8">
                 <p className="text-[11px] uppercase tracking-[0.16em] text-[#6d7d68]">Membership Access</p>
-                <p className="mt-4 text-5xl font-bold text-[#111827]">$999<span className="text-lg font-medium text-[#6b7280]">/year</span></p>
+                <p className="mt-4 text-5xl font-bold text-[#111827]">Rs 2999<span className="text-lg font-medium text-[#6b7280]">/year</span></p>
                 <p className="mt-4 text-sm leading-7 text-[#5b6757]">
                   A simple premium layer designed for people who want more depth around learning, hiring, and long-term
                   growth in the Guild ecosystem.

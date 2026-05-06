@@ -96,7 +96,7 @@ export default async function EmployerDashboard() {
             <h1 className="mt-4 text-3xl font-bold text-white">Employer Hub</h1>
             <p className="premium-copy mt-2">
               {showEmployerUpgrade
-                ? `There are ${mvpCount ?? 0} verified MVP candidates available. Upgrade to Pro to unlock full access.`
+                ? `There are ${mvpCount ?? 0} verified MVP candidates available. Upgrade to Premium to unlock full access.`
                 : "Discover pre-vetted L&D talent ready to hire."}
             </p>
             {(profile.company_name || profile.employer_designation) && (
@@ -107,7 +107,7 @@ export default async function EmployerDashboard() {
             )}
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-white/90">
-                Employer plan: {employerPlan === "pro" ? "Pro" : employerPlan === "premium" ? "Premium" : "Free"}
+                Employer plan: {employerPlan === "premium" || employerPlan === "pro" ? "Premium" : "Free"}
               </span>
               <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-white/90">
                 Membership: {membership.active ? "Active" : "Inactive"}
@@ -115,29 +115,29 @@ export default async function EmployerDashboard() {
             </div>
             {membership.active && isFreePlan && (
               <p className="mt-3 max-w-2xl text-xs leading-6 text-[#cde3e1]/80">
-                Your Guild membership is active for resources and member benefits. Employer Pro/Premium is a separate hiring plan, so you can still see employer upgrade prompts while membership stays active.
+                Your Guild membership is active for resources and member benefits. Employer Premium is a separate hiring plan, so you can still see employer upgrade prompts while membership stays active.
               </p>
             )}
           </div>
           {showEmployerUpgrade ? (
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-white dark:bg-surface-dark border p-3 rounded-xl shadow-sm">
-              <div className="text-sm">
-                <p className="font-semibold">Free Plan</p>
-                <p className="text-zinc-500">You can post jobs, but candidate access is limited.</p>
+              <div className="text-sm text-zinc-900 dark:text-white">
+                <p className="font-semibold text-zinc-900 dark:text-white">Free Plan</p>
+                <p className="text-zinc-600 dark:text-zinc-300">You can post jobs, but candidate access is limited.</p>
               </div>
               <div className="flex items-center gap-2">
                 <Link href="/dashboard/employer/post-job" className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700">
                   Post a Job
                 </Link>
-                <Link href="/dashboard/employer/upgrade" className="px-4 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-900 transition">
-                  Upgrade to Pro
+                <Link href="/dashboard/employer/upgrade" className="px-4 py-2 border border-zinc-200 dark:border-zinc-700 rounded-lg text-sm font-medium text-zinc-900 dark:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900 transition">
+                  Upgrade to Premium
                 </Link>
               </div>
             </div>
           ) : (
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
               <div className="flex items-center gap-2 px-4 py-2 bg-brand-50 text-brand-700 rounded-full text-sm font-medium border border-brand-200">
-                 <Star className="w-4 h-4" /> {employerPlan === "pro" ? "Pro Plan" : "Premium Plan"} Active
+                 <Star className="w-4 h-4" /> Premium Plan Active
               </div>
               <Link href="/dashboard/employer/post-job" className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700">
                 Post a Job
@@ -150,7 +150,7 @@ export default async function EmployerDashboard() {
         {showEmployerUpgrade && (
           <div className="premium-card-light p-5 text-sm text-yellow-900">
             <p className="font-semibold">MVP candidates are available</p>
-            <p className="mt-2">We currently have <span className="font-semibold">{mvpCount ?? 0}</span> verified MVP candidates. Upgrade to Pro to unlock full profile details and connect with them.</p>
+            <p className="mt-2">We currently have <span className="font-semibold">{mvpCount ?? 0}</span> verified MVP candidates. Upgrade to Premium to unlock full profile details and connect with them.</p>
           </div>
         )}
 

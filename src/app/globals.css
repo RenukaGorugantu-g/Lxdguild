@@ -54,6 +54,9 @@
 
 html {
   scroll-behavior: smooth;
+  color-scheme: light;
+  supported-color-schemes: light;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -66,6 +69,7 @@ body {
     radial-gradient(circle at top left, rgba(52, 205, 47, 0.16), transparent 26%),
     radial-gradient(circle at top right, rgba(95, 213, 255, 0.12), transparent 24%),
     linear-gradient(180deg, #0c1b3e 0%, #091737 45%, #08122a 100%);
+  color-scheme: light;
 }
 
 h1,
@@ -158,6 +162,71 @@ a {
   .bg-emerald-50
 ) :is(input, textarea)::placeholder {
   color: rgba(9, 23, 55, 0.5);
+}
+
+:is(
+  .bg-zinc-900,
+  .bg-zinc-950,
+  .bg-brand-600,
+  .bg-brand-700,
+  .bg-\[\#091737\],
+  .bg-\[\#19324b\],
+  .premium-hero,
+  .premium-glass-section,
+  .marketing-dashboard,
+  .force-light-text
+) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff;
+}
+
+:is(
+  .bg-zinc-900,
+  .bg-zinc-950,
+  .bg-brand-600,
+  .bg-brand-700,
+  .bg-\[\#091737\],
+  .bg-\[\#19324b\],
+  .premium-hero,
+  .premium-glass-section,
+  .marketing-dashboard,
+  .force-light-text
+) :is(
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  span,
+  label,
+  li,
+  small,
+  strong,
+  em,
+  div,
+  a,
+  button
+) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: currentColor;
+}
+
+:is(
+  .bg-zinc-900,
+  .bg-zinc-950,
+  .bg-brand-600,
+  .bg-brand-700,
+  .bg-\[\#091737\],
+  .bg-\[\#19324b\],
+  .premium-hero,
+  .premium-glass-section,
+  .marketing-dashboard,
+  .force-light-text
+) :is(input, textarea, select) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff;
 }
 
 .glass-panel {

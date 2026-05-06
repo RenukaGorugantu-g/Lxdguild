@@ -181,7 +181,7 @@ export default function ApplyModal({
   const shellClass =
     step === 3
       ? "bg-white dark:bg-surface-dark w-full max-w-7xl max-h-[calc(100vh-3rem)] rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
-      : "bg-white dark:bg-surface-dark w-full max-w-xl max-h-[calc(100vh-3rem)] rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300";
+      : "bg-white dark:bg-surface-dark w-full max-w-3xl max-h-[calc(100vh-3rem)] rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300";
 
   return (
     <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-300 sm:p-6">
@@ -200,110 +200,203 @@ export default function ApplyModal({
         </div>
 
         <div className="max-h-[calc(100vh-9rem)] overflow-y-auto p-8">
-          {step === 1 && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-4 p-4 bg-brand-50/50 dark:bg-brand-900/10 border border-brand-100 dark:border-brand-900/20 rounded-2xl">
-                <div className="w-12 h-12 bg-white dark:bg-zinc-900 rounded-xl flex items-center justify-center border border-brand-100 dark:border-brand-900/20">
-                  <User className="w-6 h-6 text-brand-600" />
+          {step !== 3 && (
+            <div className="mb-8 grid gap-6 rounded-[28px] border border-[#dde6e0] bg-[linear-gradient(135deg,#f6fbf5_0%,#ffffff_58%,#f8fbff_100%)] p-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)]">
+              <div className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  <span className={`force-light-text rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] ${step >= 1 ? "bg-[#11203b] text-white" : "bg-zinc-100 text-zinc-500"}`}>
+                    1. profile
+                  </span>
+                  <span className={`force-light-text rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] ${step >= 2 ? "bg-[#11203b] text-white" : "bg-zinc-100 text-zinc-500"}`}>
+                    2. resume
+                  </span>
+                  <span className="rounded-full bg-zinc-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+                    {isInternalApply ? "internal review" : "external handoff"}
+                  </span>
                 </div>
                 <div>
-                  <p className="font-bold">{profile.name}</p>
-                  <p className="text-xs text-zinc-500">{profile.headline || "L&D Professional"}</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#6d7d68]">
+                    {isInternalApply ? "LXD Guild apply flow" : "External employer flow"}
+                  </p>
+                  <h3 className="mt-2 text-2xl font-bold tracking-tight text-[#11203b]">
+                    {isInternalApply ? "Confirm your profile, pick a resume, and submit." : "Confirm your profile, pick a resume, then continue to the employer site."}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-[#5f6876]">
+                    {isInternalApply
+                      ? "Your application stays inside LXD Guild, where the employer can review your profile, ATS fit, and resume in one flow."
+                      : "We track your application intent here first, then send you to the employer's official page so the final submission reaches their system."}
+                  </p>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <h3 className="font-bold flex items-center gap-2 text-sm">
-                  <Award className="w-4 h-4 text-brand-600" /> Your Top Skills
+              <div className="rounded-[24px] border border-white/70 bg-white/90 p-5 shadow-sm">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-500">Role snapshot</p>
+                <p className="mt-3 text-lg font-bold text-zinc-950">{job.title}</p>
+                <div className="mt-3 flex flex-wrap gap-2 text-xs text-zinc-500">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-3 py-1">
+                    <Building2 className="h-3.5 w-3.5" />
+                    {job.company || "Employer"}
+                  </span>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-3 py-1">
+                    <FileText className="h-3.5 w-3.5" />
+                    {resumes.length} resume{resumes.length === 1 ? "" : "s"} ready
+                  </span>
+                </div>
+                {!isInternalApply && (
+                  <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    The employer may ask additional questions, attachments, or a final site-side submit before the application is complete.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {step === 1 && (
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(260px,0.9fr)]">
+              <div className="rounded-[28px] border border-zinc-200 bg-white p-6 shadow-sm">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-brand-100 bg-brand-50">
+                    <User className="h-7 w-7 text-brand-600" />
+                  </div>
+                  <div>
+                    <p className="text-lg font-bold text-zinc-950">{profile.name || "Candidate profile"}</p>
+                    <p className="text-sm text-zinc-500">{profile.headline || "L&D Professional"}</p>
+                  </div>
+                </div>
+
+                <div className="mt-6 rounded-2xl bg-zinc-50 px-4 py-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">What we send forward</p>
+                  <ul className="mt-3 space-y-2 text-sm text-zinc-700">
+                    <li>Your current profile identity and headline</li>
+                    <li>Your selected resume and ATS context</li>
+                    <li>Your employer-side application tracking inside LXD Guild</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="rounded-[28px] border border-zinc-200 bg-white p-6 shadow-sm">
+                <h3 className="flex items-center gap-2 text-sm font-bold text-zinc-900">
+                  <Award className="h-4 w-4 text-brand-600" /> Top skills on profile
                 </h3>
-                <div className="flex flex-wrap gap-2">
+                <div className="mt-4 flex flex-wrap gap-2">
                   {profile.skills?.length ? (
                     profile.skills.map((skill) => (
-                      <span key={skill} className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-xs font-medium">
+                      <span key={skill} className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700">
                         {skill}
                       </span>
                     ))
                   ) : (
-                    <p className="text-xs text-zinc-400 italic">No skills added yet. We recommend updating your profile.</p>
+                    <p className="text-sm italic text-zinc-400">No skills added yet. We recommend updating your profile.</p>
                   )}
+                </div>
+
+                <div className="mt-6 rounded-2xl border border-dashed border-zinc-200 px-4 py-4 text-sm text-zinc-500">
+                  A stronger profile helps ATS context, employer trust, and faster review after you apply.
                 </div>
               </div>
 
-              <button
-                onClick={() => setStep(2)}
-                className="w-full py-4 bg-brand-600 text-white rounded-2xl font-bold shadow-lg hover:shadow-brand-500/20 transition-all"
-              >
-                Confirm Profile & Continue
-              </button>
+              <div className="lg:col-span-2">
+                <button
+                  onClick={() => setStep(2)}
+                  className="w-full rounded-2xl bg-brand-600 py-4 font-bold text-white shadow-lg transition-all hover:shadow-brand-500/20"
+                >
+                  Confirm profile and continue
+                </button>
+              </div>
             </div>
           )}
 
           {step === 2 && (
-            <div className="space-y-6">
-              <h3 className="font-bold flex items-center gap-2 text-sm">
-                <FileText className="w-4 h-4 text-brand-600" /> Choose Resume
-              </h3>
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
+              <div className="rounded-[28px] border border-zinc-200 bg-white p-6 shadow-sm">
+                <h3 className="flex items-center gap-2 text-sm font-bold text-zinc-900">
+                  <FileText className="h-4 w-4 text-brand-600" /> Choose the resume to send
+                </h3>
 
-              <div className="space-y-3">
-                {resumes.length > 0 ? (
-                  resumes.map((resume) => (
-                    <button
-                      key={resume.id}
-                      onClick={() => setSelectedResumeId(resume.id)}
-                      className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
-                        selectedResumeId === resume.id
-                          ? "border-brand-600 bg-brand-50/50 dark:bg-brand-900/10"
-                          : "border-zinc-100 dark:border-zinc-800 hover:border-zinc-200"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <FileText className={`w-5 h-5 ${selectedResumeId === resume.id ? "text-brand-600" : "text-zinc-400"}`} />
-                        <div className="text-left">
-                          <p
-                            className={`text-sm font-bold ${
-                              selectedResumeId === resume.id ? "text-brand-900 dark:text-brand-100" : "text-zinc-600 dark:text-zinc-400"
-                            }`}
-                          >
-                            {resume.file_name || "Resume"}
-                          </p>
+                <div className="mt-5 space-y-3">
+                  {resumes.length > 0 ? (
+                    resumes.map((resume) => (
+                      <button
+                        key={resume.id}
+                        onClick={() => setSelectedResumeId(resume.id)}
+                        className={`w-full rounded-2xl border-2 p-4 text-left transition-all ${
+                          selectedResumeId === resume.id
+                            ? "border-brand-600 bg-brand-50/50 dark:bg-brand-900/10"
+                            : "border-zinc-100 dark:border-zinc-800 hover:border-zinc-200"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <FileText className={`h-5 w-5 ${selectedResumeId === resume.id ? "text-brand-600" : "text-zinc-400"}`} />
+                            <div>
+                              <p className={`text-sm font-bold ${selectedResumeId === resume.id ? "text-brand-900 dark:text-brand-100" : "text-zinc-700 dark:text-zinc-300"}`}>
+                                {resume.file_name || "Resume"}
+                              </p>
+                              <p className="mt-1 text-xs text-zinc-500">
+                                {selectedResumeId === resume.id ? "Selected for this application" : "Available in your resume vault"}
+                              </p>
+                            </div>
+                          </div>
+                          {selectedResumeId === resume.id && <CheckCircle className="h-5 w-5 text-brand-600" />}
                         </div>
-                      </div>
-                      {selectedResumeId === resume.id && <CheckCircle className="w-5 h-5 text-brand-600" />}
-                    </button>
-                  ))
-                ) : (
-                  <div className="p-8 text-center border-2 border-dashed rounded-3xl group">
-                    <p className="text-sm text-zinc-500 mb-4">No resumes found in your profile.</p>
-                    <button
-                      onClick={() => router.push("/dashboard/candidate/profile")}
-                      className="text-xs font-bold text-brand-600 uppercase tracking-widest hover:underline"
-                    >
-                      Update Profile to Upload
-                    </button>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="rounded-3xl border-2 border-dashed p-8 text-center">
+                      <p className="mb-4 text-sm text-zinc-500">No resumes found in your profile.</p>
+                      <button
+                        onClick={() => router.push("/dashboard/candidate/profile")}
+                        className="text-xs font-bold uppercase tracking-widest text-brand-600 hover:underline"
+                      >
+                        Update profile to upload
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="rounded-[28px] border border-zinc-200 bg-white p-6 shadow-sm">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-500">What happens next</p>
+                  <div className="mt-4 space-y-3">
+                    <div className="rounded-2xl bg-zinc-50 px-4 py-3">
+                      <p className="text-sm font-semibold text-zinc-900">1. We save your application intent</p>
+                      <p className="mt-1 text-xs leading-5 text-zinc-500">This keeps the role in your LXD Guild application history.</p>
+                    </div>
+                    <div className="rounded-2xl bg-zinc-50 px-4 py-3">
+                      <p className="text-sm font-semibold text-zinc-900">
+                        {isInternalApply ? "2. Employer reviews you inside LXD Guild" : "2. You finish on the employer site"}
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-zinc-500">
+                        {isInternalApply
+                          ? "Your profile, resume, and ATS context are visible in the employer review flow."
+                          : "We open the official employer page in a new tab so their system receives the final submission."}
+                      </p>
+                    </div>
                   </div>
-                )}
+                </div>
+
+                <div className={`rounded-[28px] px-5 py-4 text-sm ${isInternalApply ? "border border-emerald-200 bg-emerald-50 text-emerald-900" : "border border-amber-200 bg-amber-50 text-amber-900"}`}>
+                  {isInternalApply
+                    ? "This role uses LXD Guild's internal apply flow. Submission here is the real application."
+                    : "This role uses an external employer flow. Submission here starts tracking, but you still need to finish on the employer page."}
+                </div>
               </div>
 
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                {isInternalApply
-                  ? "This role uses LXD Guild's internal apply flow. Once you submit, the employer can review your profile, ATS fit, and resume directly in the platform."
-                  : "This opens the employer's official application page in a popup or new tab. You still need to finish the application there for your resume to reach them."}
-              </div>
-
-              <div className="flex gap-4">
+              <div className="flex gap-4 lg:col-span-2">
                 <button
                   onClick={() => setStep(1)}
-                  className="flex-1 py-4 bg-zinc-100 dark:bg-zinc-800 rounded-2xl font-bold text-zinc-600 dark:text-zinc-400 transition-all hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                  className="flex-1 rounded-2xl bg-zinc-100 py-4 font-bold text-zinc-600 transition-all hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
                 >
                   Back
                 </button>
                 <button
                   onClick={handleApply}
                   disabled={isSubmitting || !selectedResumeId}
-                  className="flex-[2] py-4 bg-brand-600 text-white rounded-2xl font-bold shadow-lg hover:shadow-brand-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-[1.8] rounded-2xl bg-brand-600 py-4 font-bold text-white shadow-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2 hover:shadow-brand-500/20"
                 >
-                  {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-4 h-4" />}
-                  {isInternalApply ? "Submit Application" : "Continue to Official Apply Page"}
+                  {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-4 w-4" />}
+                  {isInternalApply ? "Submit application" : "Continue to employer site"}
                 </button>
               </div>
             </div>

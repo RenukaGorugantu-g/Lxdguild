@@ -18,8 +18,40 @@ type ApplicationRow = {
   id: string;
   status: string;
   created_at: string;
+  ats_score?: number | string | null;
+  ats_summary?: string | null;
+  ats_auto_decision?: string | null;
   jobs: ApplicationJob | ApplicationJob[] | null;
 };
+
+type InterviewScheduleSummary = {
+  roundLabel?: string | null;
+  startAt?: string | null;
+  durationMinutes?: number | null;
+  meetingProvider?: string | null;
+  schedulingUrl?: string | null;
+  notes?: string | null;
+};
+
+function toNumericScore(value: number | string | null | undefined) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
+function formatInterviewDate(value?: string | null) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toLocaleString();
+}
 
 export default async function CandidateApplicationsPage({
   searchParams,
@@ -38,7 +70,7 @@ export default async function CandidateApplicationsPage({
 
   let query = supabase
     .from("job_applications")
-    .select("id, status, created_at, jobs(id, title, company, location, apply_url, is_active, expires_at)")
+    .select("id, status, created_at, ats_score, ats_summary, ats_auto_decision, jobs(id, title, company, location, apply_url, is_active, expires_at)")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
@@ -48,6 +80,7 @@ export default async function CandidateApplicationsPage({
 
   const applicationsQuery = await query;
   let applications: ApplicationRow[] | null = (applicationsQuery.data as ApplicationRow[] | null) ?? null;
+  const interviewSchedulesByApplicationId = new Map<string, InterviewScheduleSummary>();
 
   if (applicationsQuery.error?.code === "42703") {
     let fallbackQuery = supabase
@@ -62,6 +95,42 @@ export default async function CandidateApplicationsPage({
 
     const fallbackApplications = await fallbackQuery;
     applications = (fallbackApplications.data || []) as ApplicationRow[];
+  }
+
+  const applicationIds = (applications || []).map((application) => application.id);
+  if (applicationIds.length > 0) {
+    const notificationsQuery = await supabase
+      .from("notifications")
+      .select("id, data, type, created_at")
+      .eq("user_id", user.id)
+      .eq("type", "job_interview_scheduled")
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (!notificationsQuery.error) {
+      for (const notification of notificationsQuery.data || []) {
+        const data = notification.data as Record<string, unknown> | null;
+        const applicationId = typeof data?.application_id === "string" ? data.application_id : null;
+
+        if (!applicationId || !applicationIds.includes(applicationId) || interviewSchedulesByApplicationId.has(applicationId)) {
+          continue;
+        }
+
+        interviewSchedulesByApplicationId.set(applicationId, {
+          roundLabel: typeof data?.round_label === "string" ? data.round_label : null,
+          startAt: typeof data?.start_at === "string" ? data.start_at : null,
+          durationMinutes:
+            typeof data?.duration_minutes === "number"
+              ? data.duration_minutes
+              : typeof data?.duration_minutes === "string"
+                ? Number(data.duration_minutes)
+                : null,
+          meetingProvider: typeof data?.meeting_provider === "string" ? data.meeting_provider : null,
+          schedulingUrl: typeof data?.scheduling_url === "string" ? data.scheduling_url : null,
+          notes: typeof data?.notes === "string" ? data.notes : null,
+        });
+      }
+    }
   }
 
   return (
@@ -98,6 +167,9 @@ export default async function CandidateApplicationsPage({
                 const job = Array.isArray(application.jobs) ? application.jobs[0] : application.jobs;
                 const externalApplyUrl = normalizeExternalApplyUrl(job?.apply_url);
                 const isJobDeactivated = job?.is_active === false;
+                const atsScore = toNumericScore(application.ats_score);
+                const interviewSchedule = interviewSchedulesByApplicationId.get(application.id) || null;
+                const formattedInterviewDate = formatInterviewDate(interviewSchedule?.startAt);
                 return (
                   <li key={application.id} className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -122,6 +194,54 @@ export default async function CandidateApplicationsPage({
                         {formatStatusLabel(application.status)}
                       </span>
                     </div>
+                    {(atsScore !== null || application.ats_summary || application.ats_auto_decision) && (
+                      <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
+                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-700">ATS review</p>
+                            <p className="mt-1 text-sm font-semibold text-zinc-900">
+                              {atsScore !== null ? `Resume match score: ${Math.round(atsScore)}%` : "ATS analysis available"}
+                            </p>
+                            {application.ats_summary && <p className="mt-1 text-sm text-zinc-600">{application.ats_summary}</p>}
+                          </div>
+                          {application.ats_auto_decision && (
+                            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold capitalize text-blue-800">
+                              {application.ats_auto_decision.replace(/_/g, " ")}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    {interviewSchedule && (
+                      <div className="mt-4 rounded-2xl border border-violet-100 bg-violet-50 px-4 py-3">
+                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-violet-700">Interview schedule</p>
+                            {interviewSchedule.roundLabel && <p className="mt-1 text-sm font-semibold text-zinc-900">{interviewSchedule.roundLabel}</p>}
+                            {formattedInterviewDate && <p className="mt-1 text-sm text-zinc-700">Scheduled for {formattedInterviewDate}</p>}
+                            {typeof interviewSchedule.durationMinutes === "number" && (
+                              <p className="mt-1 text-sm text-zinc-700">Duration: {interviewSchedule.durationMinutes} minutes</p>
+                            )}
+                            {interviewSchedule.notes && <p className="mt-2 text-sm text-zinc-600">{interviewSchedule.notes}</p>}
+                          </div>
+                          {interviewSchedule.meetingProvider && (
+                            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-violet-700">
+                              {interviewSchedule.meetingProvider.replace(/_/g, " ")}
+                            </span>
+                          )}
+                        </div>
+                        {interviewSchedule.schedulingUrl && (
+                          <a
+                            href={interviewSchedule.schedulingUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-3 inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-medium text-violet-800 hover:bg-violet-100"
+                          >
+                            Open interview link
+                          </a>
+                        )}
+                      </div>
+                    )}
                     <div className="mt-4 flex flex-wrap gap-3">
                       {job?.id && (
                         <Link

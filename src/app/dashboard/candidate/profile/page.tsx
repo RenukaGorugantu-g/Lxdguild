@@ -3,7 +3,7 @@ import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { loadProfile } from "@/lib/load-profile";
 import { redirect } from "next/navigation";
-import { Briefcase, ChevronRight, FileText, Sparkles, UserCircle2 } from "lucide-react";
+import { Briefcase, FileText, Sparkles, UserCircle2 } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import ProfileForm from "./ProfileForm";
@@ -15,6 +15,7 @@ type CandidateProfileRecord = {
   headline?: string | null;
   bio?: string | null;
   location?: string | null;
+  portfolio_url?: string | null;
   skills?: string[] | null;
   experience_years?: number | null;
   [key: string]: unknown;
@@ -84,7 +85,7 @@ export default async function CandidateProfilePage() {
     <div className="marketing-page min-h-screen">
       <div className="marketing-section pt-32 pb-16">
         <div className="marketing-container space-y-10">
-          <section className="grid items-start gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+          <section className="space-y-8">
             <div className="space-y-6">
               <h1 className="marketing-title max-w-3xl text-5xl sm:text-6xl">Shape the profile employers will see.</h1>
               <p className="marketing-copy max-w-2xl text-base leading-8">
@@ -97,41 +98,32 @@ export default async function CandidateProfilePage() {
               </p>
             </div>
 
-            <div className="marketing-panel p-5">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="marketing-soft-card p-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Applications</p>
-                  <p className="mt-3 text-4xl font-bold text-[#17a21c]">{applicationCount || 0}</p>
-                  <p className="mt-4 text-xs text-[#1da326]">Tracked from your candidate account</p>
-                </div>
-                <div className="marketing-soft-card p-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Job Access</p>
-                  <p className="mt-3 text-4xl font-bold text-[#111827]">
-                    {access.isFreeAccessCandidate ? `${access.freeApplicationsRemaining}` : "Open"}
-                  </p>
-                  <p className="mt-4 text-xs text-[#1da326]">
-                    {access.isFreeAccessCandidate
-                      ? `Free applications left out of ${access.freeApplicationLimit}`
-                      : "Verified candidate access active"}
-                  </p>
-                </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="marketing-soft-card p-5">
+                <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Applications</p>
+                <p className="mt-3 text-4xl font-bold text-[#17a21c]">{applicationCount || 0}</p>
+                <p className="mt-3 text-sm text-[#647061]">Tracked from your candidate account.</p>
               </div>
-              <div className="marketing-soft-card mt-4 p-4">
-                <p className="text-sm font-semibold text-[#111827]">Candidate Progress</p>
-                <div className="mt-5 grid grid-cols-4 gap-3">
-                  {[34, 52, 28, 68].map((height, index) => (
-                    <div
-                      key={index}
-                      className={`${index === 2 ? "bg-[#35d421]" : "bg-[#dff5d8]"} rounded-t-xl`}
-                      style={{ height: `${height}px` }}
-                    />
-                  ))}
-                </div>
+              <div className="marketing-soft-card p-5">
+                <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Job Access</p>
+                <p className="mt-3 text-4xl font-bold text-[#111827]">
+                  {access.isFreeAccessCandidate ? `${access.freeApplicationsRemaining}` : "Open"}
+                </p>
+                <p className="mt-3 text-sm text-[#647061]">
+                  {access.isFreeAccessCandidate
+                    ? `Free applications left out of ${access.freeApplicationLimit}.`
+                    : "Verified candidate access is active."}
+                </p>
+              </div>
+              <div className="marketing-soft-card p-5">
+                <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Next Move</p>
+                <p className="mt-3 text-xl font-bold text-[#111827]">Keep your resume and skills current.</p>
+                <p className="mt-3 text-sm text-[#647061]">That gives employers a cleaner snapshot before they review your application.</p>
               </div>
             </div>
           </section>
 
-          <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          <section className="grid gap-5 md:grid-cols-3">
             <InfoCard
               icon={<UserCircle2 className="h-5 w-5" />}
               title="Profile Basics"
@@ -147,52 +139,33 @@ export default async function CandidateProfilePage() {
               title="Resume Vault"
               copy="Upload polished resumes so you can apply faster when a fit appears."
             />
-            <InfoCard
-              icon={<Briefcase className="h-5 w-5" />}
-              title="Marketplace Access"
-              copy={access.lockReason || "Your marketplace access is fully active."}
-            />
           </section>
 
-          <section className="grid gap-6 lg:grid-cols-[1.15fr_0.55fr]">
+          <section className="space-y-6">
             <div className="marketing-grid-card p-8">
               <ProfileForm initialProfile={resolvedProfile} initialResumes={resumes || []} />
             </div>
 
-            <div className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
               <Link
                 href="/dashboard/jobs"
-                className="flex items-center justify-between rounded-[1.9rem] border border-[#dde7d8] bg-white px-7 py-6 shadow-[0_16px_40px_rgba(87,108,67,0.08)] transition hover:-translate-y-0.5"
+                className="rounded-[1.6rem] border border-[#dde7d8] bg-white px-6 py-5 shadow-[0_16px_40px_rgba(87,108,67,0.08)] transition hover:-translate-y-0.5"
               >
-                <div>
-                  <h3 className="text-2xl font-bold text-[#111827]">Job Marketplace</h3>
-                  <p className="mt-1 text-sm text-[#7f8a7b]">
-                    {access.isFreeAccessCandidate
-                      ? `${access.freeApplicationsRemaining} free applications remaining`
-                      : "Browse and apply with your verified profile."}
-                  </p>
-                </div>
-                <ChevronRight className="h-5 w-5 text-[#c2c8be]" />
+                <h3 className="text-xl font-bold text-[#111827]">Job Marketplace</h3>
+                <p className="mt-2 text-sm text-[#7f8a7b]">
+                  {access.isFreeAccessCandidate
+                    ? `${access.freeApplicationsRemaining} free applications remaining`
+                    : "Browse and apply with your verified profile."}
+                </p>
               </Link>
 
               <Link
                 href="/dashboard/candidate/applications"
-                className="flex items-center justify-between rounded-[1.9rem] border border-[#dde7d8] bg-white px-7 py-6 shadow-[0_16px_40px_rgba(87,108,67,0.08)] transition hover:-translate-y-0.5"
+                className="rounded-[1.6rem] border border-[#dde7d8] bg-white px-6 py-5 shadow-[0_16px_40px_rgba(87,108,67,0.08)] transition hover:-translate-y-0.5"
               >
-                <div>
-                  <h3 className="text-2xl font-bold text-[#111827]">My Applications</h3>
-                  <p className="mt-1 text-sm text-[#7f8a7b]">Track your submissions and employer movement in one place.</p>
-                </div>
-                <ChevronRight className="h-5 w-5 text-[#c2c8be]" />
+                <h3 className="text-xl font-bold text-[#111827]">My Applications</h3>
+                <p className="mt-2 text-sm text-[#7f8a7b]">Track your submissions and employer movement in one place.</p>
               </Link>
-
-              <article className="rounded-[1.9rem] border border-[#dde7d8] bg-[radial-gradient(circle_at_top,rgba(181,231,157,0.25),transparent_50%),rgba(255,255,255,0.85)] p-7 shadow-[0_16px_40px_rgba(87,108,67,0.08)]">
-                <h3 className="text-2xl font-bold text-[#111827]">Profile Insight</h3>
-                <p className="mt-4 text-base leading-7 text-[#5b6757]">
-                  Candidates who complete their profile early still get something meaningful: cleaner applications,
-                  stronger employer context, and limited free marketplace access before full verification.
-                </p>
-              </article>
             </div>
           </section>
         </div>

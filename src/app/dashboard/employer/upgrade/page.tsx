@@ -3,14 +3,14 @@ import { ArrowRight, BadgeCheck, BriefcaseBusiness, Mail, Sparkles } from "lucid
 
 const tiers = [
   {
-    name: "Employer Pro",
-    copy: "For teams that want richer employer branding, stronger candidate discovery, and more guided hiring support.",
-    features: ["Priority employer support", "Enhanced candidate visibility", "Stronger employer branding on job posts"],
+    name: "Employer Free",
+    copy: "For employers who want to post jobs and start hiring with limited candidate visibility.",
+    features: ["Post jobs", "View up to 5 applicants", "Upgrade prompts on locked candidate access"],
   },
   {
     name: "Employer Premium",
-    copy: "For higher-touch hiring teams that want a more consultative relationship with LXD Guild.",
-    features: ["Everything in Pro", "Hiring concierge support", "Custom workflow guidance"],
+    copy: "For employers who want full candidate access, MVP visibility, and richer hiring support from LXD Guild.",
+    features: ["Full candidate visibility", "MVP candidate access", "Premium hiring support"],
   },
 ];
 
@@ -29,7 +29,7 @@ export default function EmployerPricingPage() {
                 Upgrade when you want deeper hiring support, not more friction.
               </h1>
               <p className="mt-4 max-w-2xl text-sm leading-8 text-[#5b6757]">
-                We&apos;re keeping employer pricing consultative for now. Tell us what kind of hiring flow you need and we&apos;ll guide you to the right plan.
+                Choose between Employer Free and Employer Premium. Premium is the employer plan for deeper candidate visibility and stronger hiring support.
               </p>
               <div className="mt-8 flex flex-col gap-4 sm:flex-row">
                 <Link href="/contact" className="marketing-primary">

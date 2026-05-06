@@ -4,11 +4,16 @@ import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { deriveRoleKeyword, scoreSimilarJob } from "@/lib/job-preferences";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { loadProfile } from "@/lib/load-profile";
+import { getEmployerPlan } from "@/lib/profile-role";
+import { decideApplicationStatus, downloadResumeBuffer } from "@/lib/resume-analysis";
+import { extractKeywords, extractSkills, parseResumeFile, scoreCandidate } from "../../../../../ats-module";
 import { notFound, redirect } from "next/navigation";
 import { MapPin, Building, Calendar, ArrowLeft, CheckCircle, Clock3 } from "lucide-react";
 import Link from "next/link";
 import ApplyButtonWithModal from "./ApplyButtonWithModal";
 import ApplicationReviewActions from "./ApplicationReviewActions";
+import ApplicationInterviewScheduleCard from "./ApplicationInterviewScheduleCard";
+import EmployerPipelineBoard from "./EmployerPipelineBoard";
 
 type ApplicantRow = {
   id: string;
@@ -17,13 +22,176 @@ type ApplicantRow = {
   resume_url: string | null;
   created_at: string;
   user_id: string;
+  ats_score?: number | string | null;
+  ats_summary?: string | null;
+  ats_auto_decision?: string | null;
 };
+
+type LiveAtsResult = {
+  score: number;
+  summary: string;
+  autoDecision: string;
+};
+
+type InterviewScheduleSummary = {
+  roundLabel?: string | null;
+  startAt?: string | null;
+  durationMinutes?: number | null;
+  meetingProvider?: string | null;
+  schedulingUrl?: string | null;
+  notes?: string | null;
+};
+
+type CachedLiveAtsResult = LiveAtsResult & {
+  cachedAt: number;
+};
+
+const LIVE_ATS_CACHE_TTL_MS = 10 * 60 * 1000;
+const liveAtsCache = new Map<string, CachedLiveAtsResult>();
+
+function toNumericScore(value: number | string | null | undefined) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
+function stripHtml(value: string | null | undefined) {
+  return (value || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function extractMinimumYearsOfExperience(description: string) {
+  const normalized = description.toLowerCase();
+  const patterns = [
+    /(\d{1,2})\+?\s+years? of experience/g,
+    /minimum of\s+(\d{1,2})\+?\s+years?/g,
+    /at least\s+(\d{1,2})\+?\s+years?/g,
+    /(\d{1,2})\+?\s+years? experience/g,
+  ];
+  const matches: number[] = [];
+
+  for (const pattern of patterns) {
+    for (const match of normalized.matchAll(pattern)) {
+      matches.push(Number(match[1]));
+    }
+  }
+
+  return matches.length ? Math.max(...matches) : 0;
+}
+
+function buildAtsSummary({
+  score,
+  skillMatch,
+  experienceMatch,
+  keywordMatch,
+  missingSkills,
+}: {
+  score: number;
+  skillMatch: number;
+  experienceMatch: number;
+  keywordMatch: number;
+  missingSkills: string[];
+}) {
+  const summaryParts = [
+    `ATS score ${score}%`,
+    `skill match ${skillMatch}%`,
+    `experience match ${experienceMatch}%`,
+    `keyword relevance ${keywordMatch}%`,
+  ];
+
+  if (missingSkills.length > 0) {
+    summaryParts.push(`missing skills: ${missingSkills.slice(0, 5).join(", ")}`);
+  }
+
+  return `${summaryParts.join(" | ")}.`;
+}
+
+async function computeLiveAtsResultForApplicant({
+  job,
+  applicant,
+}: {
+  job: JobDetailRecord;
+  applicant: ApplicantRow;
+}): Promise<LiveAtsResult | null> {
+  const cacheKey = `${applicant.id}:${applicant.resume_url || "no-resume"}:${job.id}`;
+  const cachedEntry = liveAtsCache.get(cacheKey);
+
+  if (cachedEntry && Date.now() - cachedEntry.cachedAt < LIVE_ATS_CACHE_TTL_MS) {
+    return {
+      score: cachedEntry.score,
+      summary: cachedEntry.summary,
+      autoDecision: cachedEntry.autoDecision,
+    };
+  }
+
+  if (!applicant.resume_url) {
+    return null;
+  }
+
+  try {
+    const jobDescription = stripHtml(job.description);
+    const scoringSource = `${job.title} ${jobDescription}`.trim();
+    const requiredSkills = extractSkills(scoringSource);
+    const keywords = extractKeywords(scoringSource, requiredSkills);
+    const minimumYearsOfExperience = extractMinimumYearsOfExperience(jobDescription);
+
+    const resumeFile = await downloadResumeBuffer({
+      fileUrl: applicant.resume_url,
+      fileName: `resume-${applicant.id}.pdf`,
+    });
+
+    const parsedResume = await parseResumeFile({
+      fileName: resumeFile.fileName,
+      mimeType: resumeFile.mimeType || undefined,
+      buffer: resumeFile.buffer,
+    });
+
+    const scoringResult = scoreCandidate({
+      job: {
+        title: job.title,
+        description: jobDescription,
+        requiredSkills,
+        preferredSkills: [],
+        minimumYearsOfExperience,
+        keywords,
+      },
+      resume: parsedResume,
+    });
+
+    const liveAtsResult = {
+      score: scoringResult.score,
+      summary: buildAtsSummary(scoringResult),
+      autoDecision: decideApplicationStatus(scoringResult.score).autoDecision,
+    };
+
+    liveAtsCache.set(cacheKey, {
+      ...liveAtsResult,
+      cachedAt: Date.now(),
+    });
+
+    return liveAtsResult;
+  } catch (error) {
+    console.error("[job-detail] live ATS fallback failed", {
+      applicationId: applicant.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
 
 type ApplicantProfile = {
   id: string;
   name: string | null;
   headline: string | null;
   email: string | null;
+  role?: string | null;
+  portfolio_url?: string | null;
 };
 
 type ViewerProfile = {
@@ -75,7 +243,7 @@ async function getApplicantsForJob(
 ) {
   const fullQuery = await supabase
     .from("job_applications")
-    .select("id, status, resume_id, resume_url, created_at, user_id")
+    .select("id, status, resume_id, resume_url, created_at, user_id, ats_score, ats_summary, ats_auto_decision")
     .eq("job_id", jobId)
     .order("created_at", { ascending: false });
 
@@ -98,6 +266,9 @@ async function getApplicantsForJob(
     data: (legacyQuery.data || []).map((application) => ({
       ...application,
       resume_id: null,
+      ats_score: null,
+      ats_summary: null,
+      ats_auto_decision: null,
     })),
   };
 }
@@ -180,6 +351,8 @@ export default async function JobDetailPage({
 
   const isMvpCandidate = profile?.role === "candidate_mvp";
   const isCandidateViewer = profile?.role?.startsWith("candidate");
+  const employerPlan = getEmployerPlan(profile?.role);
+  const isPaidEmployer = employerPlan === "pro" || employerPlan === "premium";
   const canApplyToJob = isCandidateViewer && !isJobOwner && canApplyToJobs;
   const roleKeyword = deriveRoleKeyword(job.title);
 
@@ -218,6 +391,8 @@ export default async function JobDetailPage({
   const { data: applicants } = isJobOwner
     ? await getApplicantsForJob(supabase, id)
     : { data: null };
+  const liveAtsByApplicationId = new Map<string, LiveAtsResult>();
+  const interviewSchedulesByApplicationId = new Map<string, InterviewScheduleSummary>();
 
   const applicantUserIds = ((applicants || []) as ApplicantRow[]).map((app) => app.user_id).filter(Boolean);
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -227,14 +402,85 @@ export default async function JobDetailPage({
       ? createSupabaseClient(supabaseUrl, serviceRoleKey)
       : null;
   const profileReader = isJobOwner && adminSupabase ? adminSupabase : supabase;
-  const { data: applicantProfiles } = applicantUserIds.length
-    ? await profileReader
-        .from("profiles")
-        .select("id, name, headline, email")
-        .in("id", applicantUserIds)
-    : { data: [] as ApplicantProfile[] };
+  let applicantProfiles: ApplicantProfile[] = [];
+  if (applicantUserIds.length) {
+    const fullProfileQuery = await profileReader
+      .from("profiles")
+      .select("id, name, headline, email, role, portfolio_url")
+      .in("id", applicantUserIds);
 
-  const applicantProfilesById = new Map((applicantProfiles || []).map((p) => [p.id, p]));
+    if (!fullProfileQuery.error) {
+      applicantProfiles = (fullProfileQuery.data || []) as ApplicantProfile[];
+    } else if (fullProfileQuery.error.code === "42703" || isMissingColumnError(fullProfileQuery.error.message)) {
+      const fallbackProfileQuery = await profileReader
+        .from("profiles")
+        .select("id, name, headline, email, role")
+        .in("id", applicantUserIds);
+
+      applicantProfiles = (fallbackProfileQuery.data || []) as ApplicantProfile[];
+    }
+  }
+
+  const applicantProfilesById = new Map(applicantProfiles.map((p) => [p.id, p]));
+  if (isJobOwner && applicantUserIds.length && adminSupabase) {
+    const interviewNotificationsQuery = await adminSupabase
+      .from("notifications")
+      .select("id, user_id, type, data, created_at")
+      .in("user_id", applicantUserIds)
+      .eq("type", "job_interview_scheduled")
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    for (const notification of interviewNotificationsQuery.data || []) {
+      const data = notification.data as Record<string, unknown> | null;
+      const applicationId = typeof data?.application_id === "string" ? data.application_id : null;
+
+      if (!applicationId || interviewSchedulesByApplicationId.has(applicationId)) {
+        continue;
+      }
+
+      interviewSchedulesByApplicationId.set(applicationId, {
+        roundLabel: typeof data?.round_label === "string" ? data.round_label : null,
+        startAt: typeof data?.start_at === "string" ? data.start_at : null,
+        durationMinutes:
+          typeof data?.duration_minutes === "number"
+            ? data.duration_minutes
+            : typeof data?.duration_minutes === "string"
+              ? Number(data.duration_minutes)
+              : null,
+        meetingProvider: typeof data?.meeting_provider === "string" ? data.meeting_provider : null,
+        schedulingUrl: typeof data?.scheduling_url === "string" ? data.scheduling_url : null,
+        notes: typeof data?.notes === "string" ? data.notes : null,
+      });
+    }
+  }
+
+  if (isJobOwner && applicants?.length) {
+    const liveAtsEntries = await Promise.all(
+      (applicants as ApplicantRow[]).map(async (applicant) => {
+        if (toNumericScore(applicant.ats_score) !== null || applicant.ats_summary || applicant.ats_auto_decision) {
+          return null;
+        }
+
+        const liveAts = await computeLiveAtsResultForApplicant({ job, applicant });
+        return liveAts ? [applicant.id, liveAts] as const : null;
+      })
+    );
+
+    for (const entry of liveAtsEntries) {
+      if (entry) {
+        liveAtsByApplicationId.set(entry[0], entry[1]);
+      }
+    }
+  }
+  const visibleApplicantRows =
+    isJobOwner && !isPaidEmployer
+      ? (((applicants as ApplicantRow[] | null) || []).slice(0, 5))
+      : (((applicants as ApplicantRow[] | null) || []));
+  const hiddenApplicantCount =
+    isJobOwner && !isPaidEmployer && applicants?.length
+      ? Math.max((applicants.length || 0) - visibleApplicantRows.length, 0)
+      : 0;
   const recommendationQuery = supabase
     .from("jobs")
     .select("id, title, company, location, expires_at, created_at, is_active")
@@ -286,7 +532,7 @@ export default async function JobDetailPage({
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black pt-28 pb-16 px-6">
-      <div className="max-w-4xl mx-auto">
+      <div className={`${isJobOwner ? "max-w-7xl" : "max-w-4xl"} mx-auto`}>
         <Link href={backToJobsHref} className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-brand-600 transition-colors mb-8 group">
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Job Board
         </Link>
@@ -366,52 +612,6 @@ export default async function JobDetailPage({
                       dangerouslySetInnerHTML={{ __html: job.description || "" }}
                     />
                   </section>
-
-                  {isJobOwner && (
-                    <section>
-                      <div className="flex items-center justify-between mb-4 gap-4">
-                        <h3 className="text-xl font-bold">Applicants</h3>
-                        <span className="text-sm text-zinc-500">{applicants?.length ?? 0} total</span>
-                      </div>
-
-                      {applicants?.length ? (
-                        <ul className="space-y-4">
-                          {(applicants as ApplicantRow[]).map((app) => {
-                            const applicantProfile = applicantProfilesById.get(app.user_id);
-                            return (
-                              <li key={app.id} className="p-4 rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
-                                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-                                  <div>
-                                    <p className="font-semibold text-zinc-900 dark:text-white">{applicantProfile?.name || "Candidate"}</p>
-                                    <p className="text-sm text-zinc-500">{applicantProfile?.headline || applicantProfile?.email || "Candidate application"}</p>
-                                  </div>
-                                  <span className={`text-xs uppercase tracking-widest px-2.5 py-1 rounded-full border ${getStatusPillClasses(app.status)}`}>
-                                    {app.status}
-                                  </span>
-                                </div>
-                                <ApplicationReviewActions applicationId={app.id} currentStatus={app.status} />
-                                {(app.resume_id || app.resume_url) && (
-                                  <a
-                                    href={app.resume_id ? `/api/resumes/${app.resume_id}/download` : app.resume_url || undefined}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-sm text-brand-600 hover:underline mt-3 block"
-                                  >
-                                    View resume
-                                  </a>
-                                )}
-                                <p className="text-xs text-zinc-400 mt-3">Applied on {new Date(app.created_at).toLocaleDateString()}</p>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      ) : (
-                        <div className="rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800 p-6 text-zinc-500 dark:text-zinc-400">
-                          No applications have been submitted for this job yet.
-                        </div>
-                      )}
-                    </section>
-                  )}
                </div>
 
                <div className="space-y-6">
@@ -468,6 +668,68 @@ export default async function JobDetailPage({
                   </div>
                </div>
             </div>
+
+            {isJobOwner && (
+              <section className="mt-12 space-y-6 rounded-[2rem] border border-zinc-200 bg-[#fbfdfc] p-6 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
+                <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-500">Applicants</p>
+                    <h3 className="mt-2 text-2xl font-bold text-zinc-900">Review the full hiring pipeline in one place.</h3>
+                    <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500">
+                      Track movement, inspect ATS results, and jump into interviews or profile review without squeezing the hiring flow into the job description column.
+                    </p>
+                  </div>
+                  <span className="inline-flex w-fit items-center rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 shadow-sm">
+                    {applicants?.length ?? 0} total applicants
+                  </span>
+                </div>
+
+                {applicants?.length ? (
+                  <>
+                    <EmployerPipelineBoard
+                      applicants={visibleApplicantRows.map((app) => {
+                        const applicantProfile = applicantProfilesById.get(app.user_id);
+                        const liveAts = liveAtsByApplicationId.get(app.id);
+                        const interviewSchedule = interviewSchedulesByApplicationId.get(app.id) || null;
+                        const atsScore = toNumericScore(app.ats_score) ?? liveAts?.score ?? null;
+                        const atsSummary = app.ats_summary || liveAts?.summary || null;
+                        const atsAutoDecision = app.ats_auto_decision || liveAts?.autoDecision || null;
+                        const isLockedMvp = !isPaidEmployer && applicantProfile?.role === "candidate_mvp";
+
+                        return {
+                          id: app.id,
+                          name: isLockedMvp ? "MVP candidate" : applicantProfile?.name || "Candidate",
+                          headline: isLockedMvp
+                            ? "Upgrade to Premium to view this MVP candidate profile."
+                            : applicantProfile?.headline || applicantProfile?.email || "Candidate application",
+                          status: app.status,
+                          appliedAt: app.created_at,
+                          atsScore,
+                          atsSummary,
+                          atsAutoDecision,
+                          interviewSchedule,
+                          resumeHref: isLockedMvp ? null : app.resume_id ? `/api/resumes/${app.resume_id}/download` : app.resume_url || null,
+                          portfolioUrl: isLockedMvp ? null : applicantProfile?.portfolio_url || null,
+                          profileHref:
+                            !isLockedMvp && applicantProfile?.role === "candidate_mvp"
+                              ? `/dashboard/employer/candidates/${app.user_id}`
+                              : null,
+                          isMvp: applicantProfile?.role === "candidate_mvp",
+                          lockedMessage: isLockedMvp ? "MVP candidate can't be viewed on the current employer plan." : null,
+                          jobTitle: job.title,
+                        };
+                      })}
+                      isPaidEmployer={isPaidEmployer}
+                      hiddenApplicantsCount={hiddenApplicantCount}
+                    />
+                  </>
+                ) : (
+                  <div className="rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800 p-6 text-zinc-500 dark:text-zinc-400">
+                    No applications have been submitted for this job yet.
+                  </div>
+                )}
+              </section>
+            )}
           </div>
         </div>
       </div>

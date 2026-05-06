@@ -451,7 +451,11 @@ export default function Header() {
 
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/8 text-white/82 transition-colors hover:bg-white/12 lg:hidden"
+              className={`inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors lg:hidden ${
+                isPublicMarketingRoute
+                  ? "border border-[#dfe8d8] bg-white text-[#111827] hover:bg-[#eef5e5]"
+                  : "border border-white/10 bg-white/8 text-white/82 hover:bg-white/12"
+              }`}
             >
               {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>

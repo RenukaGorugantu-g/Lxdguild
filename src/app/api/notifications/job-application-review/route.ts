@@ -1,7 +1,110 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
-import { notifyUser } from '@/lib/notifications'
+import { createAdminClient } from '@/utils/supabase/admin'
+import { notifyAdmins, notifyUser } from '@/lib/notifications'
 import { getSiteUrl } from '@/lib/site-url'
+
+function isMissingColumnError(message?: string | null) {
+  const normalized = message || ''
+  return (
+    normalized.includes('Could not find') ||
+    normalized.includes('does not exist') ||
+    normalized.includes('schema cache')
+  )
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  if (error && typeof error === 'object' && 'message' in error) {
+    const message = (error as { message?: unknown }).message
+    return typeof message === 'string' ? message : null
+  }
+
+  return null
+}
+
+async function updateApplicationReviewStatus(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  applicationId: string,
+  action: 'shortlisted' | 'rejected'
+) {
+  const timestampField = action === 'shortlisted' ? 'shortlisted_at' : 'rejected_at'
+  const timestamp = new Date().toISOString()
+
+  const fullUpdate = await supabase
+    .from('job_applications')
+    .update({
+      status: action,
+      reviewed_at: timestamp,
+      [timestampField]: timestamp,
+    })
+    .eq('id', applicationId)
+    .select('id')
+
+  if (!fullUpdate.error) {
+    return fullUpdate
+  }
+
+  if (fullUpdate.error.code !== '42703' && !isMissingColumnError(fullUpdate.error.message)) {
+    return fullUpdate
+  }
+
+  const statusOnlyUpdate = await supabase
+    .from('job_applications')
+    .update({
+      status: action,
+    })
+    .eq('id', applicationId)
+    .select('id')
+
+  return statusOnlyUpdate
+}
+
+async function updateApplicationReviewStatusWithAdmin(
+  applicationId: string,
+  action: 'shortlisted' | 'rejected'
+) {
+  const admin = createAdminClient()
+
+  if (!admin) {
+    return {
+      data: null,
+      error: new Error('Admin Supabase client is not configured.'),
+    }
+  }
+
+  const timestampField = action === 'shortlisted' ? 'shortlisted_at' : 'rejected_at'
+  const timestamp = new Date().toISOString()
+
+  const fullUpdate = await admin
+    .from('job_applications')
+    .update({
+      status: action,
+      reviewed_at: timestamp,
+      [timestampField]: timestamp,
+    })
+    .eq('id', applicationId)
+    .select('id')
+
+  if (!fullUpdate.error) {
+    return fullUpdate
+  }
+
+  if (fullUpdate.error.code !== '42703' && !isMissingColumnError(fullUpdate.error.message)) {
+    return fullUpdate
+  }
+
+  return admin
+    .from('job_applications')
+    .update({
+      status: action,
+    })
+    .eq('id', applicationId)
+    .select('id')
+}
 
 export async function POST(req: Request) {
   const body = await req.json()
@@ -65,20 +168,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Final decision already recorded for this application.' }, { status: 409 })
   }
 
-  const timestampField = action === 'shortlisted' ? 'shortlisted_at' : 'rejected_at'
+  let { data: updatedRows, error: updateError } = await updateApplicationReviewStatus(
+    supabase,
+    applicationId,
+    action
+  )
+  let updateErrorMessage: string | null = getErrorMessage(updateError)
 
-  const { data: updatedRows, error: updateError } = await supabase
-    .from('job_applications')
-    .update({
-      status: action,
-      reviewed_at: new Date().toISOString(),
-      [timestampField]: new Date().toISOString(),
-    })
-    .eq('id', applicationId)
-    .select('id')
+  if (!updateError && (!updatedRows || updatedRows.length === 0)) {
+    const adminUpdateResult = await updateApplicationReviewStatusWithAdmin(applicationId, action)
+    updatedRows = adminUpdateResult.data
+    updateError = adminUpdateResult.error as typeof updateError
+    updateErrorMessage = getErrorMessage(adminUpdateResult.error)
+  }
 
-  if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 500 })
+  if (updateError || updateErrorMessage) {
+    return NextResponse.json({ error: updateErrorMessage || updateError?.message || 'Application update failed.' }, { status: 500 })
   }
   if (!updatedRows || updatedRows.length === 0) {
     return NextResponse.json(
@@ -87,22 +192,60 @@ export async function POST(req: Request) {
     )
   }
 
-  await notifyUser(
-    application.user_id,
-    'job_application_reviewed',
-    action === 'shortlisted' ? 'Your application was accepted' : 'Your application was updated',
+  const candidateTitle =
+    action === 'shortlisted' ? 'Your application was accepted' : 'Your application was updated'
+  const candidateMessage =
     action === 'shortlisted'
       ? `Your application for ${job?.title || 'the role'} at ${job?.company || 'the company'} was accepted for the next hiring step.`
-      : `Your application for ${job?.title || 'the role'} at ${job?.company || 'the company'} was rejected by the employer.`,
-    {
-      application_id: applicationId,
-      job_id: application.job_id,
-      title: job?.title || '',
-      company: job?.company || '',
-      job_url: jobUrl,
-      status: action,
-    }
-  )
+      : `Your application for ${job?.title || 'the role'} at ${job?.company || 'the company'} was rejected by the employer.`
+
+  const notificationResults = await Promise.allSettled([
+    notifyUser(
+      application.user_id,
+      'job_application_reviewed',
+      candidateTitle,
+      candidateMessage,
+      {
+        application_id: applicationId,
+        job_id: application.job_id,
+        title: job?.title || '',
+        company: job?.company || '',
+        job_url: jobUrl,
+        status: action,
+      }
+    ),
+    notifyAdmins(
+      'job_application_reviewed_admin',
+      action === 'shortlisted' ? 'Candidate accepted by employer' : 'Candidate rejected by employer',
+      action === 'shortlisted'
+        ? `Employer moved a candidate forward for ${job?.title || 'the role'} at ${job?.company || 'the company'}.`
+        : `Employer rejected a candidate for ${job?.title || 'the role'} at ${job?.company || 'the company'}.`,
+      {
+        application_id: applicationId,
+        applicant_id: application.user_id,
+        job_id: application.job_id,
+        title: job?.title || '',
+        company: job?.company || '',
+        job_url: jobUrl,
+        status: action,
+        reviewer_id: user.id,
+      }
+    ),
+  ])
+
+  const rejectedNotifications = notificationResults
+    .map((result, index) => ({ result, index }))
+    .filter((entry): entry is { result: PromiseRejectedResult; index: number } => entry.result.status === 'rejected')
+
+  if (rejectedNotifications.length > 0) {
+    console.error('[job-application-review] notification delivery failed', {
+      applicationId,
+      rejectedNotifications: rejectedNotifications.map(({ index, result }) => ({
+        index,
+        reason: result.reason instanceof Error ? result.reason.message : String(result.reason),
+      })),
+    })
+  }
 
   return NextResponse.json({ success: true, status: action })
 }

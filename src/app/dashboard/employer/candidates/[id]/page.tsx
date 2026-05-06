@@ -1,7 +1,8 @@
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, FileText, ShieldCheck, User, GraduationCap } from "lucide-react";
+import { ArrowLeft, FileText, Link as LinkIcon, ShieldCheck, User, GraduationCap } from "lucide-react";
 import { isEmployerRole } from "@/lib/profile-role";
 
 type CandidateResume = {
@@ -10,8 +11,38 @@ type CandidateResume = {
   visibility?: string | null;
 };
 
-export default async function EmployerCandidateDetailPage({ params }: { params: { id: string } }) {
+type EmployerCandidateRecord = {
+  id: string;
+  headline?: string | null;
+  bio?: string | null;
+  location?: string | null;
+  name?: string | null;
+  designation_level?: string | null;
+  role?: string | null;
+  portfolio_url?: string | null;
+  skills?: string[] | null;
+  experience_years?: number | null;
+  candidates?: Array<{
+    latest_score?: number | null;
+    pass_status?: string | null;
+    exam_status?: string | null;
+  }> | null;
+  resumes?: CandidateResume[] | null;
+};
+
+function isMissingColumnError(message?: string | null) {
+  const normalized = message || "";
+  return (
+    normalized.includes("Could not find") ||
+    normalized.includes("does not exist") ||
+    normalized.includes("schema cache")
+  );
+}
+
+export default async function EmployerCandidateDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = await createClient();
+  const adminSupabase = createAdminClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
@@ -45,13 +76,43 @@ export default async function EmployerCandidateDetailPage({ params }: { params: 
     );
   }
 
-  const { data: candidate } = await supabase
+  const candidateReader = adminSupabase || supabase;
+  const accessCheck = adminSupabase
+    ? await adminSupabase
+        .from("job_applications")
+        .select("id, jobs!inner(user_id)", { count: "exact" })
+        .eq("user_id", id)
+        .eq("jobs.user_id", user.id)
+        .limit(1)
+    : await supabase
+        .from("job_applications")
+        .select("id, jobs!inner(user_id)", { count: "exact" })
+        .eq("user_id", id)
+        .eq("jobs.user_id", user.id)
+        .limit(1);
+
+  if ((accessCheck.count || 0) < 1) {
+    notFound();
+  }
+
+  const fullCandidateQuery = await candidateReader
     .from("profiles")
     .select(
-      `id, name, designation_level, role, candidates(latest_score, pass_status, exam_status), resumes(id, file_url, visibility)`
+      `id, name, headline, bio, location, designation_level, role, portfolio_url, skills, experience_years, candidates(latest_score, pass_status, exam_status), resumes(id, file_url, visibility)`
     )
-    .eq("id", params.id)
-    .single();
+    .eq("id", id);
+
+  const fallbackCandidateQuery =
+    fullCandidateQuery.error && (fullCandidateQuery.error.code === "42703" || isMissingColumnError(fullCandidateQuery.error.message))
+      ? await candidateReader
+          .from("profiles")
+          .select(
+            `id, name, designation_level, role, candidates(latest_score, pass_status, exam_status), resumes(id, file_url, visibility)`
+          )
+          .eq("id", id)
+      : null;
+
+  const candidate = (fullCandidateQuery.error ? fallbackCandidateQuery?.data?.[0] : fullCandidateQuery.data?.[0]) as EmployerCandidateRecord | undefined;
 
   if (!candidate || candidate.role !== "candidate_mvp") {
     notFound();
@@ -94,9 +155,23 @@ export default async function EmployerCandidateDetailPage({ params }: { params: 
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1 sm:col-span-2">
+                  <p className="text-xs text-zinc-400 uppercase tracking-[0.2em]">Headline</p>
+                  <p className="font-medium text-zinc-900 dark:text-white">{candidate.headline || "No professional headline shared yet"}</p>
+                </div>
                 <div className="space-y-1">
                   <p className="text-xs text-zinc-400 uppercase tracking-[0.2em]">Role</p>
                   <p className="font-medium text-zinc-900 dark:text-white">{candidate.designation_level || "Instructional Designer"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-zinc-400 uppercase tracking-[0.2em]">Experience</p>
+                  <p className="font-medium text-zinc-900 dark:text-white">
+                    {typeof candidate.experience_years === "number" ? `${candidate.experience_years} years` : "Not shared yet"}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-zinc-400 uppercase tracking-[0.2em]">Location</p>
+                  <p className="font-medium text-zinc-900 dark:text-white">{candidate.location || "Not shared yet"}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-zinc-400 uppercase tracking-[0.2em]">Exam Status</p>
@@ -110,6 +185,47 @@ export default async function EmployerCandidateDetailPage({ params }: { params: 
                   <p className="text-xs text-zinc-400 uppercase tracking-[0.2em]">Access</p>
                   <p className="font-medium text-zinc-900 dark:text-white">Read-only profile + resume</p>
                 </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <p className="text-xs text-zinc-400 uppercase tracking-[0.2em]">Portfolio</p>
+                  {candidate.portfolio_url ? (
+                    <a
+                      href={candidate.portfolio_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 font-medium text-brand-600 hover:text-brand-700 hover:underline"
+                    >
+                      <LinkIcon className="h-4 w-4" />
+                      View portfolio
+                    </a>
+                  ) : (
+                    <p className="font-medium text-zinc-900 dark:text-white">Not shared yet</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-5">
+                <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">About this candidate</p>
+                <p className="mt-3 text-sm leading-7 text-zinc-600 dark:text-zinc-300">
+                  {candidate.bio || "This MVP candidate has not added a detailed bio yet."}
+                </p>
+              </div>
+
+              <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-5">
+                <p className="text-xs uppercase tracking-[0.2em] text-zinc-500">Skills snapshot</p>
+                {candidate.skills?.length ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {candidate.skills.map((skill) => (
+                      <span
+                        key={skill}
+                        className="rounded-full border border-brand-200 bg-brand-50 px-3 py-1 text-xs font-medium text-brand-700"
+                      >
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm text-zinc-500">No skills shared yet.</p>
+                )}
               </div>
 
               <div className="rounded-3xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-100 dark:border-zinc-800 p-5">

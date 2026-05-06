@@ -526,31 +526,26 @@ function buildContent({
 }
 
 function renderEmailHtml(content: TemplateContent) {
-  const heroAccentColor =
-    content.layoutVariant === "celebration"
-      ? "#f5f0c5"
-      : content.layoutVariant === "urgent"
-        ? "#ffd9a0"
-        : content.layoutVariant === "support"
-          ? "#d6eef9"
-          : "#f5f0c5";
-
-  const heroBodyTone =
-    content.layoutVariant === "support"
-      ? "rgba(236,244,249,0.96)"
-      : "rgba(247,242,234,0.92)";
+  const heroBodyTone = "#334155";
+  const heroKickerText = "#1f4d46";
+  const heroKickerBg = "#e6f4ef";
+  const heroKickerBorder = "#bfe2d5";
+  const heroNoteBg = "#ffffff";
+  const heroNoteBorder = "#d7e3ea";
+  const heroSurfaceStart = "#f8f4ed";
+  const heroSurfaceEnd = content.layoutVariant === "support" ? "#eef6fb" : "#eef7f1";
 
   const ctaBg =
     content.layoutVariant === "urgent"
-      ? "#f0b861"
+      ? "#b7791f"
       : content.layoutVariant === "support"
-        ? "#b8dcea"
+        ? "#0f766e"
         : content.theme.accent;
 
-  const ctaTextColor = "#081225";
+  const ctaTextColor = "#ffffff";
 
   const leadCardHtml = content.summary
-    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:22px;border-collapse:separate;border-spacing:0;background:#f8f3ec;border:1px solid ${content.theme.border};border-radius:24px;box-shadow:0 12px 26px rgba(15,23,42,0.05);">
+    ? `<table class="email-card" role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:22px;border-collapse:separate;border-spacing:0;background:#f8f3ec;border:1px solid ${content.theme.border};border-radius:24px;box-shadow:0 12px 26px rgba(15,23,42,0.05);">
         <tr>
           <td style="padding:22px 24px;border-left:4px solid ${content.theme.accent};">
             <div style="font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${content.theme.accent};">What matters now</div>
@@ -575,7 +570,7 @@ function renderEmailHtml(content: TemplateContent) {
               (row) => `<tr>
                 ${row
                   .map(
-                    (detail) => `<td class="stack-card" valign="top" width="50%" style="background:#fffdf9;border:1px solid ${content.theme.border};padding:18px 17px;border-radius:18px;box-shadow:0 8px 18px rgba(15,23,42,0.04);">
+                    (detail) => `<td class="stack-card email-tile" valign="top" width="50%" style="background:#fffdf9;border:1px solid ${content.theme.border};padding:18px 17px;border-radius:18px;box-shadow:0 8px 18px rgba(15,23,42,0.04);">
                       <div style="font-size:10px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#7b8794;">${escapeHtml(detail.label)}</div>
                       <div style="margin-top:9px;font-size:15px;line-height:1.65;font-weight:700;color:#13202d;">${escapeHtml(detail.value)}</div>
                     </td>`
@@ -590,7 +585,7 @@ function renderEmailHtml(content: TemplateContent) {
     : "";
 
   const checklistHtml = content.checklist?.length
-    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:24px;border-collapse:separate;border-spacing:0;background:#f8f3ec;border:1px solid ${content.theme.border};border-radius:24px;">
+    ? `<table class="email-card" role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:24px;border-collapse:separate;border-spacing:0;background:#f8f3ec;border:1px solid ${content.theme.border};border-radius:24px;">
         <tr>
           <td style="padding:22px 24px;">
             <div style="margin:0 0 12px;font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${content.theme.accent};">Next steps</div>
@@ -606,13 +601,13 @@ function renderEmailHtml(content: TemplateContent) {
     ? `<div style="margin:22px 0 0;">
         ${content.spotlight
           .map(
-            (item) => `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;border-collapse:separate;border-spacing:0;background:#f8f3ec;border:1px solid ${content.theme.border};border-radius:22px;">
+            (item) => `<table class="email-card" role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;border-collapse:separate;border-spacing:0;background:#f8f3ec;border:1px solid ${content.theme.border};border-radius:22px;">
               <tr>
                 <td style="padding:18px;">
                   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
                     <tr>
                       <td width="64" style="vertical-align:top;">
-                        <div style="width:46px;height:46px;border-radius:14px;background:${content.theme.accent};color:#ffffff;font-size:11px;font-weight:800;line-height:46px;text-align:center;letter-spacing:0.08em;box-shadow:0 10px 18px rgba(15,23,42,0.14);">${escapeHtml(item.icon)}</div>
+                        <div class="email-chip" style="width:46px;height:46px;border-radius:14px;background:${content.theme.accent};color:#ffffff;font-size:11px;font-weight:800;line-height:46px;text-align:center;letter-spacing:0.08em;box-shadow:0 10px 18px rgba(15,23,42,0.14);">${escapeHtml(item.icon)}</div>
                       </td>
                       <td style="vertical-align:top;">
                         <p style="margin:0;font-size:15px;font-weight:700;color:#13202d;">${escapeHtml(item.title)}</p>
@@ -634,7 +629,7 @@ function renderEmailHtml(content: TemplateContent) {
         <div>
           ${content.resources
             .map(
-              (item) => `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;border-collapse:separate;border-spacing:0;background:#fffdf9;border:1px solid ${content.theme.border};border-radius:22px;">
+              (item) => `<table class="email-card" role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;border-collapse:separate;border-spacing:0;background:#fffdf9;border:1px solid ${content.theme.border};border-radius:22px;">
                 <tr>
                   <td style="padding:18px;">
                     <p style="margin:0;font-size:15px;font-weight:700;color:#13202d;">${escapeHtml(item.title)}</p>
@@ -652,7 +647,7 @@ function renderEmailHtml(content: TemplateContent) {
   const detailsHtml = remainingDetails.length
     ? `<div style="margin:22px 0 0;">
         <p style="margin:0 0 12px;font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#64748b;">Details</p>
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-spacing:0;background:#fffdf9;border:1px solid ${content.theme.border};border-radius:24px;">
+        <table class="email-card" role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:separate;border-spacing:0;background:#fffdf9;border:1px solid ${content.theme.border};border-radius:24px;">
           <tr>
             <td style="padding:22px 24px;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
@@ -689,7 +684,7 @@ function renderEmailHtml(content: TemplateContent) {
 
   const statusHtml = content.status
     ? `<div style="margin:0 0 14px;">
-        <span style="display:inline-block;padding:8px 14px;border-radius:999px;background:${content.theme.accentSoft};color:${content.theme.accent};font-size:12px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;border:1px solid ${content.theme.border};">
+        <span class="status-pill" style="display:inline-block;padding:8px 14px;border-radius:999px;background:${content.theme.accent};color:#ffffff !important;font-size:12px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;border:1px solid ${content.theme.accent};">
           ${escapeHtml(content.status)}
         </span>
       </div>`
@@ -697,7 +692,7 @@ function renderEmailHtml(content: TemplateContent) {
 
   const ctaHtml = content.cta
     ? `<div style="margin:24px 0 0;">
-        <a class="cta-button" href="${escapeHtml(content.cta.href)}" style="display:inline-block;padding:16px 28px;border-radius:999px;background:${ctaBg};color:${ctaTextColor};text-decoration:none;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;box-shadow:0 14px 28px rgba(15,23,42,0.14);min-width:260px;text-align:center;">
+        <a class="cta-button" href="${escapeHtml(content.cta.href)}" style="display:inline-block;padding:16px 28px;border-radius:999px;background:${ctaBg};color:${ctaTextColor} !important;text-decoration:none;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;box-shadow:0 14px 28px rgba(15,23,42,0.14);min-width:260px;text-align:center;-webkit-text-fill-color:${ctaTextColor};">
           ${escapeHtml(content.cta.label)}
         </a>
       </div>`
@@ -708,8 +703,15 @@ function renderEmailHtml(content: TemplateContent) {
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
     <title>${escapeHtml(content.heading)}</title>
     <style>
+      :root {
+        color-scheme: light only;
+        supported-color-schemes: light;
+      }
+
       @media only screen and (max-width: 680px) {
         .shell {
           width: 100% !important;
@@ -746,6 +748,9 @@ function renderEmailHtml(content: TemplateContent) {
           width: 100% !important;
           min-width: 0 !important;
           box-sizing: border-box !important;
+          border-radius: 18px !important;
+          font-size: 14px !important;
+          line-height: 1.4 !important;
         }
 
         .stack-card,
@@ -758,12 +763,69 @@ function renderEmailHtml(content: TemplateContent) {
           margin-top: -14px !important;
         }
 
+        .shell {
+          border-radius: 22px !important;
+        }
+
+        .content-shell,
+        .footer-shell,
+        .email-card {
+          border-radius: 18px !important;
+        }
+
+        .email-tile,
+        .email-chip,
+        .status-pill {
+          border-radius: 14px !important;
+        }
+
         .footer-stack-right {
           display: block !important;
           width: 100% !important;
           padding-top: 22px !important;
           text-align: left !important;
         }
+      }
+
+      [data-ogsc] .cta-button,
+      [data-ogsb] .cta-button {
+        color: #ffffff !important;
+        -webkit-text-fill-color: #ffffff !important;
+      }
+
+      [data-ogsc] .status-pill,
+      [data-ogsb] .status-pill {
+        color: #ffffff !important;
+        background: ${content.theme.accent} !important;
+        border-color: ${content.theme.accent} !important;
+      }
+
+      [data-ogsc] .hero-kicker,
+      [data-ogsb] .hero-kicker {
+        color: ${heroKickerText} !important;
+        -webkit-text-fill-color: ${heroKickerText} !important;
+        background: ${heroKickerBg} !important;
+        border-color: ${heroKickerBorder} !important;
+      }
+
+      [data-ogsc] .hero-title,
+      [data-ogsb] .hero-title {
+        color: #111827 !important;
+        -webkit-text-fill-color: #111827 !important;
+      }
+
+      [data-ogsc] .hero-copy,
+      [data-ogsb] .hero-copy,
+      [data-ogsc] .hero-note,
+      [data-ogsb] .hero-note {
+        color: ${heroBodyTone} !important;
+        -webkit-text-fill-color: ${heroBodyTone} !important;
+      }
+
+      [data-ogsc] .hero-note,
+      [data-ogsb] .hero-note {
+        background: ${heroNoteBg} !important;
+        border-color: ${heroNoteBorder} !important;
       }
     </style>
   </head>
@@ -781,7 +843,7 @@ function renderEmailHtml(content: TemplateContent) {
               </td>
             </tr>
             <tr>
-              <td class="hero-pad" style="background-color:${content.theme.headerStart};background-image:radial-gradient(circle at top right, rgba(255,222,173,0.16) 0%, rgba(255,222,173,0) 34%),linear-gradient(135deg,${content.theme.headerStart} 0%,${content.theme.headerEnd} 100%);padding:28px 34px 54px;border-top:1px solid rgba(255,255,255,0.06);border-bottom:1px solid rgba(255,255,255,0.08);">
+              <td class="hero-pad" style="background-color:${heroSurfaceStart};background-image:radial-gradient(circle at top right, rgba(15,118,110,0.08) 0%, rgba(15,118,110,0) 34%),linear-gradient(135deg,${heroSurfaceStart} 0%,${heroSurfaceEnd} 100%);padding:28px 34px 54px;border-top:1px solid #f4ede4;border-bottom:1px solid #d9e5df;">
                 <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                   <tr>
                     <td align="center" style="padding-bottom:18px;">
@@ -792,26 +854,26 @@ function renderEmailHtml(content: TemplateContent) {
                   </tr>
                   <tr>
                     <td align="center" style="padding-bottom:12px;">
-                      <div style="display:inline-block;padding:8px 14px;background:rgba(247,242,234,0.14);border:1px solid rgba(247,242,234,0.18);color:#ffffff;font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;border-radius:8px;">
+                      <div class="status-pill hero-kicker" style="display:inline-block;padding:8px 14px;background:${heroKickerBg};border:1px solid ${heroKickerBorder};color:${heroKickerText} !important;font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;border-radius:8px;-webkit-text-fill-color:${heroKickerText};">
                         ${escapeHtml(content.kicker || content.theme.eyebrow)}
                       </div>
                     </td>
                   </tr>
                   <tr>
                     <td align="center" style="padding-bottom:10px;">
-                      <div class="hero-title" style="font-family:Georgia,'Times New Roman',serif;font-size:54px;line-height:1.02;color:${heroAccentColor};font-style:italic;">
+                      <div class="hero-title" style="font-family:Georgia,'Times New Roman',serif;font-size:54px;line-height:1.02;color:#111827 !important;font-style:italic;-webkit-text-fill-color:#111827;">
                         ${escapeHtml(content.heading)}
                       </div>
                     </td>
                   </tr>
                   <tr>
                     <td align="center">
-                      <div class="hero-copy" style="max-width:520px;margin:0 auto;font-size:18px;line-height:1.75;color:${heroBodyTone};">
+                      <div class="hero-copy" style="max-width:520px;margin:0 auto;font-size:18px;line-height:1.75;color:${heroBodyTone} !important;-webkit-text-fill-color:${heroBodyTone};">
                         ${escapeHtml(content.intro)}
                       </div>
                     </td>
                   </tr>
-                  ${content.heroNote ? `<tr><td align="center" style="padding-top:18px;"><div style="max-width:480px;margin:0 auto;padding:12px 16px;border:1px solid rgba(247,242,234,0.16);background:rgba(247,242,234,0.08);font-size:13px;line-height:1.75;color:${heroBodyTone};border-radius:16px;">${escapeHtml(content.heroNote)}</div></td></tr>` : ""}
+                  ${content.heroNote ? `<tr><td align="center" style="padding-top:18px;"><div class="email-card hero-note" style="max-width:480px;margin:0 auto;padding:12px 16px;border:1px solid ${heroNoteBorder};background:${heroNoteBg};font-size:13px;line-height:1.75;color:${heroBodyTone} !important;border-radius:16px;-webkit-text-fill-color:${heroBodyTone};">${escapeHtml(content.heroNote)}</div></td></tr>` : ""}
                   ${ctaHtml ? `<tr><td align="center">${ctaHtml}</td></tr>` : ""}
                 </table>
               </td>
@@ -841,7 +903,7 @@ function renderEmailHtml(content: TemplateContent) {
             </tr>
             <tr>
               <td style="background:#f6efe6;padding:0 18px 18px;">
-                <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#0d1823;border:1px solid #1f3344;border-radius:22px;box-shadow:0 14px 30px rgba(15,23,42,0.12);">
+                <table class="footer-shell" role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#0d1823;border:1px solid #1f3344;border-radius:22px;box-shadow:0 14px 30px rgba(15,23,42,0.12);">
                   <tr>
                     <td style="padding:22px 24px;">
                       <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
