@@ -526,14 +526,16 @@ function buildContent({
 }
 
 function renderEmailHtml(content: TemplateContent) {
-  const heroBodyTone = "#334155";
-  const heroKickerText = "#1f4d46";
-  const heroKickerBg = "#e6f4ef";
-  const heroKickerBorder = "#bfe2d5";
-  const heroNoteBg = "#ffffff";
-  const heroNoteBorder = "#d7e3ea";
-  const heroSurfaceStart = "#f8f4ed";
-  const heroSurfaceEnd = content.layoutVariant === "support" ? "#eef6fb" : "#eef7f1";
+  const isUrgentHero = content.layoutVariant === "urgent";
+  const heroTitleTone = isUrgentHero ? "#f8fafc" : "#111827";
+  const heroBodyTone = isUrgentHero ? "#dbe7f3" : "#334155";
+  const heroKickerText = isUrgentHero ? "#f8fafc" : "#1f4d46";
+  const heroKickerBg = isUrgentHero ? "#18324b" : "#e6f4ef";
+  const heroKickerBorder = isUrgentHero ? "#2d4e73" : "#bfe2d5";
+  const heroNoteBg = isUrgentHero ? "#1f2937" : "#ffffff";
+  const heroNoteBorder = isUrgentHero ? "#31475f" : "#d7e3ea";
+  const heroSurfaceStart = isUrgentHero ? "#0f172a" : "#f8f4ed";
+  const heroSurfaceEnd = isUrgentHero ? "#19324b" : content.layoutVariant === "support" ? "#eef6fb" : "#eef7f1";
 
   const ctaBg =
     content.layoutVariant === "urgent"
@@ -810,8 +812,8 @@ function renderEmailHtml(content: TemplateContent) {
 
       [data-ogsc] .hero-title,
       [data-ogsb] .hero-title {
-        color: #111827 !important;
-        -webkit-text-fill-color: #111827 !important;
+        color: ${heroTitleTone} !important;
+        -webkit-text-fill-color: ${heroTitleTone} !important;
       }
 
       [data-ogsc] .hero-copy,
@@ -861,7 +863,7 @@ function renderEmailHtml(content: TemplateContent) {
                   </tr>
                   <tr>
                     <td align="center" style="padding-bottom:10px;">
-                      <div class="hero-title" style="font-family:Georgia,'Times New Roman',serif;font-size:54px;line-height:1.02;color:#111827 !important;font-style:italic;-webkit-text-fill-color:#111827;">
+                      <div class="hero-title" style="font-family:Georgia,'Times New Roman',serif;font-size:54px;line-height:1.02;color:${heroTitleTone} !important;font-style:italic;-webkit-text-fill-color:${heroTitleTone};">
                         ${escapeHtml(content.heading)}
                       </div>
                     </td>

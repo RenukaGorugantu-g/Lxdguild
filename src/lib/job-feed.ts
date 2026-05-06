@@ -87,6 +87,16 @@ type SyncRunRecord = {
   id: string;
 };
 
+type ExistingJobMatch = {
+  id: string;
+  source: string | null;
+  source_job_id: string | null;
+  apply_url: string | null;
+  title: string | null;
+  company: string | null;
+  location: string | null;
+};
+
 async function startSyncRun(trigger: SyncTrigger) {
   const supabase = createAdminClient();
   if (!supabase) return null;
@@ -194,7 +204,152 @@ function expiryFrom(externalPostedAt: string | null, nowIso: string) {
 }
 
 function normalizeText(value: string | null | undefined) {
-  return (value || "").toLowerCase().replace(/[^a-z0-9&+\s-]/g, " ");
+  return (value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9&+\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeApplyUrl(value: string | null | undefined) {
+  if (!value) return "";
+
+  try {
+    const url = new URL(value.trim());
+    url.hash = "";
+
+    const removableParams = [
+      "utm_source",
+      "utm_medium",
+      "utm_campaign",
+      "utm_term",
+      "utm_content",
+      "gh_src",
+      "gh_jid",
+      "gclid",
+      "fbclid",
+      "ref",
+      "refid",
+      "referral",
+      "tracking",
+      "track",
+    ];
+
+    for (const key of removableParams) {
+      url.searchParams.delete(key);
+    }
+
+    const keptParams = [...url.searchParams.entries()].sort(([a], [b]) => a.localeCompare(b));
+    url.search = "";
+    for (const [key, paramValue] of keptParams) {
+      url.searchParams.append(key, paramValue);
+    }
+
+    const normalizedPath = url.pathname.replace(/\/+$/, "") || "/";
+    return `${url.protocol}//${url.host.toLowerCase()}${normalizedPath}${url.search}`;
+  } catch {
+    return value.trim().replace(/\/+$/, "");
+  }
+}
+
+function buildJobFingerprint(job: Pick<NormalizedJob, "title" | "company" | "location" | "job_kind">) {
+  return [
+    normalizeText(job.title),
+    normalizeText(job.company),
+    normalizeText(job.location),
+    job.job_kind,
+  ].join("::");
+}
+
+function buildJobIdentity(job: NormalizedJob) {
+  if (job.source_job_id) {
+    return `source:${job.source}::${job.source_job_id}`;
+  }
+
+  const normalizedApplyUrl = normalizeApplyUrl(job.apply_url);
+  if (normalizedApplyUrl) {
+    return `url:${normalizedApplyUrl}`;
+  }
+
+  return `fingerprint:${buildJobFingerprint(job)}`;
+}
+
+function pickPreferredJob(current: NormalizedJob | undefined, candidate: NormalizedJob) {
+  if (!current) return candidate;
+
+  const currentDescriptionLength = current.description?.length ?? 0;
+  const candidateDescriptionLength = candidate.description?.length ?? 0;
+  const currentHasExternalDate = current.external_posted_at ? 1 : 0;
+  const candidateHasExternalDate = candidate.external_posted_at ? 1 : 0;
+
+  if (candidateHasExternalDate !== currentHasExternalDate) {
+    return candidateHasExternalDate > currentHasExternalDate ? candidate : current;
+  }
+
+  if (candidateDescriptionLength !== currentDescriptionLength) {
+    return candidateDescriptionLength > currentDescriptionLength ? candidate : current;
+  }
+
+  return current;
+}
+
+async function findExistingJobsForMatch(job: NormalizedJob) {
+  const supabase = createAdminClient();
+  if (!supabase) return [] as ExistingJobMatch[];
+
+  const matches = new Map<string, ExistingJobMatch>();
+  const exactFingerprint = buildJobFingerprint(job);
+
+  if (job.source_job_id) {
+    const { data } = await supabase
+      .from("jobs")
+      .select("id, source, source_job_id, apply_url, title, company, location")
+      .eq("source", job.source)
+      .eq("source_job_id", job.source_job_id)
+      .limit(10);
+
+    for (const row of data || []) {
+      matches.set(row.id, row as ExistingJobMatch);
+    }
+  }
+
+  const normalizedUrl = normalizeApplyUrl(job.apply_url);
+  if (normalizedUrl) {
+    const { data } = await supabase
+      .from("jobs")
+      .select("id, source, source_job_id, apply_url, title, company, location")
+      .eq("apply_url", job.apply_url)
+      .limit(10);
+
+    for (const row of data || []) {
+      matches.set(row.id, row as ExistingJobMatch);
+    }
+  }
+
+  const { data: titleCompanyMatches } = await supabase
+    .from("jobs")
+    .select("id, source, source_job_id, apply_url, title, company, location")
+    .eq("title", job.title)
+    .eq("company", job.company)
+    .eq("job_kind", job.job_kind)
+    .neq("source", "employer")
+    .limit(25);
+
+  for (const row of titleCompanyMatches || []) {
+    const typedRow = row as ExistingJobMatch;
+    const rowFingerprint = buildJobFingerprint({
+      title: typedRow.title || "",
+      company: typedRow.company || "",
+      location: typedRow.location || "",
+      job_kind: job.job_kind,
+    });
+
+    if (rowFingerprint === exactFingerprint) {
+      matches.set(typedRow.id, typedRow);
+    }
+  }
+
+  return [...matches.values()];
 }
 
 function inferWorkMode(...values: Array<string | null | undefined>) {
@@ -495,7 +650,9 @@ export async function syncJobFeed(options?: { trigger?: SyncTrigger }) {
 
     for (const jobs of sourceResults) {
       for (const job of jobs) {
-        collected.set(job.apply_url, job);
+        const identity = buildJobIdentity(job);
+        const existing = collected.get(identity);
+        collected.set(identity, pickPreferredJob(existing, job));
       }
     }
 
@@ -645,15 +802,8 @@ async function upsertLegacyJobs(collected: Map<string, NormalizedJob>): Promise<
   let refreshed = 0;
 
   for (const job of collected.values()) {
-    const { data: existing, error: existingError } = await supabase
-      .from("jobs")
-      .select("id")
-      .eq("apply_url", job.apply_url)
-      .maybeSingle();
-
-    if (existingError && !isMissingSchemaError(existingError)) {
-      throw existingError;
-    }
+    const matches = await findExistingJobsForMatch(job);
+    const [primaryMatch] = matches;
 
     const payload = {
       title: job.title,
@@ -667,10 +817,25 @@ async function upsertLegacyJobs(collected: Map<string, NormalizedJob>): Promise<
       job_kind: job.job_kind,
     };
 
-    if (existing?.id) {
+    if (primaryMatch?.id) {
       refreshed += 1;
-      const { error: updateError } = await supabase.from("jobs").update(payload).eq("id", existing.id);
+      const { error: updateError } = await supabase.from("jobs").update(payload).eq("id", primaryMatch.id);
       if (updateError) throw updateError;
+
+      const duplicateIds = matches.slice(1).map((match) => match.id);
+      if (duplicateIds.length) {
+        const { data: appliedRows } = await supabase
+          .from("job_applications")
+          .select("job_id")
+          .in("job_id", duplicateIds);
+
+        const appliedIds = new Set((appliedRows || []).map((row) => row.job_id));
+        const safeToDelete = duplicateIds.filter((id) => !appliedIds.has(id));
+        if (safeToDelete.length) {
+          const { error: deleteError } = await supabase.from("jobs").delete().in("id", safeToDelete);
+          if (deleteError) throw deleteError;
+        }
+      }
     } else {
       imported += 1;
       const { error: insertError } = await supabase.from("jobs").insert(payload);
@@ -691,15 +856,12 @@ async function upsertLifecycleJobs(collected: Map<string, NormalizedJob>, nowIso
   let refreshed = 0;
 
   for (const job of collected.values()) {
-    const { data: existing } = await supabase
-      .from("jobs")
-      .select("id")
-      .eq("apply_url", job.apply_url)
-      .maybeSingle();
+    const matches = await findExistingJobsForMatch(job);
+    const [primaryMatch] = matches;
 
-    if (existing?.id) {
+    if (primaryMatch?.id) {
       refreshed += 1;
-      await supabase
+      const { error: updateError } = await supabase
         .from("jobs")
         .update({
           title: job.title,
@@ -718,10 +880,33 @@ async function upsertLifecycleJobs(collected: Map<string, NormalizedJob>, nowIso
           is_active: true,
           job_kind: job.job_kind,
         })
-        .eq("id", existing.id);
+        .eq("id", primaryMatch.id);
+
+      if (updateError) throw updateError;
+
+      const duplicateIds = matches.slice(1).map((match) => match.id);
+      if (duplicateIds.length) {
+        const { data: appliedRows } = await supabase
+          .from("job_applications")
+          .select("job_id")
+          .in("job_id", duplicateIds);
+
+        const appliedIds = new Set((appliedRows || []).map((row) => row.job_id));
+        const safeToDeactivate = duplicateIds.filter((id) => !appliedIds.has(id));
+
+        if (safeToDeactivate.length) {
+          const { error: deactivateError } = await supabase
+            .from("jobs")
+            .update({ is_active: false, last_seen_at: nowIso })
+            .in("id", safeToDeactivate);
+
+          if (deactivateError) throw deactivateError;
+        }
+      }
     } else {
       imported += 1;
-      await supabase.from("jobs").insert(job);
+      const { error: insertError } = await supabase.from("jobs").insert(job);
+      if (insertError) throw insertError;
     }
   }
 

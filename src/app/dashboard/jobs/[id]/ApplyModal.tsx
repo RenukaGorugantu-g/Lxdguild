@@ -405,16 +405,22 @@ export default function ApplyModal({
           {step === 3 && (
             <div className="grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_380px]">
               <div className="space-y-6">
-                <div className="rounded-[28px] border border-green-200 bg-[linear-gradient(135deg,#ecfdf3_0%,#ffffff_55%,#f0f9ff_100%)] p-7">
+                <div
+                  className="apply-success-surface rounded-[28px] border border-green-200 bg-[linear-gradient(135deg,#ecfdf3_0%,#ffffff_55%,#f0f9ff_100%)] p-7"
+                  style={{ colorScheme: "light", forcedColorAdjust: "none", backgroundColor: "#ffffff", color: "#091737" }}
+                >
                   <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
                     <div className="space-y-3">
-                      <div className="inline-flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em] text-green-800">
+                      <div
+                        className="apply-success-accent inline-flex items-center gap-2 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.22em]"
+                        style={{ color: "#166534", WebkitTextFillColor: "#166534" }}
+                      >
                         <CheckCircle className="h-3.5 w-3.5" />
                         Application started
                       </div>
                       <div>
-                      <p className="text-2xl font-bold tracking-tight text-zinc-950">Your application is in motion</p>
-                      <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-700">
+                      <p className="apply-success-title text-2xl font-bold tracking-tight" style={{ color: "#091737", WebkitTextFillColor: "#091737" }}>Your application is in motion</p>
+                      <p className="apply-success-copy mt-2 max-w-2xl text-sm leading-6" style={{ color: "#334155", WebkitTextFillColor: "#334155" }}>
                           {isInternalApply
                             ? "Your application has been submitted inside LXD Guild. The employer can now review your profile, resume, and ATS fit directly on the platform."
                             : "Continue on the employer's official application page in a new tab. Many job sites block embedded forms, so we now send you there directly."}
@@ -422,20 +428,20 @@ export default function ApplyModal({
                       </div>
                     </div>
 
-                    <div className="rounded-3xl border border-white/70 bg-white/80 px-4 py-3 shadow-sm backdrop-blur">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-zinc-500">Applied role</p>
-                      <p className="mt-2 text-sm font-semibold text-zinc-900">{job.title}</p>
-                      <p className="mt-1 text-sm text-zinc-500">{job.company}</p>
+                    <div className="apply-success-surface rounded-3xl border border-white/70 bg-white/80 px-4 py-3 shadow-sm backdrop-blur" style={{ colorScheme: "light", forcedColorAdjust: "none", backgroundColor: "rgba(255,255,255,0.92)", color: "#091737" }}>
+                      <p className="apply-success-muted text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: "#64748b", WebkitTextFillColor: "#64748b" }}>Applied role</p>
+                      <p className="apply-success-title mt-2 text-sm font-semibold" style={{ color: "#091737", WebkitTextFillColor: "#091737" }}>{job.title}</p>
+                      <p className="apply-success-muted mt-1 text-sm" style={{ color: "#64748b", WebkitTextFillColor: "#64748b" }}>{job.company}</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="grid gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)]">
-                  <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+                  <div className="apply-success-surface rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm" style={{ colorScheme: "light", forcedColorAdjust: "none", backgroundColor: "#ffffff", color: "#091737" }}>
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="text-sm font-bold text-zinc-900">Next step</p>
-                        <p className="mt-1 text-sm text-zinc-500">
+                        <p className="apply-success-title text-sm font-bold" style={{ color: "#091737", WebkitTextFillColor: "#091737" }}>Next step</p>
+                        <p className="apply-success-muted mt-1 text-sm" style={{ color: "#64748b", WebkitTextFillColor: "#64748b" }}>
                           {isInternalApply
                             ? "Your profile is already in the employer's review queue. Stay here to track shortlist and next-round updates."
                             : "Submit the employer form in the external window so your resume reaches their team."}
@@ -445,24 +451,24 @@ export default function ApplyModal({
                     </div>
 
                     <div className="mt-5 space-y-3">
-                      <div className="flex items-start gap-3 rounded-2xl bg-zinc-50 px-4 py-3">
-                        <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">1</div>
+                      <div className="flex items-start gap-3 rounded-2xl bg-zinc-50 px-4 py-3" style={{ colorScheme: "light", forcedColorAdjust: "none", backgroundColor: "#f8fafc", color: "#091737" }}>
+                        <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white" style={{ color: "#ffffff", WebkitTextFillColor: "#ffffff" }}>1</div>
                         <div>
-                        <p className="text-sm font-semibold text-zinc-900">
+                        <p className="apply-success-title text-sm font-semibold" style={{ color: "#091737", WebkitTextFillColor: "#091737" }}>
                           {isInternalApply ? "Application submitted in-platform" : "Finish the official employer application"}
                         </p>
-                          <p className="mt-1 text-xs leading-5 text-zinc-500">
+                          <p className="apply-success-muted mt-1 text-xs leading-5" style={{ color: "#64748b", WebkitTextFillColor: "#64748b" }}>
                             {isInternalApply
                               ? "The employer can shortlist, reject, and move you to interview stages right here in LXD Guild."
                               : "Some employers ask for extra questions, work samples, or a profile login before the submission is complete."}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-start gap-3 rounded-2xl bg-zinc-50 px-4 py-3">
-                        <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white">2</div>
+                      <div className="flex items-start gap-3 rounded-2xl bg-zinc-50 px-4 py-3" style={{ colorScheme: "light", forcedColorAdjust: "none", backgroundColor: "#f8fafc", color: "#091737" }}>
+                        <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-xs font-bold text-white" style={{ color: "#ffffff", WebkitTextFillColor: "#ffffff" }}>2</div>
                         <div>
-                          <p className="text-sm font-semibold text-zinc-900">Come back here for your shortlist</p>
-                          <p className="mt-1 text-xs leading-5 text-zinc-500">
+                          <p className="apply-success-title text-sm font-semibold" style={{ color: "#091737", WebkitTextFillColor: "#091737" }}>Come back here for your shortlist</p>
+                          <p className="apply-success-muted mt-1 text-xs leading-5" style={{ color: "#64748b", WebkitTextFillColor: "#64748b" }}>
                             Save the company or follow similar roles so your next best matches stay easy to revisit.
                           </p>
                         </div>
@@ -480,17 +486,17 @@ export default function ApplyModal({
                 </div>
 
                 {atsResult && (typeof atsResult.score === "number" || atsResult.summary) && (
-                  <div className="rounded-[28px] border border-blue-200 bg-blue-50 p-6">
+                  <div className="apply-success-surface rounded-[28px] border border-blue-200 bg-blue-50 p-6" style={{ colorScheme: "light", forcedColorAdjust: "none", backgroundColor: "#eff6ff", color: "#091737" }}>
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                       <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-700">ATS review</p>
-                        <p className="mt-2 text-lg font-bold text-zinc-950">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-700 [color:#1d4ed8] [-webkit-text-fill-color:#1d4ed8]">ATS review</p>
+                        <p className="apply-success-title mt-2 text-lg font-bold" style={{ color: "#091737", WebkitTextFillColor: "#091737" }}>
                           {typeof atsResult.score === "number" ? `Resume match score: ${Math.round(atsResult.score)}%` : "ATS analysis completed"}
                         </p>
-                        {atsResult.summary ? <p className="mt-2 text-sm leading-6 text-zinc-700">{atsResult.summary}</p> : null}
+                        {atsResult.summary ? <p className="apply-success-copy mt-2 text-sm leading-6" style={{ color: "#334155", WebkitTextFillColor: "#334155" }}>{atsResult.summary}</p> : null}
                       </div>
                       {atsResult.autoDecision ? (
-                        <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold capitalize text-blue-800">
+                        <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold capitalize text-blue-800" style={{ colorScheme: "light", forcedColorAdjust: "none", backgroundColor: "#ffffff", color: "#1e40af", WebkitTextFillColor: "#1e40af" }}>
                           {atsResult.autoDecision.replace(/_/g, " ")}
                         </span>
                       ) : null}
@@ -499,11 +505,11 @@ export default function ApplyModal({
                 )}
 
                 {!isInternalApply && (
-                <div className="rounded-[28px] border border-zinc-200 bg-white p-6 shadow-sm">
+                <div className="apply-success-surface rounded-[28px] border border-zinc-200 bg-white p-6 shadow-sm" style={{ colorScheme: "light", forcedColorAdjust: "none", backgroundColor: "#ffffff", color: "#091737" }}>
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
-                      <p className="text-sm font-bold text-zinc-900">Official application handoff</p>
-                      <p className="mt-1 text-sm text-zinc-500">
+                      <p className="apply-success-title text-sm font-bold" style={{ color: "#091737", WebkitTextFillColor: "#091737" }}>Official application handoff</p>
+                      <p className="apply-success-muted mt-1 text-sm" style={{ color: "#64748b", WebkitTextFillColor: "#64748b" }}>
                         Your employer page should already be opening in a new tab. If the browser blocked it, use the button below.
                       </p>
                     </div>
@@ -512,6 +518,7 @@ export default function ApplyModal({
                         onClick={() => openEmployerPage(externalApplyUrl || job.apply_url)}
                         disabled={!externalApplyUrl && !job.apply_url}
                         className="inline-flex items-center gap-2 rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
+                        style={{ colorScheme: "light", forcedColorAdjust: "none", color: "#ffffff", WebkitTextFillColor: "#ffffff" }}
                       >
                         Open Employer Page
                         <ExternalLink className="h-4 w-4" />
@@ -519,6 +526,7 @@ export default function ApplyModal({
                       <button
                         onClick={onClose}
                         className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-100"
+                        style={{ colorScheme: "light", forcedColorAdjust: "none", backgroundColor: "#ffffff", color: "#334155", WebkitTextFillColor: "#334155" }}
                       >
                         Close
                       </button>
@@ -526,17 +534,17 @@ export default function ApplyModal({
                   </div>
 
                   <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-2xl bg-zinc-50 p-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Status</p>
-                      <p className="mt-2 text-sm font-semibold text-zinc-900">Application tracked in LXD Guild</p>
+                    <div className="rounded-2xl bg-zinc-50 p-4" style={{ colorScheme: "light", forcedColorAdjust: "none", backgroundColor: "#f8fafc", color: "#091737" }}>
+                      <p className="apply-success-muted text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "#64748b", WebkitTextFillColor: "#64748b" }}>Status</p>
+                      <p className="apply-success-title mt-2 text-sm font-semibold" style={{ color: "#091737", WebkitTextFillColor: "#091737" }}>Application tracked in LXD Guild</p>
                     </div>
-                    <div className="rounded-2xl bg-zinc-50 p-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Destination</p>
-                      <p className="mt-2 text-sm font-semibold text-zinc-900">{job.company || "Employer website"}</p>
+                    <div className="rounded-2xl bg-zinc-50 p-4" style={{ colorScheme: "light", forcedColorAdjust: "none", backgroundColor: "#f8fafc", color: "#091737" }}>
+                      <p className="apply-success-muted text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "#64748b", WebkitTextFillColor: "#64748b" }}>Destination</p>
+                      <p className="apply-success-title mt-2 text-sm font-semibold" style={{ color: "#091737", WebkitTextFillColor: "#091737" }}>{job.company || "Employer website"}</p>
                     </div>
-                    <div className="rounded-2xl bg-zinc-50 p-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Action needed</p>
-                      <p className="mt-2 text-sm font-semibold text-zinc-900">Complete the employer form</p>
+                    <div className="rounded-2xl bg-zinc-50 p-4" style={{ colorScheme: "light", forcedColorAdjust: "none", backgroundColor: "#f8fafc", color: "#091737" }}>
+                      <p className="apply-success-muted text-[11px] font-semibold uppercase tracking-[0.18em]" style={{ color: "#64748b", WebkitTextFillColor: "#64748b" }}>Action needed</p>
+                      <p className="apply-success-title mt-2 text-sm font-semibold" style={{ color: "#091737", WebkitTextFillColor: "#091737" }}>Complete the employer form</p>
                     </div>
                   </div>
                 </div>
@@ -548,6 +556,7 @@ export default function ApplyModal({
                       onClick={() => window.open(externalApplyUrl || job.apply_url || "", "_blank", "noopener,noreferrer")}
                       disabled={!externalApplyUrl && !job.apply_url}
                       className="w-full rounded-2xl bg-brand-600 py-4 font-bold text-white shadow-lg transition-all hover:shadow-brand-500/20 disabled:opacity-50"
+                      style={{ colorScheme: "light", forcedColorAdjust: "none", color: "#ffffff", WebkitTextFillColor: "#ffffff" }}
                     >
                       Open Employer Page in New Tab
                     </button>
@@ -555,6 +564,7 @@ export default function ApplyModal({
                   <button
                     onClick={() => router.push(backToJobsHref)}
                     className="w-full rounded-2xl bg-zinc-100 py-4 font-bold text-zinc-700 transition-all hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                    style={{ colorScheme: "light", forcedColorAdjust: "none", backgroundColor: "#f3f4f6", color: "#334155", WebkitTextFillColor: "#334155" }}
                   >
                     Keep Browsing Jobs
                   </button>
@@ -562,6 +572,7 @@ export default function ApplyModal({
                     onClick={() => job.company && handlePreferenceToggle("company", job.company)}
                     disabled={savingCompany || !job.company}
                     className="flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white py-4 font-bold text-zinc-700 transition-all hover:bg-zinc-50 disabled:opacity-50"
+                    style={{ colorScheme: "light", forcedColorAdjust: "none", backgroundColor: "#ffffff", color: "#334155", WebkitTextFillColor: "#334155" }}
                   >
                     {savingCompany ? <Loader2 className="w-4 h-4 animate-spin" /> : <BookmarkPlus className="w-4 h-4" />}
                     {!job.company ? "Company Unavailable" : companySaved ? "Saved Company" : "Save This Company"}
@@ -570,6 +581,7 @@ export default function ApplyModal({
                     onClick={() => handlePreferenceToggle("role", roleKeyword)}
                     disabled={followingRole}
                     className="flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white py-4 font-bold text-zinc-700 transition-all hover:bg-zinc-50 disabled:opacity-50"
+                    style={{ colorScheme: "light", forcedColorAdjust: "none", backgroundColor: "#ffffff", color: "#334155", WebkitTextFillColor: "#334155" }}
                   >
                     {followingRole ? <Loader2 className="w-4 h-4 animate-spin" /> : <BellPlus className="w-4 h-4" />}
                     {roleFollowed ? `Following ${roleKeyword}` : `Follow Similar ${roleKeyword}`}
@@ -577,13 +589,13 @@ export default function ApplyModal({
                 </div>
 
                 {!isInternalApply && (
-                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600" style={{ colorScheme: "light", forcedColorAdjust: "none", backgroundColor: "#f8fafc", color: "#475569", WebkitTextFillColor: "#475569" }}>
                     Some external job sites send `X-Frame-Options` or `Content-Security-Policy` headers that block embedding, so this flow now sends candidates to the official page in a new tab instead of showing a broken frame.
                   </div>
                 )}
 
                 {quotaMessage && (
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" style={{ colorScheme: "light", forcedColorAdjust: "none", backgroundColor: "#fffbeb", color: "#78350f", WebkitTextFillColor: "#78350f" }}>
                     {quotaMessage}
                   </div>
                 )}

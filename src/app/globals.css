@@ -213,6 +213,69 @@ a {
   -webkit-text-fill-color: currentColor;
 }
 
+.apply-success-surface {
+  color-scheme: light !important;
+  forced-color-adjust: none;
+  -webkit-text-size-adjust: 100%;
+  background-color: #ffffff !important;
+}
+
+.apply-success-title {
+  color: #091737 !important;
+  -webkit-text-fill-color: #091737 !important;
+}
+
+.apply-success-copy {
+  color: #334155 !important;
+  -webkit-text-fill-color: #334155 !important;
+}
+
+.apply-success-muted {
+  color: #64748b !important;
+  -webkit-text-fill-color: #64748b !important;
+}
+
+.apply-success-accent {
+  color: #166534 !important;
+  -webkit-text-fill-color: #166534 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .apply-success-surface,
+  .apply-success-surface * {
+    color-scheme: light !important;
+    forced-color-adjust: none !important;
+  }
+
+  .apply-success-surface {
+    background-color: #ffffff !important;
+  }
+
+  .apply-success-surface .apply-success-title,
+  .apply-success-surface .apply-success-title * {
+    color: #091737 !important;
+    -webkit-text-fill-color: #091737 !important;
+  }
+
+  .apply-success-surface .apply-success-copy,
+  .apply-success-surface .apply-success-copy * {
+    color: #334155 !important;
+    -webkit-text-fill-color: #334155 !important;
+  }
+
+  .apply-success-surface .apply-success-muted,
+  .apply-success-surface .apply-success-muted * {
+    color: #64748b !important;
+    -webkit-text-fill-color: #64748b !important;
+  }
+
+  .apply-success-surface .apply-success-accent,
+  .apply-success-surface .apply-success-accent * {
+    color: #166534 !important;
+    -webkit-text-fill-color: #166534 !important;
+  }
+}
+
 :is(
   .bg-zinc-900,
   .bg-zinc-950,

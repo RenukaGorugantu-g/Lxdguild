@@ -1,5 +1,5 @@
 export const MEMBER_ANNUAL_PLAN_CODE = "member_annual";
-export const MEMBER_ANNUAL_PRICE_INR = 2999;
+export const MEMBER_ANNUAL_PRICE_INR = 999;
 export const MEMBER_DURATION_DAYS = 365;
 const LEGACY_ACTIVE_MEMBERSHIP_STATUSES = new Set(["active", "pro", "premium", "paid", "member"]);
 
