@@ -218,7 +218,7 @@ export default function Header() {
   const brandHref = baseRole === "candidate" ? "/candidate" : baseRole === "employer" ? "/employer" : "/";
   const dashboardHref = user ? "/dashboard" : "/login";
   const jobBoardHref = user && (isCandidate || isVerifiedMVP || canViewJobBoard) ? "/dashboard/jobs" : "/dashboard/jobs";
-  const resourcesHref = user ? "/dashboard/resources" : "/membership";
+  const resourcesHref = "/dashboard/resources";
   const profileHref = user
     ? isEmployer
       ? "/dashboard/employer/profile"
@@ -371,7 +371,7 @@ export default function Header() {
                   href="/register"
                   className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#118118,#2aa82b)] px-5 py-2.5 text-sm font-bold text-white transition-all hover:translate-y-[-1px] shadow-[0_16px_32px_rgba(24,124,29,0.18)]"
                 >
-                  <Sparkles className="h-4 w-4" /> Join Us
+                  <Sparkles className="h-4 w-4" /> Join the Guild
                 </Link>
               </div>
             )}
@@ -477,7 +477,7 @@ export default function Header() {
                       : "bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] text-[#091737] shadow-[0_18px_40px_rgba(52,205,47,0.24)]"
                   }`}
                 >
-                  <Sparkles className="h-4 w-4" /> Join Us
+                  <Sparkles className="h-4 w-4" /> Join the Guild
                 </Link>
               ) : (
                 <button
@@ -599,7 +599,7 @@ export default function Header() {
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] px-4 py-3 text-sm font-bold text-[#091737]"
                 >
-                  Join Guild
+                  Join the Guild
                 </Link>
               </>
             )}

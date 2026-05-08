@@ -1,0 +1,26 @@
+<svg width="560" height="720" viewBox="0 0 560 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="560" height="720" rx="40" fill="#0A151D"/>
+  <circle cx="430" cy="98" r="132" fill="#5FD5FF" fill-opacity="0.14"/>
+  <circle cx="134" cy="164" r="156" fill="#5AD34D" fill-opacity="0.12"/>
+  <rect x="58" y="90" width="444" height="314" rx="28" fill="#102128"/>
+  <rect x="88" y="126" width="384" height="30" rx="15" fill="#16333F"/>
+  <rect x="88" y="176" width="164" height="168" rx="22" fill="#173A22"/>
+  <rect x="270" y="176" width="202" height="168" rx="22" fill="#122630"/>
+  <circle cx="172" cy="224" r="24" fill="#5AE04A"/>
+  <circle cx="328" cy="234" r="16" fill="#67E0FF"/>
+  <path d="M290 286H438" stroke="#355565" stroke-width="14" stroke-linecap="round"/>
+  <path d="M108 286H208" stroke="#58E84C" stroke-width="14" stroke-linecap="round"/>
+  <path d="M290 322H404" stroke="#28424D" stroke-width="14" stroke-linecap="round"/>
+  <path d="M108 322H184" stroke="#3FA638" stroke-width="14" stroke-linecap="round"/>
+  <rect x="30" y="494" width="500" height="196" rx="28" fill="url(#paint0_linear)"/>
+  <path d="M62 526C126 486 158 584 232 546C306 508 330 428 502 472" stroke="#7AFFC9" stroke-opacity="0.28" stroke-width="4"/>
+  <text x="42" y="562" fill="#9AD5B1" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="2">EMPLOYERS</text>
+  <text x="42" y="620" fill="white" font-family="Georgia, serif" font-size="42" font-weight="700">People-first hiring</text>
+  <text x="42" y="664" fill="white" font-family="Georgia, serif" font-size="42" font-weight="700">with AI precision.</text>
+  <defs>
+    <linearGradient id="paint0_linear" x1="280" y1="494" x2="280" y2="690" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#102028" stop-opacity="0.16"/>
+      <stop offset="1" stop-color="#102028" stop-opacity="0.86"/>
+    </linearGradient>
+  </defs>
+</svg>

@@ -11,6 +11,7 @@ import {
   Users,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
+import { MEMBER_ANNUAL_PRICE_INR } from "@/lib/membership";
 
 const curatedAssets = [
   "LXD Playbooks",
@@ -53,13 +54,14 @@ export default async function PublicMembershipPage() {
 
   const primaryHref = user ? "/dashboard/membership" : "/register";
   const secondaryHref = "/dashboard/resources";
+  const freeResourcesHref = "/dashboard/resources";
 
   return (
     <div className="marketing-page">
       <main className="pt-22 sm:pt-24">
         <section className="marketing-section pb-16 pt-3">
           <div className="marketing-container">
-            <div className="grid items-center gap-10 lg:grid-cols-[0.98fr_1.02fr]">
+            <div className="grid items-center gap-10 lg:grid-cols-[0.96fr_1.04fr]">
               <div className="space-y-6">
                 <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#7a8773]">
                   Exclusive membership
@@ -73,7 +75,7 @@ export default async function PublicMembershipPage() {
                 </p>
                 <div className="flex flex-col gap-4 sm:flex-row">
                   <Link href={primaryHref} className="marketing-primary rounded-full px-6">
-                    {user ? "Become a member" : "Become a member"}
+                    {user ? "Open membership" : "Join the Guild"}
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                   <Link href={secondaryHref} className="marketing-secondary rounded-full px-6">
@@ -82,71 +84,107 @@ export default async function PublicMembershipPage() {
                 </div>
               </div>
 
-              <div className="grid items-end gap-4 lg:grid-cols-[0.86fr_1.14fr]">
-                <article className="space-y-5">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Curated assets</p>
-                    <h2 className="mt-4 text-4xl font-semibold text-[#111827]">180+ premium L&D resources</h2>
-                    <p className="mt-4 text-sm leading-7 text-[#606c5b]">
-                      Step away from generic templates. Access cinematic storyboards, AI-integrated playbooks, and
-                      organizational learning guides that transform how teams perceive growth.
+              <div className="lg:pl-8">
+                <div className="mx-auto max-w-xl rounded-[1.8rem] border border-white/65 bg-[linear-gradient(145deg,rgba(255,255,255,0.58),rgba(228,248,221,0.34))] p-6 shadow-[0_30px_70px_rgba(87,108,67,0.14)] backdrop-blur-2xl lg:p-7">
+                  <div className="rounded-[1.8rem] border border-white/80 bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(240,250,233,0.90))] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_18px_35px_rgba(87,108,67,0.10)]">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Membership access</p>
+                    <div className="mt-3 flex items-end gap-2">
+                      <span className="text-5xl font-semibold leading-none text-[#111827]">Rs {MEMBER_ANNUAL_PRICE_INR}</span>
+                      <span className="pb-1 text-sm font-medium text-[#5f6d5c]">/ year</span>
+                    </div>
+                    <p className="mt-3 max-w-md text-sm leading-7 text-[#5f6d5c]">
+                      {user
+                        ? "Membership is ready to unlock in your dashboard."
+                        : "Not a member yet. Start with access to premium resources and tools."}
                     </p>
-                  </div>
 
-                  <div className="space-y-4">
-                    {curatedAssets.map((item, index) => (
-                      <div key={item} className="flex items-start gap-3 text-sm text-[#50604e]">
-                        {index === 0 ? <BookOpen className="mt-0.5 h-4 w-4 text-[#17931b]" /> : <Sparkles className="mt-0.5 h-4 w-4 text-[#17931b]" />}
-                        <div>
-                          <p className="font-medium text-[#111827]">{item}</p>
-                          <p className="mt-1 text-xs text-[#72806f]">
-                            {index === 0
-                              ? "Strategic frameworks for high-impact learning initiatives."
-                              : "Visual mapping tools for immersive learning experiences."}
-                          </p>
-                        </div>
+                    <div className="mt-6 flex flex-col gap-3">
+                      <Link
+                        href={primaryHref}
+                        className="marketing-primary w-full px-6"
+                      >
+                        {user ? "Open membership" : "Join the Guild"}
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                      <div className="flex flex-col gap-3 sm:flex-row">
+                        <Link href={freeResourcesHref} className="marketing-secondary flex-1 px-5">
+                          Free resources
+                        </Link>
+                        <Link href={secondaryHref} className="marketing-secondary flex-1 px-5">
+                          Resources page
+                        </Link>
                       </div>
-                    ))}
+                    </div>
                   </div>
-                </article>
+                </div>
+              </div>
+            </div>
 
-                <div className="grid gap-4 sm:grid-cols-[0.9fr_1.1fr]">
-                  <div className="relative min-h-[320px] overflow-hidden rounded-[1.8rem] border border-[#102028] bg-[#11171c] shadow-[0_20px_50px_rgba(15,23,42,0.14)]">
+            <div className="mt-12 grid gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
+              <article className="space-y-5">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Curated assets</p>
+                  <h2 className="mt-4 max-w-lg text-3xl font-semibold leading-tight text-[#111827] sm:text-4xl">
+                    180+ premium L&amp;D resources
+                  </h2>
+                  <p className="mt-4 max-w-xl text-sm leading-7 text-[#606c5b]">
+                    Step away from generic templates. Access cinematic storyboards, AI-integrated playbooks, and
+                    organizational learning guides that transform how teams perceive growth.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {curatedAssets.map((item, index) => (
+                    <div key={item} className="flex items-start gap-3 text-sm text-[#50604e]">
+                      {index === 0 ? <BookOpen className="mt-0.5 h-4 w-4 text-[#17931b]" /> : <Sparkles className="mt-0.5 h-4 w-4 text-[#17931b]" />}
+                      <div>
+                        <p className="font-medium text-[#111827]">{item}</p>
+                        <p className="mt-1 text-xs text-[#72806f]">
+                          {index === 0
+                            ? "Strategic frameworks for high-impact learning initiatives."
+                            : "Visual mapping tools for immersive learning experiences."}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </article>
+
+              <div className="grid gap-4 sm:grid-cols-[0.9fr_1.1fr]">
+                <div className="relative min-h-[320px] overflow-hidden rounded-[1.8rem] border border-[#102028] bg-[#11171c] shadow-[0_20px_50px_rgba(15,23,42,0.14)] lg:min-h-[360px]">
+                  <Image
+                    src="/landing-membership-human.png"
+                    alt="Premium learning resources"
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 280px"
+                    className="object-cover object-center"
+                  />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,17,24,0.08),rgba(8,17,24,0.38))]" />
+                </div>
+
+                <div className="space-y-4">
+                  <div className="relative min-h-[240px] overflow-hidden rounded-[1.7rem] border border-[#dbe6d6] bg-[#f2f6ef] shadow-[0_18px_44px_rgba(87,108,67,0.08)]">
                     <Image
-                      src="/landing-membership-human.png"
-                      alt="Premium learning resources"
+                      src="/landing-hero-human.png"
+                      alt="Ecosystem verification layer"
                       fill
                       sizes="(max-width: 1024px) 100vw, 280px"
-                      className="object-cover object-center"
-                      priority
+                      className="object-cover object-center opacity-80"
                     />
-                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,17,24,0.06),rgba(8,17,24,0.46))]" />
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(240,247,235,0.18),rgba(240,247,235,0.78))]" />
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="relative min-h-[220px] overflow-hidden rounded-[1.7rem] border border-[#dbe6d6] bg-[#f2f6ef] shadow-[0_18px_44px_rgba(87,108,67,0.08)]">
-                      <Image
-                        src="/landing-hero-human.png"
-                        alt="Ecosystem verification layer"
-                        fill
-                        sizes="(max-width: 1024px) 100vw, 280px"
-                        className="object-cover object-center opacity-80"
-                      />
-                      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(240,247,235,0.18),rgba(240,247,235,0.78))]" />
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="rounded-[1.4rem] bg-[#dff6d9] px-5 py-5 shadow-[0_14px_30px_rgba(87,108,67,0.08)]">
+                      <p className="text-3xl font-semibold text-[#111827]">180+</p>
+                      <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#6a7766]">Premium resources</p>
                     </div>
-
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="rounded-[1.4rem] bg-[#dff6d9] px-5 py-5 shadow-[0_14px_30px_rgba(87,108,67,0.08)]">
-                        <p className="text-3xl font-semibold text-[#111827]">32</p>
-                        <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#6a7766]">New assets monthly</p>
-                      </div>
-                      <div className="rounded-[1.4rem] bg-white px-5 py-5 shadow-[0_14px_30px_rgba(87,108,67,0.08)]">
-                        <div className="flex items-start gap-3">
-                          <Crown className="mt-0.5 h-4 w-4 text-[#17931b]" />
-                          <div>
-                            <p className="text-sm font-semibold text-[#111827]">Ecosystem verified</p>
-                            <p className="mt-1 text-xs leading-6 text-[#72806f]">Every resource is vetted by our L&D council.</p>
-                          </div>
+                    <div className="rounded-[1.4rem] bg-white px-5 py-5 shadow-[0_14px_30px_rgba(87,108,67,0.08)]">
+                      <div className="flex items-start gap-3">
+                        <Crown className="mt-0.5 h-4 w-4 text-[#17931b]" />
+                        <div>
+                          <p className="text-sm font-semibold text-[#111827]">Ecosystem verified</p>
+                          <p className="mt-1 text-xs leading-6 text-[#72806f]">Every resource is vetted by our L&amp;D council.</p>
                         </div>
                       </div>
                     </div>
@@ -232,15 +270,16 @@ export default async function PublicMembershipPage() {
         </section>
 
         <section className="marketing-section pb-24">
-          <div className="marketing-container overflow-hidden rounded-[2.5rem] border border-[#101a1d] px-8 py-18 text-center text-white shadow-[0_28px_80px_rgba(7,19,31,0.18)]">
+          <div className="marketing-container relative overflow-hidden rounded-[2.5rem] border border-[#101a1d] bg-[#091116] px-8 py-18 text-center text-white shadow-[0_28px_80px_rgba(7,19,31,0.18)]">
             <div className="landing-cta-panel absolute inset-0 rounded-[2.5rem]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(46,201,78,0.16),transparent_48%),linear-gradient(180deg,rgba(8,16,22,0.82),rgba(8,16,22,0.94))]" />
             <div className="relative">
               <h2 className="mx-auto max-w-4xl text-5xl font-semibold leading-tight">Step into the future of L&amp;D</h2>
               <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-white/72">
                 The ecosystem is evolving. Secure your place at the forefront of AI-driven learning design.
               </p>
               <Link href={primaryHref} className="marketing-primary mt-8 rounded-full px-7">
-                Unlock full access
+                {user ? "Open membership" : "Join the Guild"}
               </Link>
             </div>
           </div>

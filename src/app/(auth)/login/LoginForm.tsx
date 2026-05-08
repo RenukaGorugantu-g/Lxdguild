@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { AuthLogo } from "@/components/auth/AuthShared";
 import { ArrowRight, BarChart3, Eye, EyeOff, LockKeyhole, Mail, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -87,7 +86,6 @@ export default function LoginForm() {
         <div className="grid w-full gap-8 lg:grid-cols-[1.02fr_0.98fr] lg:items-center">
           <section className="relative overflow-hidden rounded-[34px] px-1 py-2 md:px-4 lg:py-4">
             <div className="max-w-[560px]">
-              <AuthLogo />
               <h1 className="mt-6 max-w-[560px] text-[1.75rem] font-semibold leading-[1.08] tracking-[-0.05em] text-[#1d222a] sm:text-[2.2rem]">
                 Elevate your professional journey with{" "}
                 <span className="bg-[linear-gradient(90deg,#1f9c1f_0%,#1f7f25_40%,#7780a5_100%)] bg-clip-text text-transparent">

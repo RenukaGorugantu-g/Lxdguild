@@ -77,10 +77,10 @@ export default function Footer() {
             <h3 className="text-2xl font-bold text-white">A clearer path for L&D talent, jobs, and resources.</h3>
           </div>
           <div className="flex shrink-0 items-center gap-3">
-            <Link href="/register" className="rounded-full bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] px-6 py-3 text-sm font-bold text-[#091737] shadow-[0_18px_40px_rgba(52,205,47,0.24)] transition-all hover:translate-y-[-1px]">
+            <Link href="/register" className="marketing-primary rounded-full px-6">
               Join the Guild
             </Link>
-            <Link href="/contact" className="rounded-full border border-white/14 px-6 py-3 text-sm font-bold text-[#cde3e1] transition-all hover:bg-white/6">
+            <Link href="/contact" className="marketing-secondary rounded-full px-6">
               Contact Us
             </Link>
           </div>
@@ -106,7 +106,7 @@ export default function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={label}
-                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/6 text-[#cde3e1]/60 transition-all hover:scale-105 hover:bg-white/12 hover:text-white"
+                  className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/6 text-[#cde3e1]/60 transition-all hover:scale-105 hover:bg-[#ebf7e3] hover:text-[#138d1a]"
                 >
                   <Icon />
                 </a>
@@ -121,11 +121,11 @@ export default function Footer() {
                 {links.map((link) => (
                   <li key={link.label}>
                     {"external" in link && link.external ? (
-                      <a href={link.href} target="_blank" rel="noopener noreferrer" className="text-sm text-[#cde3e1]/70 transition-colors hover:text-white">
+                      <a href={link.href} target="_blank" rel="noopener noreferrer" className="text-sm text-[#cde3e1]/70 transition-colors hover:text-[#34cd2f]">
                         {link.label}
                       </a>
                     ) : (
-                      <Link href={link.href} className="text-sm text-[#cde3e1]/70 transition-colors hover:text-white">
+                      <Link href={link.href} className="text-sm text-[#cde3e1]/70 transition-colors hover:text-[#34cd2f]">
                         {link.label}
                       </Link>
                     )}
@@ -146,11 +146,11 @@ export default function Footer() {
             </a>.
           </p>
           <div className="flex items-center gap-4">
-            <a href="https://lxdguildacademy.com" target="_blank" rel="noopener noreferrer" className="text-xs text-[#cde3e1]/45 transition-colors hover:text-white">
+            <a href="https://lxdguildacademy.com" target="_blank" rel="noopener noreferrer" className="text-xs text-[#cde3e1]/45 transition-colors hover:text-[#34cd2f]">
               LXD Academy
             </a>
             <span className="text-white/10">·</span>
-            <a href="https://lxdguild.com" target="_blank" rel="noopener noreferrer" className="text-xs text-[#cde3e1]/45 transition-colors hover:text-white">
+            <a href="https://lxdguild.com" target="_blank" rel="noopener noreferrer" className="text-xs text-[#cde3e1]/45 transition-colors hover:text-[#34cd2f]">
               LXDVerse
             </a>
           </div>

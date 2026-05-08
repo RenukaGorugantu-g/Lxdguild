@@ -5,7 +5,6 @@ import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getBucketForTargetRole, TARGET_ROLE_OPTIONS } from "@/lib/assessment";
-import { AuthLogo } from "@/components/auth/AuthShared";
 import { ArrowRight, BriefcaseBusiness, Check, Eye, EyeOff, SearchCheck } from "lucide-react";
 
 type PathCardProps = {
@@ -111,9 +110,6 @@ function RegisterPageContent() {
       <div className="min-h-screen bg-[linear-gradient(180deg,#f8faef_0%,#f1f7e8_100%)] text-[#212733]">
         <main className="mx-auto flex min-h-[60vh] w-full max-w-[1280px] items-center px-5 py-24 md:px-8">
           <div className="mx-auto w-full max-w-[680px] rounded-[34px] border border-white/80 bg-white/92 px-8 py-12 text-center shadow-[0_28px_70px_rgba(86,106,58,0.14)]">
-            <div className="mx-auto w-fit">
-              <AuthLogo compact />
-            </div>
             <p className="mt-8 text-[12px] font-semibold uppercase tracking-[0.24em] text-[#748068]">Registration complete</p>
             <h1 className="mt-4 text-[2.8rem] font-semibold tracking-[-0.05em] text-[#20252f]">
               {requiresEmailVerification ? "Check your email" : "Account created"}
@@ -148,11 +144,7 @@ function RegisterPageContent() {
         <div className="grid w-full lg:grid-cols-[0.9fr_1fr]">
           <section className="flex flex-col justify-between bg-[#0a8615] px-7 py-8 text-white md:px-10 md:py-10 lg:min-h-[680px]">
             <div>
-              <div className="w-fit rounded-[12px] bg-white px-3 py-2 text-[#0a8615] shadow-[0_10px_20px_rgba(0,0,0,0.08)]">
-                <AuthLogo compact />
-              </div>
-
-              <div className="mt-16 max-w-[420px]">
+              <div className="max-w-[420px]">
                 <h1 className="text-[1.7rem] font-medium tracking-[-0.04em]">Unlock your next career chapter.</h1>
                 <p className="mt-6 text-[1rem] leading-7 text-[#b7f0b3]">
                   Join 50,000+ professionals who have accelerated their career path with our AI-driven ecosystem.

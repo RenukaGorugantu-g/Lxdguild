@@ -34,7 +34,7 @@ const platformCards = [
     copy:
       "Access the academy, premium resources, guided growth tools, and the support layer that keeps the ecosystem moving.",
     href: "/membership",
-    cta: "Join the guild",
+    cta: "Join the Guild",
     imageSrc: "/landing-membership-human.png",
   },
 ] as const;
@@ -86,7 +86,7 @@ export default function LandingPage() {
 
                 <div className="flex flex-col gap-4 sm:flex-row">
                   <Link href="/register" className="marketing-primary rounded-full px-6">
-                    Enter the ecosystem
+                    Join the Guild
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                   <Link href="/dashboard/jobs" className="marketing-secondary rounded-full px-6">

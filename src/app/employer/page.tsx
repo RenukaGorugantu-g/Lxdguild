@@ -315,7 +315,7 @@ export default async function EmployerLandingPage() {
 
         <section className="marketing-section pb-18">
           <div className="marketing-container overflow-hidden rounded-[2.3rem] bg-[linear-gradient(135deg,#dff7d8_0%,#eef8e7_100%)] px-8 py-10 shadow-[0_24px_60px_rgba(87,108,67,0.12)]">
-            <div className="grid items-center gap-8 lg:grid-cols-[0.95fr_1.05fr]">
+            <div className="grid items-center gap-8 lg:grid-cols-[0.9fr_1.1fr]">
               <div className="text-[#07131f]">
                 <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#4f7a4f]">Integrated process</p>
                 <h2 className="mt-3 text-5xl font-semibold leading-[0.95]">Move faster from discovery to hiring</h2>
@@ -335,10 +335,10 @@ export default async function EmployerLandingPage() {
                 </div>
               </div>
 
-              <div className="relative min-h-[280px] overflow-hidden rounded-[1.8rem] border border-[#0f2028] bg-[#11171c] p-3 shadow-[0_24px_60px_rgba(15,23,42,0.14)]">
+              <div className="relative min-h-[320px] overflow-hidden rounded-[1.8rem] border border-[#0f2028] bg-[#11171c] p-3 shadow-[0_24px_60px_rgba(15,23,42,0.14)] lg:min-h-[360px]">
                 <div className="relative h-full overflow-hidden rounded-[1.35rem]">
                   <Image
-                    src="/landing-employer-human.png"
+                    src="/landing-membership-human.png"
                     alt="Collaborative hiring and interview review"
                     fill
                     sizes="(max-width: 1024px) 100vw, 520px"

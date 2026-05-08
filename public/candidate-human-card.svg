@@ -1,0 +1,21 @@
+<svg width="560" height="720" viewBox="0 0 560 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="560" height="720" rx="40" fill="#0B1821"/>
+  <circle cx="130" cy="158" r="150" fill="#56D74B" fill-opacity="0.18"/>
+  <circle cx="432" cy="86" r="122" fill="#60D8FF" fill-opacity="0.18"/>
+  <rect x="30" y="486" width="500" height="204" rx="28" fill="url(#paint0_linear)"/>
+  <path d="M86 520C146 472 186 600 258 562C330 524 360 442 510 476" stroke="#7AFFC9" stroke-opacity="0.34" stroke-width="4"/>
+  <ellipse cx="266" cy="246" rx="96" ry="106" fill="#12212B"/>
+  <path d="M178 636C182 536 194 476 222 434C240 408 266 392 302 392C340 392 368 412 388 444C412 482 426 546 432 636H178Z" fill="#102028"/>
+  <path d="M246 430C230 422 218 408 212 390C204 368 204 348 214 328C230 294 270 276 308 284C346 292 372 324 374 364C376 396 362 420 336 438L342 474C346 500 326 522 300 522H286C260 522 240 502 244 476L246 430Z" fill="#E0AC8B"/>
+  <path d="M218 344C224 268 288 226 346 252C396 274 408 344 382 388C374 362 358 346 330 338C300 330 274 338 254 356C242 348 230 344 218 344Z" fill="#0C1720"/>
+  <path d="M266 494C282 502 298 506 316 506C334 506 350 502 364 494L400 636H200L266 494Z" fill="#F5F0EA"/>
+  <text x="42" y="566" fill="#E9F5EA" font-family="Arial, sans-serif" font-size="18" font-weight="700" letter-spacing="2">CANDIDATES</text>
+  <text x="42" y="622" fill="white" font-family="Georgia, serif" font-size="44" font-weight="700">Human-led growth,</text>
+  <text x="42" y="668" fill="white" font-family="Georgia, serif" font-size="44" font-weight="700">AI-guided direction.</text>
+  <defs>
+    <linearGradient id="paint0_linear" x1="280" y1="486" x2="280" y2="690" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#102028" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#102028" stop-opacity="0.86"/>
+    </linearGradient>
+  </defs>
+</svg>

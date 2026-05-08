@@ -1,0 +1,43 @@
+<svg width="900" height="980" viewBox="0 0 900 980" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="900" height="980" rx="48" fill="#0A141D"/>
+  <circle cx="180" cy="178" r="180" fill="url(#paint0_radial)" fill-opacity="0.9"/>
+  <circle cx="684" cy="254" r="210" fill="url(#paint1_radial)" fill-opacity="0.65"/>
+  <rect x="82" y="88" width="286" height="142" rx="28" fill="#F6F2EA"/>
+  <text x="116" y="140" fill="#6A756F" font-family="Arial, sans-serif" font-size="24" font-weight="700" letter-spacing="3">MATCH SCORE</text>
+  <text x="116" y="205" fill="#0B1720" font-family="Arial, sans-serif" font-size="68" font-weight="800">18%</text>
+  <text x="236" y="205" fill="#78837D" font-family="Arial, sans-serif" font-size="28" font-weight="600">vision</text>
+  <g opacity="0.92">
+    <path d="M52 630C190 536 290 746 424 662C558 578 612 356 876 434" stroke="#6BFFC1" stroke-opacity="0.45" stroke-width="6"/>
+    <path d="M30 692C168 598 268 808 402 724C536 640 590 418 854 496" stroke="#6BFFC1" stroke-opacity="0.78" stroke-width="6"/>
+    <path d="M10 756C148 662 248 872 382 788C516 704 570 482 834 560" stroke="#41D2FF" stroke-opacity="0.48" stroke-width="6"/>
+  </g>
+  <rect x="682" y="544" width="150" height="202" rx="28" fill="url(#paint2_linear)"/>
+  <text x="718" y="652" fill="#08210D" font-family="Arial, sans-serif" font-size="28" font-weight="700">Connected</text>
+  <text x="718" y="690" fill="#08210D" font-family="Arial, sans-serif" font-size="28" font-weight="700">intelligence</text>
+  <circle cx="758" cy="594" r="18" fill="#0B1720" fill-opacity="0.12"/>
+  <path d="M750 594H766" stroke="#0B1720" stroke-width="4" stroke-linecap="round"/>
+  <path d="M758 586V602" stroke="#0B1720" stroke-width="4" stroke-linecap="round"/>
+  <ellipse cx="486" cy="430" rx="126" ry="138" fill="#12222E"/>
+  <path d="M378 806C384 672 402 596 438 540C460 506 492 484 534 484C580 484 614 510 636 550C668 608 684 686 692 806H378Z" fill="#101D25"/>
+  <path d="M468 530C446 520 430 504 422 482C412 456 412 430 424 406C446 364 500 340 548 350C598 360 630 402 632 458C634 496 616 526 584 546L592 594C596 624 572 650 542 650H524C492 650 468 624 472 592L468 530Z" fill="#DCA986"/>
+  <path d="M432 420C444 324 526 278 600 314C662 344 676 430 644 482C636 458 620 444 594 436C558 426 530 434 510 454C494 438 474 430 450 430C444 430 438 430 432 420Z" fill="#0B1720"/>
+  <path d="M492 612C510 620 528 624 548 624C566 624 584 620 600 612L642 806H420L492 612Z" fill="#F5F0E8"/>
+  <path d="M504 644L472 806H420L492 612L504 644Z" fill="#E8DDD1"/>
+  <path d="M592 612L642 806H580L560 650L592 612Z" fill="#DCE9DF"/>
+  <rect x="400" y="700" width="290" height="62" rx="31" fill="#F6F2EA"/>
+  <text x="438" y="740" fill="#5E6963" font-family="Arial, sans-serif" font-size="24" font-weight="700" letter-spacing="2">HUMAN + AI CAREER FLOW</text>
+  <defs>
+    <radialGradient id="paint0_radial" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(180 178) rotate(90) scale(180)">
+      <stop stop-color="#47D23A"/>
+      <stop offset="1" stop-color="#47D23A" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="paint1_radial" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(684 254) rotate(90) scale(210)">
+      <stop stop-color="#5FD5FF"/>
+      <stop offset="1" stop-color="#5FD5FF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="paint2_linear" x1="757" y1="544" x2="757" y2="746" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1F9F21"/>
+      <stop offset="1" stop-color="#58E84C"/>
+    </linearGradient>
+  </defs>
+</svg>
