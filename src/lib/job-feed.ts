@@ -674,11 +674,27 @@ export async function syncJobFeed(options?: { trigger?: SyncTrigger }) {
       ...JSEARCH_STANDARD_QUERIES.map((query) => fetchJSearchIndeedJobs(query, nowIso)),
     ];
 
-    const sourceResults = await Promise.all([
+    const sourceSettled = await Promise.allSettled([
       ...adzunaRequests,
       ...joobleRequests,
       ...jsearchRequests,
     ]);
+
+    const sourceWarnings: string[] = [];
+    const sourceResults: NormalizedJob[][] = [];
+
+    for (const result of sourceSettled) {
+      if (result.status === "fulfilled") {
+        sourceResults.push(result.value);
+        continue;
+      }
+
+      const message =
+        result.reason instanceof Error
+          ? result.reason.message
+          : "Unknown provider failure";
+      sourceWarnings.push(message);
+    }
 
     for (const jobs of sourceResults) {
       for (const job of jobs) {
@@ -695,7 +711,10 @@ export async function syncJobFeed(options?: { trigger?: SyncTrigger }) {
         expired: 0,
         hardDeleted: 0,
         skipped: true,
-        reason: "No jobs were returned from any configured source, so existing listings were left unchanged.",
+        reason:
+          sourceWarnings.length > 0
+            ? `No jobs were returned from the configured sources. Provider issues: ${sourceWarnings.slice(0, 3).join(" | ")}`
+            : "No jobs were returned from any configured source, so existing listings were left unchanged.",
       } satisfies SyncCounters;
 
       if (supportsLifecycle) {
@@ -734,7 +753,7 @@ export async function syncJobFeed(options?: { trigger?: SyncTrigger }) {
           id: 1,
           last_synced_at: nowIso,
           last_sync_status: "success",
-          last_sync_message: `Imported ${result.imported}, refreshed ${result.refreshed}, expired ${result.expired}.`,
+          last_sync_message: `Imported ${result.imported}, refreshed ${result.refreshed}, expired ${result.expired}.${sourceWarnings.length ? ` Warnings: ${sourceWarnings.slice(0, 3).join(" | ")}` : ""}`,
           updated_at: nowIso,
         });
     }
@@ -745,11 +764,18 @@ export async function syncJobFeed(options?: { trigger?: SyncTrigger }) {
       refreshed: result.refreshed,
       expired: result.expired,
       hardDeleted: result.hardDeleted,
-      message: result.reason ?? `Imported ${result.imported}, refreshed ${result.refreshed}, expired ${result.expired}, deleted ${result.hardDeleted}.`,
+      message:
+        result.reason ??
+        `Imported ${result.imported}, refreshed ${result.refreshed}, expired ${result.expired}, deleted ${result.hardDeleted}.${sourceWarnings.length ? ` Warnings: ${sourceWarnings.slice(0, 3).join(" | ")}` : ""}`,
       supportsLifecycle,
     });
 
-    return result;
+    return {
+      ...result,
+      reason:
+        result.reason ??
+        (sourceWarnings.length ? `Completed with provider warnings: ${sourceWarnings.slice(0, 3).join(" | ")}` : undefined),
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown sync error";
     if (supportsLifecycle) {

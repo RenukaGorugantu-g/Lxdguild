@@ -76,7 +76,8 @@ export default function LandingPage() {
                 <div className="space-y-5">
                   <h1 className="marketing-title max-w-3xl text-[3.2rem] leading-[0.95] sm:text-[4.25rem]">
                     The first AI-powered{" "}
-                    <span className="italic text-[#169a20]">ecosystem</span> for L&amp;D professionals.
+                    <span className="mr-2 inline-block italic text-[#169a20] sm:mr-3">ecosystem</span>
+                    for L&amp;D professionals.
                   </h1>
                   <p className="marketing-copy max-w-2xl text-base leading-8">
                     Hiring, career growth, assessments, learning intelligence, and opportunity discovery all connected

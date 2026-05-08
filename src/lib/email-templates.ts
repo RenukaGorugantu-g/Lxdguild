@@ -527,15 +527,30 @@ function buildContent({
 
 function renderEmailHtml(content: TemplateContent) {
   const isUrgentHero = content.layoutVariant === "urgent";
-  const heroTitleTone = isUrgentHero ? "#f8fafc" : "#111827";
-  const heroBodyTone = isUrgentHero ? "#dbe7f3" : "#334155";
-  const heroKickerText = isUrgentHero ? "#f8fafc" : "#1f4d46";
-  const heroKickerBg = isUrgentHero ? "#18324b" : "#e6f4ef";
-  const heroKickerBorder = isUrgentHero ? "#2d4e73" : "#bfe2d5";
-  const heroNoteBg = isUrgentHero ? "#1f2937" : "#ffffff";
-  const heroNoteBorder = isUrgentHero ? "#31475f" : "#d7e3ea";
-  const heroSurfaceStart = isUrgentHero ? "#0f172a" : "#f8f4ed";
-  const heroSurfaceEnd = isUrgentHero ? "#19324b" : content.layoutVariant === "support" ? "#eef6fb" : "#eef7f1";
+  const heroTitleTone = "#f8fafc";
+  const heroBodyTone = "#dbe7f3";
+  const heroKickerText = "#f8fafc";
+  const heroKickerBg =
+    content.layoutVariant === "support"
+      ? "#134e4a"
+      : isUrgentHero
+        ? "#18324b"
+        : "#18462d";
+  const heroKickerBorder =
+    content.layoutVariant === "support"
+      ? "#1d7f76"
+      : isUrgentHero
+        ? "#2d4e73"
+        : "#2f7b47";
+  const heroNoteBg = "#1f2937";
+  const heroNoteBorder = "#31475f";
+  const heroSurfaceStart = "#0f172a";
+  const heroSurfaceEnd =
+    content.layoutVariant === "support"
+      ? "#15384d"
+      : isUrgentHero
+        ? "#19324b"
+        : "#10301e";
 
   const ctaBg =
     content.layoutVariant === "urgent"
