@@ -103,7 +103,7 @@ export default function AssessmentBadgeShare({
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-      <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,#0c1f44_0%,#091737_100%)] p-6 shadow-[0_28px_60px_rgba(9,23,55,0.24)]">
+      <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,#0c1f44_0%,#091737_100%)] p-5 shadow-[0_28px_60px_rgba(9,23,55,0.24)] sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#95e68f]">Share your milestone</p>
@@ -114,48 +114,46 @@ export default function AssessmentBadgeShare({
           </div>
         </div>
 
-        <div className="mt-6 overflow-hidden rounded-[1.7rem] border border-white/12 bg-[radial-gradient(circle_at_top_left,rgba(52,205,47,0.22),transparent_28%),linear-gradient(135deg,#f7f0e8_0%,#efe7db_100%)] p-5 text-[#091737]">
-          <div className="rounded-[1.45rem] border border-[#cfd8d4] bg-[#f9f5ef] p-5 shadow-[0_18px_34px_rgba(9,23,55,0.12)]">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.26em] text-[#5b6b78]">LXD Guild badge</p>
-                <h3 className="mt-3 text-[2rem] leading-none text-[#091737]">{badgeLabel}</h3>
-              </div>
-              <div
-                className="flex h-14 w-14 items-center justify-center rounded-[1.2rem] border text-sm font-bold"
-                style={{ backgroundColor: badgeTone.accentSoft, borderColor: badgeTone.ring, color: "#091737" }}
-              >
-                <Award className="h-6 w-6" />
-              </div>
+        <div className="mt-6 overflow-hidden rounded-[1.7rem] border border-white/12 bg-[radial-gradient(circle_at_top_left,rgba(52,205,47,0.22),transparent_28%),linear-gradient(135deg,#f7f0e8_0%,#efe7db_100%)] p-4 text-[#091737] sm:p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.26em] text-[#5b6b78]">LXD Guild badge</p>
+              <h3 className="mt-3 text-[1.7rem] leading-none text-[#091737] sm:text-[2rem]">{badgeLabel}</h3>
             </div>
-
-            <div className="mt-6 rounded-[1.25rem] border border-[#d8ddd7] bg-white px-4 py-4">
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#64748b]">Issued to</p>
-              <p className="mt-2 text-xl font-bold text-[#091737]">{candidateName}</p>
-              <p className="mt-1 text-sm font-medium text-[#3c4c58]">{targetRole}</p>
+            <div
+              className="flex h-12 w-12 items-center justify-center rounded-[1.1rem] border text-sm font-bold sm:h-14 sm:w-14"
+              style={{ backgroundColor: badgeTone.accentSoft, borderColor: badgeTone.ring, color: "#091737" }}
+            >
+              <Award className="h-5 w-5 sm:h-6 sm:w-6" />
             </div>
+          </div>
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              <MetricTile label="Track" value={designationBucket} />
-              <MetricTile label="Score" value={`${score}%`} />
-              <MetricTile label="Status" value={isPass ? "Verified" : "Completed"} />
-            </div>
+          <div className="mt-5 space-y-1">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#64748b]">Issued to</p>
+            <p className="text-xl font-bold text-[#091737]">{candidateName}</p>
+            <p className="text-sm font-medium text-[#3c4c58]">{targetRole}</p>
+          </div>
 
-            <div className="mt-5 flex items-center justify-between gap-4 rounded-[1.1rem] border border-[#d8ddd7] bg-[#f5f7f4] px-4 py-3">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#64748b]">Social ready</p>
-                <p className="mt-1 text-sm text-[#334155]">Download and post this badge on LinkedIn, X, or your portfolio.</p>
-              </div>
-              <Sparkles className="h-5 w-5 text-[#23b61f]" />
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <MetricTile label="Track" value={designationBucket} />
+            <MetricTile label="Score" value={`${score}%`} />
+            <MetricTile label="Status" value={isPass ? "Verified" : "Completed"} />
+          </div>
+
+          <div className="mt-5 flex items-start gap-3 border-t border-[#d8ddd7] pt-4">
+            <Sparkles className="mt-0.5 h-5 w-5 text-[#23b61f]" />
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#64748b]">Social ready</p>
+              <p className="mt-1 text-sm leading-6 text-[#334155]">Download and post this badge on LinkedIn, X, or your portfolio.</p>
             </div>
           </div>
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <button
             type="button"
             onClick={downloadBadge}
-            className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] px-5 py-3 text-sm font-bold text-[#091737] shadow-[0_18px_34px_rgba(52,205,47,0.24)] transition hover:translate-y-[-1px]"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] px-5 py-3 text-sm font-bold text-[#091737] shadow-[0_18px_34px_rgba(52,205,47,0.24)] transition hover:translate-y-[-1px] sm:w-auto"
           >
             <Download className="h-4 w-4" />
             Download badge
@@ -163,7 +161,7 @@ export default function AssessmentBadgeShare({
           <button
             type="button"
             onClick={copyShareText}
-            className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/6 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/14 bg-white/6 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 sm:w-auto"
           >
             <Copy className="h-4 w-4" />
             Copy share text
@@ -171,7 +169,7 @@ export default function AssessmentBadgeShare({
           <button
             type="button"
             onClick={nativeShare}
-            className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/6 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/14 bg-white/6 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 sm:w-auto"
           >
             <Share2 className="h-4 w-4" />
             Share
@@ -181,7 +179,7 @@ export default function AssessmentBadgeShare({
         {feedback ? <p className="mt-4 text-sm font-medium text-[#a8f0a2]">{feedback}</p> : null}
       </div>
 
-      <div className="rounded-[2rem] border border-[#dbe4d4] bg-[#f8f4ed] p-6 text-[#091737] shadow-[0_24px_54px_rgba(9,23,55,0.08)]">
+      <div className="rounded-[2rem] border border-[#dbe4d4] bg-[#f8f4ed] p-5 text-[#091737] shadow-[0_24px_54px_rgba(9,23,55,0.08)] sm:p-6">
         <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#1c9219]">Bring more people on board</p>
         <h2 className="mt-3 text-3xl text-[#091737]">Turn this result into momentum</h2>
         <p className="mt-4 text-sm leading-7 text-[#475569]">
@@ -210,7 +208,7 @@ export default function AssessmentBadgeShare({
           />
         </div>
 
-        <div className="mt-6 rounded-[1.5rem] border border-[#d8ddd7] bg-white px-4 py-4">
+        <div className="mt-6 border-t border-[#d8ddd7] px-0 pt-4">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#64748b]">Good next ideas for LXD Guild</p>
           <ul className="mt-3 space-y-2 text-sm leading-6 text-[#475569]">
             <li>Public verification pages for each earned badge.</li>

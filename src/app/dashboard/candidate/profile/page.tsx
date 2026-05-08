@@ -3,9 +3,7 @@ import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { loadProfile } from "@/lib/load-profile";
 import { redirect } from "next/navigation";
-import { Briefcase, FileText, Sparkles, UserCircle2 } from "lucide-react";
 import Link from "next/link";
-import type { ReactNode } from "react";
 import ProfileForm from "./ProfileForm";
 
 type CandidateProfileRecord = {
@@ -99,12 +97,12 @@ export default async function CandidateProfilePage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
-              <div className="marketing-soft-card p-5">
+              <div className="border-b border-[#dde7d8] pb-4">
                 <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Applications</p>
                 <p className="mt-3 text-4xl font-bold text-[#17a21c]">{applicationCount || 0}</p>
                 <p className="mt-3 text-sm text-[#647061]">Tracked from your candidate account.</p>
               </div>
-              <div className="marketing-soft-card p-5">
+              <div className="border-b border-[#dde7d8] pb-4">
                 <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Job Access</p>
                 <p className="mt-3 text-4xl font-bold text-[#111827]">
                   {access.isFreeAccessCandidate ? `${access.freeApplicationsRemaining}` : "Open"}
@@ -115,7 +113,7 @@ export default async function CandidateProfilePage() {
                     : "Verified candidate access is active."}
                 </p>
               </div>
-              <div className="marketing-soft-card p-5">
+              <div className="border-b border-[#dde7d8] pb-4">
                 <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Next Move</p>
                 <p className="mt-3 text-xl font-bold text-[#111827]">Keep your resume and skills current.</p>
                 <p className="mt-3 text-sm text-[#647061]">That gives employers a cleaner snapshot before they review your application.</p>
@@ -123,33 +121,13 @@ export default async function CandidateProfilePage() {
             </div>
           </section>
 
-          <section className="grid gap-5 md:grid-cols-3">
-            <InfoCard
-              icon={<UserCircle2 className="h-5 w-5" />}
-              title="Profile Basics"
-              copy="Keep your name, headline, and experience aligned to the roles you want."
-            />
-            <InfoCard
-              icon={<Sparkles className="h-5 w-5" />}
-              title="Skills Story"
-              copy="Turn your profile into a sharper signal for employers and matching logic."
-            />
-            <InfoCard
-              icon={<FileText className="h-5 w-5" />}
-              title="Resume Vault"
-              copy="Upload polished resumes so you can apply faster when a fit appears."
-            />
-          </section>
-
           <section className="space-y-6">
-            <div className="marketing-grid-card p-8">
-              <ProfileForm initialProfile={resolvedProfile} initialResumes={resumes || []} />
-            </div>
+            <ProfileForm initialProfile={resolvedProfile} initialResumes={resumes || []} />
 
             <div className="grid gap-4 md:grid-cols-2">
               <Link
                 href="/dashboard/jobs"
-                className="rounded-[1.6rem] border border-[#dde7d8] bg-white px-6 py-5 shadow-[0_16px_40px_rgba(87,108,67,0.08)] transition hover:-translate-y-0.5"
+                className="border-t border-[#dde7d8] px-0 py-5 transition hover:-translate-y-0.5"
               >
                 <h3 className="text-xl font-bold text-[#111827]">Job Marketplace</h3>
                 <p className="mt-2 text-sm text-[#7f8a7b]">
@@ -161,7 +139,7 @@ export default async function CandidateProfilePage() {
 
               <Link
                 href="/dashboard/candidate/applications"
-                className="rounded-[1.6rem] border border-[#dde7d8] bg-white px-6 py-5 shadow-[0_16px_40px_rgba(87,108,67,0.08)] transition hover:-translate-y-0.5"
+                className="border-t border-[#dde7d8] px-0 py-5 transition hover:-translate-y-0.5"
               >
                 <h3 className="text-xl font-bold text-[#111827]">My Applications</h3>
                 <p className="mt-2 text-sm text-[#7f8a7b]">Track your submissions and employer movement in one place.</p>
@@ -171,23 +149,5 @@ export default async function CandidateProfilePage() {
         </div>
       </div>
     </div>
-  );
-}
-
-function InfoCard({
-  icon,
-  title,
-  copy,
-}: {
-  icon: ReactNode;
-  title: string;
-  copy: string;
-}) {
-  return (
-    <article className="rounded-[1.9rem] border border-[#d8e6d3] bg-white p-7 shadow-[0_16px_40px_rgba(87,108,67,0.08)]">
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#138d1a] text-white">{icon}</div>
-      <h3 className="mt-8 text-2xl font-bold text-[#111827]">{title}</h3>
-      <p className="mt-3 text-base leading-7 text-[#647061]">{copy}</p>
-    </article>
   );
 }

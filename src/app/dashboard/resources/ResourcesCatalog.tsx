@@ -101,7 +101,7 @@ export default function ResourcesCatalog({ resources, hasMembership }: Resources
           </div>
           <div className="marketing-soft-card mt-4 p-4">
             <p className="text-sm font-semibold text-[#111827]">Library Progress</p>
-            <div className="mt-5 grid grid-cols-4 gap-3">
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[34, 52, 28, 68].map((height, index) => (
                 <div
                   key={index}
@@ -235,7 +235,7 @@ export default function ResourcesCatalog({ resources, hasMembership }: Resources
         <div className="grid gap-6 md:grid-cols-3">
           <div className="marketing-grid-card p-6">
             <p className="text-sm font-semibold text-[#111827]">Library health</p>
-            <div className="mt-5 grid grid-cols-4 gap-3">
+            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[34, 50, 42, 64].map((height, index) => (
                 <div key={index} className={`${index === 3 ? "bg-[#35d421]" : "bg-[#dff5d8]"} rounded-t-xl`} style={{ height: `${height}px` }} />
               ))}
@@ -404,7 +404,7 @@ function SideCard({
   copy: string;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-[1.9rem] border border-[#dde7d8] bg-white px-7 py-6 shadow-[0_16px_40px_rgba(87,108,67,0.08)]">
+    <div className="flex flex-col gap-4 rounded-[1.9rem] border border-[#dde7d8] bg-white px-6 py-6 shadow-[0_16px_40px_rgba(87,108,67,0.08)] sm:flex-row sm:items-center sm:justify-between sm:px-7">
       <div className="flex items-center gap-4">
         <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${accent}`}>{icon}</div>
         <div>
@@ -412,7 +412,7 @@ function SideCard({
           <p className="mt-1 text-sm text-[#7f8a7b]">{copy}</p>
         </div>
       </div>
-      <ChevronRight className="h-5 w-5 text-[#c2c8be]" />
+      <ChevronRight className="h-5 w-5 self-end text-[#c2c8be] sm:self-auto" />
     </div>
   );
 }

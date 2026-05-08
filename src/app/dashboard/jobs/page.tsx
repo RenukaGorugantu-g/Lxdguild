@@ -348,7 +348,7 @@ export default async function JobsDashboard({
               </div>
               <div className="marketing-soft-card mt-4 p-4">
                 <p className="text-sm font-semibold text-[#111827]">Marketplace Flow</p>
-                <div className="mt-5 grid grid-cols-5 gap-3">
+                <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-5">
                   {[34, 46, 28, 62, 44].map((height, index) => (
                     <div key={index} className={`${index === 3 ? "bg-[#35d421]" : "bg-[#dff5d8]"} rounded-t-xl`} style={{ height: `${height + 18}px` }} />
                   ))}
@@ -365,7 +365,7 @@ export default async function JobsDashboard({
             <div className="flex-1 space-y-4">
               {view !== "freelance" && freelanceJobs.length > 0 && (
                 <div className="marketing-grid-card p-5">
-                  <div className="flex items-center justify-between gap-4">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <div className="flex items-center gap-2 text-sm font-semibold text-[#111827]">
                         <BriefcaseBusiness className="h-4 w-4 text-[#23b61f]" />
@@ -395,26 +395,26 @@ export default async function JobsDashboard({
               )}
 
               {isFreeAccessCandidate && freeApplicationsRemaining > 0 && (
-                <div className="marketing-grid-card flex items-center justify-between gap-4 p-4 text-sm">
+                <div className="marketing-grid-card flex flex-col items-start gap-4 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2 text-emerald-900">
                     <BriefcaseBusiness className="h-4 w-4 text-emerald-700" />
                     You are on free marketplace access. {freeApplicationsUsed} used, {freeApplicationsRemaining} remaining.
                   </div>
-                  <Link href="/dashboard/candidate/profile" className="marketing-secondary whitespace-nowrap px-4 py-2 text-sm">
+                  <Link href="/dashboard/candidate/profile" className="marketing-secondary px-4 py-2 text-sm">
                     Strengthen Profile
                   </Link>
                 </div>
               )}
 
               {!canApplyToJobs && (
-                <div className="marketing-grid-card flex items-center justify-between gap-4 p-4 text-sm">
+                <div className="marketing-grid-card flex flex-col items-start gap-4 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2 text-amber-900">
                     <Lock className="h-4 w-4 text-amber-700" />
                     {lockReason || "Jobs are visible, but applying is locked. Complete the assessment to unlock applications."}
                   </div>
                   <Link
                     href={isFreeAccessCandidate ? "/dashboard/candidate/profile" : "/dashboard/candidate/exam"}
-                    className="marketing-primary whitespace-nowrap px-4 py-2 text-sm"
+                    className="marketing-primary px-4 py-2 text-sm"
                   >
                     {isFreeAccessCandidate ? "Verify to Continue" : "Write Assessment"}
                   </Link>
@@ -422,12 +422,12 @@ export default async function JobsDashboard({
               )}
 
               {(!jobsList || jobsList.length <= 3) && isAdminRole(profile?.role) && (
-                <div className="marketing-grid-card flex items-center justify-between gap-4 p-4 text-sm">
+                <div className="marketing-grid-card flex flex-col items-start gap-4 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2 text-[#335769]">
                     <RefreshCw className="h-4 w-4 text-[#23b61f]" />
                     Job board looks a bit empty. Want to sync fresh roles?
                   </div>
-                  <Link href="/api/jobs/import" className="marketing-primary whitespace-nowrap px-4 py-2 text-sm">
+                  <Link href="/api/jobs/import" className="marketing-primary px-4 py-2 text-sm">
                     Sync Now
                   </Link>
                 </div>
@@ -462,7 +462,7 @@ export default async function JobsDashboard({
                   <p className="text-sm text-[#6d7d68]">
                     Showing {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, totalJobs)} of {totalJobs} jobs
                   </p>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     {currentPage > 1 ? (
                       <Link href={buildJobsHref(currentPage - 1)} className="marketing-secondary gap-2">
                         <ChevronLeft className="h-4 w-4" />
@@ -516,6 +516,10 @@ function JobCard({
 }) {
   const expiryDate = job.expires_at ? new Date(job.expires_at).toLocaleDateString() : null;
   const freshnessDate = new Date(job.external_posted_at || job.imported_at || job.created_at || new Date().toISOString()).toLocaleDateString();
+  const mobilePreview = (job.description || "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
   return (
     <div className={`marketing-grid-card ${compact ? "p-4" : "p-6"} transition-shadow hover:shadow-[0_18px_36px_rgba(15,23,42,0.08)]`}>
@@ -553,14 +557,24 @@ function JobCard({
             )}
           </div>
           {!compact && (
-            <p
-              className="mt-2 text-sm leading-relaxed text-[#5b6757]"
-              dangerouslySetInnerHTML={{ __html: job.description || "" }}
-            />
+            <>
+              <p
+                className="mt-2 hidden text-sm leading-relaxed text-[#5b6757] md:block"
+                dangerouslySetInnerHTML={{ __html: job.description || "" }}
+              />
+              <div className="mt-2 md:hidden">
+                <p className="line-clamp-1 text-sm text-[#5b6757]">
+                  {mobilePreview || "Open the role to read the full description."}
+                </p>
+                <Link href={detailHref} className="mt-2 inline-flex text-xs font-semibold text-[#138d1a]">
+                  Read more
+                </Link>
+              </div>
+            </>
           )}
         </div>
 
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex flex-col items-start gap-2 md:items-end">
           <Link href={detailHref} className="marketing-secondary whitespace-nowrap">
             {canApplyToJobs ? "View Details" : "View Role"}
           </Link>

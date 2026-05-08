@@ -161,9 +161,9 @@ export default async function CandidateDashboard() {
               </p>
             </div>
 
-            <div className="marketing-panel p-5">
+            <div className="space-y-4 border-t border-[#dde7d8] pt-4">
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="marketing-soft-card p-4">
+                <div className="border-b border-[#dde7d8] pb-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Latest Score</p>
                   <p className="mt-3 text-4xl font-bold text-[#17a21c]">
                     {candidate?.latest_score ? `${candidate.latest_score}%` : "--"}
@@ -175,7 +175,7 @@ export default async function CandidateDashboard() {
                     />
                   </div>
                 </div>
-                <div className="marketing-soft-card p-4">
+                <div className="border-b border-[#dde7d8] pb-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Applications</p>
                   <p className="mt-3 text-4xl font-bold text-[#111827]">{recentApplications?.length ?? 0}</p>
                   <p className="mt-4 text-xs text-[#1da326]">
@@ -187,9 +187,9 @@ export default async function CandidateDashboard() {
                   </p>
                 </div>
               </div>
-              <div className="marketing-soft-card mt-4 p-4">
+              <div className="pt-1">
                 <p className="text-sm font-semibold text-[#111827]">Candidate Progress</p>
-                <div className="mt-5 grid grid-cols-4 gap-3">
+                <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {[34, 52, 28, 68].map((height, index) => (
                     <div
                       key={index}
@@ -252,10 +252,10 @@ export default async function CandidateDashboard() {
           </section>
 
           <section className="grid gap-6 lg:grid-cols-[1.15fr_0.55fr]">
-            <article className="marketing-grid-card p-8">
-              <div className="grid gap-8 md:grid-cols-[260px_1fr] md:items-start">
-                <div className="rounded-[1.8rem] bg-[#19324b] p-6 text-white shadow-[0_22px_44px_rgba(15,23,42,0.2)]">
-                  <div className="mx-auto flex h-40 w-full items-center justify-center rounded-[1.4rem] bg-[#224463]">
+            <article className="border-t border-[#dde7d8] pt-8">
+              <div className="grid gap-8 md:grid-cols-[220px_1fr] md:items-start">
+                <div className="rounded-[1.6rem] bg-[#19324b] p-5 text-white shadow-[0_16px_28px_rgba(15,23,42,0.14)]">
+                  <div className="mx-auto flex h-32 w-full items-center justify-center rounded-[1.2rem] bg-[#224463]">
                     <FileText className="h-16 w-16 text-[#b7ffd0]" />
                   </div>
                 </div>
@@ -333,7 +333,7 @@ export default async function CandidateDashboard() {
                 }
               />
 
-              <article className="rounded-[1.9rem] border border-[#dde7d8] bg-[radial-gradient(circle_at_top,rgba(181,231,157,0.25),transparent_50%),rgba(255,255,255,0.85)] p-7 shadow-[0_16px_40px_rgba(87,108,67,0.08)]">
+              <article className="border-t border-[#dde7d8] px-0 pt-6">
                 <h3 className="text-2xl font-bold text-[#111827]">Market Insight</h3>
                 <p className="mt-4 text-base leading-7 text-[#5b6757]">
                   {canViewJobBoard
@@ -387,7 +387,7 @@ function DashboardSideCard({
   return (
     <Link
       href={href}
-      className="flex items-center justify-between rounded-[1.9rem] border border-[#dde7d8] bg-white px-7 py-6 shadow-[0_16px_40px_rgba(87,108,67,0.08)] transition hover:-translate-y-0.5"
+      className="flex items-center justify-between border-t border-[#dde7d8] px-0 py-6 transition hover:-translate-y-0.5"
     >
       <div className="flex items-center gap-4">
         <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${accent}`}>{icon}</div>

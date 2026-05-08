@@ -572,7 +572,7 @@ export default async function JobDetailPage({
               </div>
 
               {isCandidateViewer ? (
-                <div className="flex flex-col gap-3 min-w-[200px]">
+                <div className="flex w-full flex-col gap-3 sm:min-w-[200px] sm:w-auto">
                   <ApplyButtonWithModal
                     job={job}
                     profile={profile}
@@ -596,7 +596,7 @@ export default async function JobDetailPage({
                   </p>
                 </div>
               ) : (
-                <div className="min-w-[220px] rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-4">
+                <div className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:min-w-[220px] sm:w-auto dark:border-zinc-800 dark:bg-zinc-900/50">
                   <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">Employer view</p>
                   <p className="text-xs mt-1 text-zinc-500">Application controls are available in the applicants list below.</p>
                 </div>

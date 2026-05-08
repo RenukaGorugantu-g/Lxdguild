@@ -95,6 +95,13 @@ type ExistingJobMatch = {
   title: string | null;
   company: string | null;
   location: string | null;
+  job_kind?: "standard" | "freelance" | null;
+};
+
+type ExistingJobIndex = {
+  bySourceId: Map<string, ExistingJobMatch[]>;
+  byNormalizedUrl: Map<string, ExistingJobMatch[]>;
+  byFingerprint: Map<string, ExistingJobMatch[]>;
 };
 
 async function startSyncRun(trigger: SyncTrigger) {
@@ -293,60 +300,85 @@ function pickPreferredJob(current: NormalizedJob | undefined, candidate: Normali
   return current;
 }
 
-async function findExistingJobsForMatch(job: NormalizedJob) {
-  const supabase = createAdminClient();
-  if (!supabase) return [] as ExistingJobMatch[];
+function appendToIndex(map: Map<string, ExistingJobMatch[]>, key: string, value: ExistingJobMatch) {
+  if (!key) return;
+  const existing = map.get(key);
+  if (existing) {
+    existing.push(value);
+    return;
+  }
+  map.set(key, [value]);
+}
 
+async function preloadExistingJobIndex() {
+  const supabase = createAdminClient();
+  if (!supabase) {
+    return {
+      rows: [] as ExistingJobMatch[],
+      index: {
+        bySourceId: new Map<string, ExistingJobMatch[]>(),
+        byNormalizedUrl: new Map<string, ExistingJobMatch[]>(),
+        byFingerprint: new Map<string, ExistingJobMatch[]>(),
+      } satisfies ExistingJobIndex,
+    };
+  }
+
+  const { data } = await supabase
+    .from("jobs")
+    .select("id, source, source_job_id, apply_url, title, company, location, job_kind")
+    .neq("source", "employer")
+    .limit(50000);
+
+  const rows = (data || []) as ExistingJobMatch[];
+  const index: ExistingJobIndex = {
+    bySourceId: new Map<string, ExistingJobMatch[]>(),
+    byNormalizedUrl: new Map<string, ExistingJobMatch[]>(),
+    byFingerprint: new Map<string, ExistingJobMatch[]>(),
+  };
+
+  for (const row of rows) {
+    if (row.source && row.source_job_id) {
+      appendToIndex(index.bySourceId, `${row.source}::${row.source_job_id}`, row);
+    }
+
+    const normalizedUrl = normalizeApplyUrl(row.apply_url);
+    if (normalizedUrl) {
+      appendToIndex(index.byNormalizedUrl, normalizedUrl, row);
+    }
+
+    appendToIndex(
+      index.byFingerprint,
+      buildJobFingerprint({
+        title: row.title || "",
+        company: row.company || "",
+        location: row.location || "",
+        job_kind: row.job_kind || "standard",
+      }),
+      row
+    );
+  }
+
+  return { rows, index };
+}
+
+function findExistingJobsForMatch(job: NormalizedJob, index: ExistingJobIndex) {
   const matches = new Map<string, ExistingJobMatch>();
-  const exactFingerprint = buildJobFingerprint(job);
 
   if (job.source_job_id) {
-    const { data } = await supabase
-      .from("jobs")
-      .select("id, source, source_job_id, apply_url, title, company, location")
-      .eq("source", job.source)
-      .eq("source_job_id", job.source_job_id)
-      .limit(10);
-
-    for (const row of data || []) {
-      matches.set(row.id, row as ExistingJobMatch);
+    for (const row of index.bySourceId.get(`${job.source}::${job.source_job_id}`) || []) {
+      matches.set(row.id, row);
     }
   }
 
   const normalizedUrl = normalizeApplyUrl(job.apply_url);
   if (normalizedUrl) {
-    const { data } = await supabase
-      .from("jobs")
-      .select("id, source, source_job_id, apply_url, title, company, location")
-      .eq("apply_url", job.apply_url)
-      .limit(10);
-
-    for (const row of data || []) {
-      matches.set(row.id, row as ExistingJobMatch);
+    for (const row of index.byNormalizedUrl.get(normalizedUrl) || []) {
+      matches.set(row.id, row);
     }
   }
 
-  const { data: titleCompanyMatches } = await supabase
-    .from("jobs")
-    .select("id, source, source_job_id, apply_url, title, company, location")
-    .eq("title", job.title)
-    .eq("company", job.company)
-    .eq("job_kind", job.job_kind)
-    .neq("source", "employer")
-    .limit(25);
-
-  for (const row of titleCompanyMatches || []) {
-    const typedRow = row as ExistingJobMatch;
-    const rowFingerprint = buildJobFingerprint({
-      title: typedRow.title || "",
-      company: typedRow.company || "",
-      location: typedRow.location || "",
-      job_kind: job.job_kind,
-    });
-
-    if (rowFingerprint === exactFingerprint) {
-      matches.set(typedRow.id, typedRow);
-    }
+  for (const row of index.byFingerprint.get(buildJobFingerprint(job)) || []) {
+    matches.set(row.id, row);
   }
 
   return [...matches.values()];
@@ -798,11 +830,13 @@ async function upsertLegacyJobs(collected: Map<string, NormalizedJob>): Promise<
     return { imported: 0, refreshed: 0, expired: 0, hardDeleted: 0, skipped: true, reason: "Missing service role credentials." };
   }
 
+  const { index } = await preloadExistingJobIndex();
+
   let imported = 0;
   let refreshed = 0;
 
   for (const job of collected.values()) {
-    const matches = await findExistingJobsForMatch(job);
+    const matches = findExistingJobsForMatch(job, index);
     const [primaryMatch] = matches;
 
     const payload = {
@@ -852,11 +886,13 @@ async function upsertLifecycleJobs(collected: Map<string, NormalizedJob>, nowIso
     return { imported: 0, refreshed: 0, expired: 0, hardDeleted: 0, skipped: true, reason: "Missing service role credentials." };
   }
 
+  const { index } = await preloadExistingJobIndex();
+
   let imported = 0;
   let refreshed = 0;
 
   for (const job of collected.values()) {
-    const matches = await findExistingJobsForMatch(job);
+    const matches = findExistingJobsForMatch(job, index);
     const [primaryMatch] = matches;
 
     if (primaryMatch?.id) {
@@ -875,7 +911,6 @@ async function upsertLifecycleJobs(collected: Map<string, NormalizedJob>, nowIso
           search_keyword: job.search_keyword,
           external_posted_at: job.external_posted_at,
           last_seen_at: job.last_seen_at,
-          imported_at: job.imported_at,
           expires_at: job.expires_at,
           is_active: true,
           job_kind: job.job_kind,

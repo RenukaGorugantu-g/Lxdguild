@@ -919,13 +919,13 @@ export default function ProfileForm({
               {(resumeSkillSuggestions || resumeOptimization || coverLetterDraft || careerPathPredictions) ? (
                 <div className="space-y-5">
                   {(resumeSkillSuggestions || resumeOptimization) ? (
-                    <div className="rounded-[1.8rem] border border-[#dbe6d7] bg-[linear-gradient(135deg,#f6fbf3,#ffffff)] p-5">
+                    <div className="px-1 py-2">
                       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                         <div>
                           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d7d68]">Current readiness</p>
                           <h3 className="mt-1 text-lg font-bold text-[#111827]">See the baseline before you rewrite anything.</h3>
                         </div>
-                        <div className="mt-4 space-y-4">
+                        <div className="mt-4 w-full max-w-xl space-y-4">
                           {[
                             {
                               label: "Current score",
@@ -1337,8 +1337,8 @@ export default function ProfileForm({
               ) : null}
 
               {coverLetterDraft ? (
-                <div className="space-y-4 rounded-[1.8rem] border border-[#dbe6d7] bg-[linear-gradient(135deg,#f8fcf5,#ffffff_68%)] p-5 shadow-[0_16px_34px_rgba(87,108,67,0.06)]">
-                  <div className="flex items-start gap-3 border-b border-[#e4ece0] pb-4">
+                <div className="space-y-5 px-1 py-2">
+                  <div className="flex items-start gap-3 pb-1">
                     <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#edf8ea,#ffffff)] text-[#138d1a] shadow-[0_10px_22px_rgba(87,108,67,0.1)]">
                       <Mail className="h-5 w-5" />
                     </div>
@@ -1349,15 +1349,15 @@ export default function ProfileForm({
                     </div>
                   </div>
 
-                  <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
-                    <div className="rounded-2xl border border-[#e4ebdf] bg-white p-4">
+                  <div className="grid gap-5 xl:grid-cols-[240px_minmax(0,1fr)]">
+                    <div className="space-y-2">
                       <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Subject</p>
-                      <p className="mt-2 text-sm font-semibold text-zinc-800">{coverLetterDraft.subject}</p>
+                      <p className="text-sm font-semibold leading-6 text-zinc-800">{coverLetterDraft.subject}</p>
                     </div>
 
-                    <div className="rounded-2xl border border-[#e4ebdf] bg-white p-4">
+                    <div className="space-y-3 border-l-0 border-[#e4ebdf] pl-0 xl:border-l xl:pl-5">
                       <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Draft preview</p>
-                      <div className="mt-3 space-y-3 text-sm leading-7 text-zinc-700">
+                      <div className="space-y-3 text-sm leading-7 text-zinc-700">
                         <p>{coverLetterDraft.intro}</p>
                         {coverLetterDraft.body.map((paragraph) => (
                           <p key={paragraph}>{paragraph}</p>
@@ -1367,7 +1367,7 @@ export default function ProfileForm({
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between gap-3 rounded-2xl border border-[#dbe6d7] bg-[#fbfdf8] px-4 py-3">
+                  <div className="flex flex-col gap-3 border-t border-[#e4ece0] pt-4 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6d7d68]">
                       Generated via {coverLetterDraft.source === "ai" ? "AI draft engine" : "smart template engine"}
                     </p>
@@ -1388,7 +1388,7 @@ export default function ProfileForm({
                         setCopiedCoverLetter(true);
                         window.setTimeout(() => setCopiedCoverLetter(false), 1800);
                       }}
-                      className="rounded-xl border border-[#dbe4d5] bg-white px-3 py-2 text-xs font-semibold text-[#138d1a] hover:bg-[#f4f7f1]"
+                      className="w-full rounded-xl border border-[#dbe4d5] bg-white px-3 py-2 text-xs font-semibold text-[#138d1a] hover:bg-[#f4f7f1] sm:w-auto"
                     >
                       {copiedCoverLetter ? "Copied" : "Copy cover letter"}
                     </button>

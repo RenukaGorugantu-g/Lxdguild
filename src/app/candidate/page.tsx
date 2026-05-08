@@ -1,16 +1,88 @@
+import Image from "next/image";
 import Link from "next/link";
-import {
-  ArrowRight,
-  BadgeCheck,
-  BookOpen,
-  BriefcaseBusiness,
-  FileText,
-  Sparkles,
-  Target,
-  Trophy,
-} from "lucide-react";
+import { ArrowRight, BadgeCheck, BookOpen, BriefcaseBusiness, Sparkles, Target } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getBaseRole } from "@/lib/profile-role";
+
+const journeySteps = [
+  {
+    step: "01",
+    title: "Profile creation",
+    copy: "Build your verified identity with designation, resume, and proof of capability.",
+  },
+  {
+    step: "02",
+    title: "AI diagnosis",
+    copy: "Turn your resume and profile into clear signals, strengths, and improvement areas.",
+  },
+  {
+    step: "03",
+    title: "Validation",
+    copy: "Use assessments and scorecards to create stronger proof for recruiters and hiring teams.",
+  },
+  {
+    step: "04",
+    title: "Precision placement",
+    copy: "Move toward stronger-fit roles with ATS insight, readiness support, and better targeting.",
+  },
+] as const;
+
+const expertiseTiles = [
+  { title: "Live scorecards", value: "94%", width: "94%", kind: "score" },
+  { title: "Designation-based tracks", value: "12", width: "76%", kind: "track" },
+  { title: "Resume optimizer", value: "+18%", width: "82%", kind: "lift" },
+  { title: "Opportunity matching", value: "42", width: "88%", kind: "match" },
+] as const;
+
+const uspPoints = [
+  {
+    eyebrow: "Resume analyzer",
+    title: "See how strong your resume really is.",
+    copy:
+      "Upload a resume and get a readiness score, ATS-facing signals, clearer strengths, and the exact areas you should improve next.",
+    stats: [
+      ["Resume score", "93%"],
+      ["ATS readiness", "88%"],
+    ],
+  },
+  {
+    eyebrow: "Skill-gap engine",
+    title: "Know what to strengthen before you apply.",
+    copy:
+      "We detect visible skills, missing signals, and the next capabilities that would improve how employers and ATS systems read your profile.",
+    stats: [
+      ["Detected skills", "21"],
+      ["Focus areas", "4"],
+    ],
+  },
+  {
+    eyebrow: "Resume optimizer",
+    title: "Turn weak positioning into cleaner ATS fit.",
+    copy:
+      "Generate stronger summary language, better bullet points, cleaner skills sections, and formatting that is easier for employers to scan.",
+    stats: [
+      ["Projected lift", "+18%"],
+      ["Cleaner bullets", "Ready"],
+    ],
+  },
+  {
+    eyebrow: "Career path predictor",
+    title: "Map the most realistic next move.",
+    copy:
+      "Use your resume and current skills to predict adjacent L&D roles, the skill gaps behind them, and the timeline to get there.",
+    stats: [
+      ["Next paths", "2-3"],
+      ["Timeline", "0-6 mo"],
+    ],
+  },
+] as const;
+
+const actionEngine = [
+  "ATS score and match context",
+  "Resume rewrite suggestions",
+  "Cover letter generation",
+  "Academy course recommendations",
+] as const;
 
 export default async function CandidateLandingPage() {
   const supabase = await createClient();
@@ -31,247 +103,322 @@ export default async function CandidateLandingPage() {
   const primaryHref = isSignedInCandidate ? "/dashboard/candidate" : "/register?role=candidate";
   const secondaryHref = isSignedInCandidate ? "/dashboard/candidate/exam" : "/membership";
 
-  const features = [
-    {
-      title: "Assessment-backed credibility",
-      copy: "Stand out with validated capability instead of competing on generic resumes alone.",
-      icon: BadgeCheck,
-      accent: "bg-[#e9fde2] text-[#15911b]",
-    },
-    {
-      title: "Stronger profile readiness",
-      copy: "Move from raw profile setup to clearer positioning, richer proof, and better-fit opportunities.",
-      icon: FileText,
-      accent: "bg-[#f3f4ff] text-[#7281d0]",
-    },
-    {
-      title: "Career momentum",
-      copy: "Keep exam, scorecard, course suggestions, and premium support connected in one flow.",
-      icon: Trophy,
-      accent: "bg-[#ffe9ee] text-[#cc5c82]",
-    },
-  ];
-
   return (
     <div className="marketing-page">
-      <main className="pt-32">
-        <section className="marketing-section pb-16">
+      <main className="pt-22 sm:pt-24">
+        <section className="marketing-section pb-14 pt-3">
           <div className="marketing-container">
-            <div className="grid items-center gap-12 lg:grid-cols-[0.95fr_1.05fr]">
+            <div className="grid items-center gap-10 lg:grid-cols-[1.02fr_0.98fr]">
               <div className="space-y-6">
-                <div className="marketing-kicker">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  {isSignedInCandidate ? "Candidate Home" : "Validation Track"}
+                <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#7a8773]">
+                  Candidate career system
                 </div>
-                <h1 className="marketing-title max-w-xl text-5xl sm:text-6xl">
+                <h1 className="marketing-title max-w-2xl text-[3.2rem] leading-[0.96] sm:text-[4.3rem]">
                   {isSignedInCandidate
-                    ? `Welcome back${profileName ? `, ${profileName}` : ""}. Keep your career momentum moving.`
-                    : "Get verified, build confidence, and unlock stronger-fit opportunities."}
+                    ? `Your AI-powered career growth platform${profileName ? `, ${profileName}` : ""}.`
+                    : "Your AI-powered career growth platform for L&D."}
                 </h1>
-                <p className="marketing-copy max-w-xl text-base leading-8">
-                  {isSignedInCandidate
-                    ? "Return to your candidate home for exam progress, score insights, profile readiness, and next-step support."
-                    : "Move through registration, assessment, recommendations, and profile growth in one cleaner candidate journey."}
+                <p className="marketing-copy max-w-2xl text-base leading-8">
+                  Understand how hiring teams see you, validate your strengths, improve your resume, and move toward
+                  better-fit opportunities with one connected candidate ecosystem.
                 </p>
+                <div className="flex flex-wrap gap-3 text-sm">
+                  <span className="rounded-full border border-[#dbe6d6] bg-white/90 px-4 py-2 text-[#51604d] shadow-[0_10px_24px_rgba(87,108,67,0.06)]">
+                    Resume analyzer
+                  </span>
+                  <span className="rounded-full border border-[#dbe6d6] bg-white/90 px-4 py-2 text-[#51604d] shadow-[0_10px_24px_rgba(87,108,67,0.06)]">
+                    ATS insights
+                  </span>
+                  <span className="rounded-full border border-[#dbe6d6] bg-white/90 px-4 py-2 text-[#51604d] shadow-[0_10px_24px_rgba(87,108,67,0.06)]">
+                    Career path prediction
+                  </span>
+                </div>
                 <div className="flex flex-col gap-4 sm:flex-row">
-                  <Link href={primaryHref} className="marketing-primary">
-                    {isSignedInCandidate ? "Open Candidate Dashboard" : "Start as Candidate"}
+                  <Link href={primaryHref} className="marketing-primary rounded-full px-6">
+                    {isSignedInCandidate ? "Open candidate hub" : "Start as candidate"}
                     <ArrowRight className="h-4 w-4" />
                   </Link>
-                  <Link href={secondaryHref} className="marketing-secondary">
-                    {isSignedInCandidate ? "Continue Assessment" : "Explore Membership"}
+                  <Link href={secondaryHref} className="marketing-secondary rounded-full px-6">
+                    {isSignedInCandidate ? "Continue assessment" : "Explore premium support"}
                   </Link>
                 </div>
               </div>
 
-              <div className="marketing-panel p-5">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="marketing-soft-card p-4">
-                    <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Validation Phase</p>
-                    <p className="mt-3 text-4xl font-bold text-[#17a21c]">Skill Test</p>
-                    <div className="mt-3 h-1.5 rounded-full bg-[#e2ecd8]">
-                      <div className="h-1.5 w-[74%] rounded-full bg-[#23b61f]" />
+              <div className="relative overflow-hidden rounded-[2rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbf1_100%)] p-4 shadow-[0_24px_60px_rgba(87,108,67,0.08)]">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(52,205,47,0.08),transparent_28%)]" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(95,213,255,0.06),transparent_24%)]" />
+                <div className="absolute inset-0">
+                  <Image
+                    src="/landing-candidate-human.png"
+                    alt="Candidate using AI-powered career tools"
+                    fill
+                    sizes="(max-width: 1024px) 100vw, 620px"
+                    className="object-cover object-[center_20%] opacity-[0.1]"
+                    priority
+                  />
+                </div>
+                <div className="relative">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Candidate insight layer</p>
+                    <h2 className="mt-3 max-w-lg text-2xl font-semibold leading-tight text-[#111827]">
+                      Know how hiring teams see your resume before you apply.
+                    </h2>
+
+                    <div className="mt-10 rounded-[1.5rem] border border-[#dfe9d8] bg-[rgba(255,255,255,0.9)] p-4 backdrop-blur-md">
+                      <div className="grid gap-4 sm:grid-cols-[0.72fr_1.28fr]">
+                        <div>
+                          <div className="rounded-[1.25rem] bg-white px-4 py-4 shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7a8674]">Career score</p>
+                            <p className="mt-2 text-4xl font-semibold text-[#111827]">94</p>
+                            <p className="mt-4 text-sm font-semibold text-[#17931b]">Strong match trend</p>
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#7c8875]">Signal map</p>
+                          <div className="mt-3 space-y-3">
+                            {[
+                              ["ATS readiness", "88%"],
+                              ["Resume clarity", "84%"],
+                              ["Role fit", "91%"],
+                            ].map(([label, value]) => (
+                              <div key={label}>
+                                <div className="mb-1 flex items-center justify-between text-[11px] text-[#5e6a59]">
+                                  <span>{label}</span>
+                                  <span>{value}</span>
+                                </div>
+                                <div className="h-2 rounded-full bg-[#e3ecd9]">
+                                  <div
+                                    className="h-2 rounded-full bg-[linear-gradient(90deg,#63db52,#17931b)]"
+                                    style={{ width: value }}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="marketing-soft-card p-4">
-                    <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Estimated Time</p>
-                    <p className="mt-3 text-4xl font-bold text-[#111827]">45 Min</p>
-                    <p className="mt-4 text-xs text-[#1da326]">Personalized by designation</p>
-                  </div>
                 </div>
-                <div className="marketing-soft-card mt-4 p-4">
-                  <p className="text-sm font-semibold text-[#111827]">Candidate Journey Flow</p>
-                  <div className="mt-5 grid grid-cols-4 gap-3">
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-[#121514] px-6 py-14 text-white">
+          <div className="marketing-container">
+            <div className="text-center">
+              <h2 className="text-3xl font-semibold text-white sm:text-4xl">The journey to career mastery</h2>
+            </div>
+            <div className="mt-10 grid gap-8 lg:grid-cols-4">
+              {journeySteps.map((step, index) => (
+                <article key={step.step} className="relative text-center">
+                  {index < journeySteps.length - 1 ? (
+                    <div className="absolute left-[calc(100%-0.5rem)] top-5 hidden h-px w-14 border-t border-dashed border-white/16 lg:block" />
+                  ) : null}
+                  <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white text-[11px] font-bold uppercase tracking-[0.2em] text-[#111827]">
+                    {step.step}
+                  </div>
+                  <h3 className={`mt-5 text-xl font-semibold ${index === journeySteps.length - 1 ? "text-[#5dec61]" : "text-white"}`}>
+                    {step.title}
+                  </h3>
+                  <p className="mt-3 text-sm leading-7 text-white/64">{step.copy}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="marketing-section pb-16 pt-16">
+          <div className="marketing-container">
+            <div className="max-w-3xl">
+              <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#7b8775]">Why candidates choose LXD Guild</p>
+              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">
+                More than a profile builder. It is a candidate action engine.
+              </h2>
+              <p className="mt-4 max-w-2xl text-base leading-8 text-[#5b6757]">
+                Instead of only storing your information, the platform actively diagnoses your resume, scores readiness,
+                suggests what to improve, and turns that insight into clearer next actions.
+              </p>
+            </div>
+
+            <div className="mt-10 grid gap-6 lg:grid-cols-2">
+              {uspPoints.slice(0, 2).map((point, index) => (
+                <article
+                  key={point.title}
+                  className={`overflow-hidden rounded-[2rem] border p-6 shadow-[0_20px_50px_rgba(87,108,67,0.08)] ${
+                    index % 2 === 0
+                      ? "border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f6faef_100%)]"
+                      : "border-[#132019] bg-[#101713] text-white"
+                  }`}
+                >
+                  <p
+                    className={`text-[10px] font-bold uppercase tracking-[0.22em] ${
+                      index % 2 === 0 ? "text-[#7b8775]" : "text-[#9ee7a9]"
+                    }`}
+                  >
+                    {point.eyebrow}
+                  </p>
+                  <h3 className={`mt-3 text-3xl font-semibold leading-tight ${index % 2 === 0 ? "text-[#111827]" : "text-white"}`}>
+                    {point.title}
+                  </h3>
+                  <p className={`mt-4 text-sm leading-7 ${index % 2 === 0 ? "text-[#5b6757]" : "text-white/72"}`}>{point.copy}</p>
+                  <div className="mt-6 grid grid-cols-2 gap-3">
+                    {point.stats.map(([label, value]) => (
+                      <div
+                        key={label}
+                        className={`rounded-[1.35rem] px-4 py-4 ${
+                          index % 2 === 0 ? "bg-white shadow-[0_10px_24px_rgba(87,108,67,0.06)]" : "bg-white/6"
+                        }`}
+                      >
+                        <p className={`text-[10px] font-bold uppercase tracking-[0.18em] ${index % 2 === 0 ? "text-[#7b8775]" : "text-white/55"}`}>
+                          {label}
+                        </p>
+                        <p className={`mt-2 text-2xl font-semibold ${index % 2 === 0 ? "text-[#16921d]" : "text-[#6af06a]"}`}>{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="marketing-section pb-16 pt-16">
+          <div className="marketing-container rounded-[2rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f6faef_100%)] p-7 shadow-[0_20px_50px_rgba(87,108,67,0.08)]">
+            <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Candidate insight system</p>
+                <h2 className="mt-3 text-4xl font-semibold text-[#111827]">See where your career can go next.</h2>
+                <p className="mt-4 max-w-2xl text-sm leading-7 text-[#5f6b5a]">
+                  Use assessments, AI analysis, and role-fit signals to understand what you should improve, what roles are
+                  realistic next, and how to move toward better-fit opportunities with stronger positioning.
+                </p>
+                <div className="mt-7 grid gap-3 sm:grid-cols-2">
+                  {[
+                    "Role-fit guidance",
+                    "Career path prediction",
+                    "Opportunity matching",
+                    "Stronger applications",
+                  ].map((item) => (
+                    <div key={item} className="rounded-[1.3rem] border border-[#e1eadb] bg-white px-4 py-4 text-sm font-medium text-[#30402d] shadow-[0_10px_24px_rgba(87,108,67,0.06)]">
+                      {item}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-[1.7rem] bg-[#101713] p-6 text-white">
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#a7efad]">Placement intelligence</p>
+                <div className="mt-5 space-y-4">
+                  {[
+                    ["See where you stand", "Understand ATS fit, missing signals, and clearer next actions."],
+                    ["Build stronger proof", "Use scorecards, resume optimization, and guided support."],
+                    ["Move with precision", "Apply with better targeting instead of guesswork."],
+                  ].map(([title, copy]) => (
+                    <div key={title} className="rounded-[1.3rem] border border-white/10 bg-white/6 px-4 py-4">
+                      <p className="font-semibold text-white">{title}</p>
+                      <p className="mt-1 text-sm leading-6 text-white/70">{copy}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="marketing-section pb-16">
+          <div className="marketing-container">
+            <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+              <article className="relative overflow-hidden rounded-[2rem] border border-[#112019] bg-[#0f1712] p-7 text-white shadow-[0_24px_60px_rgba(15,23,42,0.16)]">
+                <Image
+                  src="/landing-candidate-human.png"
+                  alt="Candidate AI upgrade workflow"
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 520px"
+                  className="object-cover object-center opacity-25"
+                />
+                <div className="relative">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#a7efad]">USP stack</p>
+                  <h3 className="mt-3 text-3xl font-semibold leading-tight">Resume intelligence that turns into action.</h3>
+                  <div className="mt-8 space-y-4">
                     {[
-                      { label: "Register", height: 36 },
-                      { label: "Assess", height: 58 },
-                      { label: "Improve", height: 46 },
-                      { label: "Apply", height: 68 },
-                    ].map((step, index) => (
-                      <div key={step.label} className="space-y-2">
-                        <div
-                          className={`${index === 3 ? "bg-[#35d421]" : "bg-[#dff5d8]"} rounded-t-xl`}
-                          style={{ height: `${step.height}px` }}
-                        />
-                        <p className="text-[11px] font-semibold text-[#62705f]">{step.label}</p>
+                      ["Analyze resume", "Score strengths, missing signals, ATS readiness."],
+                      ["Fix the resume", "Rewrite bullets, summary, and skills section."],
+                      ["Generate support", "Create cover letters and learning suggestions."],
+                    ].map(([title, copy]) => (
+                      <div key={title} className="rounded-[1.3rem] border border-white/10 bg-white/6 px-4 py-4 backdrop-blur-sm">
+                        <p className="font-semibold text-white">{title}</p>
+                        <p className="mt-1 text-sm leading-6 text-white/70">{copy}</p>
                       </div>
                     ))}
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </section>
+              </article>
 
-        <section className="marketing-section pb-14">
-          <div className="marketing-container grid gap-6 md:grid-cols-3">
-            {features.map((feature) => (
-              <article key={feature.title} className="marketing-grid-card p-7">
-                <div className={`mb-5 flex h-12 w-12 items-center justify-center rounded-2xl ${feature.accent}`}>
-                  <feature.icon className="h-5 w-5" />
-                </div>
-                <h2 className="text-2xl font-bold text-[#111827]">{feature.title}</h2>
-                <p className="mt-3 text-sm leading-7 text-[#5b6757]">{feature.copy}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="marketing-section pb-16">
-          <div className="marketing-container">
-            <div className="mb-8 text-center">
-              <h2 className="marketing-title text-4xl">Experience the fluid flow</h2>
-            </div>
-            <div className="grid gap-6 lg:grid-cols-3">
-              <article className="marketing-grid-card p-6">
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#eafde2] text-[#15911b]">
-                    <BadgeCheck className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-[#111827]">Verified Track</p>
-                    <p className="text-xs text-[#5b6757]">Registration to assessment</p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2 text-[11px] font-semibold text-[#647061]">
-                  <span className="rounded-full bg-[#eff8ea] px-3 py-1">Register</span>
-                  <span className="rounded-full bg-[#eff8ea] px-3 py-1">Designation</span>
-                  <span className="rounded-full bg-[#eff8ea] px-3 py-1">Validation</span>
-                </div>
-                <div className="mt-5 flex gap-2">
-                  <button className="rounded-xl bg-[#34d11f] px-4 py-2 text-sm font-semibold text-white">Start</button>
-                  <button className="rounded-xl border border-[#d7dfd0] px-4 py-2 text-sm font-semibold text-[#111827]">
-                    Prepare
-                  </button>
-                </div>
-              </article>
-              <article className="marketing-grid-card p-6">
-                <div className="mb-4 flex items-center justify-between">
-                  <p className="font-semibold text-[#111827]">Scorecard View</p>
-                  <Target className="h-4 w-4 text-[#15911b]" />
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <div className="mb-2 flex items-center justify-between text-xs text-[#5b6757]">
-                      <span>Readiness</span>
-                      <span>84%</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-[#e4eddc]">
-                      <div className="h-2 w-[84%] rounded-full bg-[#34d11f]" />
-                    </div>
-                  </div>
-                  <div>
-                    <div className="mb-2 flex items-center justify-between text-xs text-[#5b6757]">
-                      <span>Profile Strength</span>
-                      <span>76%</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-[#e4eddc]">
-                      <div className="h-2 w-[76%] rounded-full bg-[#b8d8b0]" />
-                    </div>
-                  </div>
-                </div>
-              </article>
-              <article className="marketing-grid-card p-6">
-                <div className="mb-4 flex items-center justify-between">
-                  <p className="font-semibold text-[#111827]">Next Actions</p>
-                  <BriefcaseBusiness className="h-4 w-4 text-[#cc5c82]" />
-                </div>
-                <div className="space-y-3 text-sm text-[#5b6757]">
-                  <p>Assessment unlocks score-driven recommendations.</p>
-                  <p>Course suggestions align to designation and performance tier.</p>
-                  <p>Premium membership adds deeper support without changing your candidate role.</p>
-                </div>
-              </article>
-            </div>
-          </div>
-        </section>
-
-        <section className="marketing-section pb-16">
-          <div className="marketing-container">
-            <div className="mb-8">
-              <h2 className="marketing-title text-4xl">Everything you need to move forward</h2>
-              <p className="marketing-copy mt-3 max-w-2xl text-sm">
-                A focused candidate platform for immediate clarity, prioritizing validation, readiness, and stronger-fit
-                visibility.
-              </p>
-            </div>
-            <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-              <article className="marketing-grid-card p-8">
-                <h3 className="text-3xl font-bold text-[#111827]">Role-first candidate experience</h3>
+              <article className="overflow-hidden rounded-[2rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f5faef_100%)] p-7 shadow-[0_20px_50px_rgba(87,108,67,0.08)]">
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">From insight to execution</p>
+                <h2 className="mt-3 text-4xl font-semibold text-[#111827]">One candidate workflow, multiple upgrade layers.</h2>
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-[#5b6757]">
-                  The core path starts with your designation and assessment, then turns score signals into profile guidance,
-                  course suggestions, and better next steps.
+                  Your profile does not stop at a score. Once the system reads your resume, it can immediately help you
+                  rewrite it, generate a cover letter, suggest LXD Guild academy directions, and predict the next role you
+                  can realistically grow into.
                 </p>
-                <div className="mt-8 flex flex-wrap gap-3 text-sm">
-                  <span className="rounded-full border border-[#dbe3d5] px-4 py-2 text-[#557057]">Assessment Routing</span>
-                  <span className="rounded-full border border-[#dbe3d5] px-4 py-2 text-[#557057]">Course Suggestions</span>
-                  <span className="rounded-full border border-[#dbe3d5] px-4 py-2 text-[#557057]">Profile Readiness</span>
+                <div className="mt-7 grid gap-3 sm:grid-cols-2">
+                  {actionEngine.map((item) => (
+                    <div key={item} className="rounded-[1.35rem] border border-[#e1eadb] bg-white px-4 py-4 text-sm font-medium text-[#30402d] shadow-[0_10px_24px_rgba(87,108,67,0.06)]">
+                      {item}
+                    </div>
+                  ))}
                 </div>
-              </article>
-              <article className="rounded-[2rem] bg-[#32d61f] p-8 text-white shadow-[0_20px_50px_rgba(31,157,39,0.18)]">
-                <BookOpen className="h-6 w-6" />
-                <h3 className="mt-8 text-3xl font-bold">Membership fits on top, not instead.</h3>
-                <p className="mt-4 text-sm leading-7 text-white/88">
-                  Add premium templates, guided resources, and stronger prep support while keeping the same candidate identity.
-                </p>
-              </article>
-            </div>
-            <div className="mt-6 grid gap-6 md:grid-cols-2">
-              <article className="marketing-grid-card p-8 text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
-                  <Target className="h-6 w-6 text-[#111827]" />
-                </div>
-                <h3 className="mt-5 text-2xl font-bold text-[#111827]">Score-led recommendations</h3>
-                <p className="mt-3 text-sm leading-7 text-[#5b6757]">
-                  Recommendations are matched to designation, set, and performance percentage.
-                </p>
-              </article>
-              <article className="marketing-grid-card p-8">
-                <p className="text-sm font-semibold text-[#111827]">Verified opportunity flow</p>
-                <p className="mt-3 text-sm leading-7 text-[#5b6757]">
-                  Build a more complete career path with better proof, cleaner positioning, and premium readiness resources.
-                </p>
-                <Link href={primaryHref} className="mt-5 inline-flex text-sm font-semibold text-[#15911b]">
-                  {isSignedInCandidate ? "Open candidate workspace" : "Explore candidate path"}
-                </Link>
               </article>
             </div>
           </div>
         </section>
 
         <section className="marketing-section pb-20">
-          <div className="marketing-container rounded-[2.25rem] bg-[radial-gradient(circle_at_top,rgba(137,222,119,0.18),transparent_40%),rgba(255,255,255,0.56)] px-8 py-14 text-center">
-            <h2 className="marketing-title text-5xl">Ready to validate your next move?</h2>
-            <p className="marketing-copy mx-auto mt-4 max-w-2xl text-sm">
-              Start with your candidate flow, then add membership only when you want deeper support around the same journey.
-            </p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link href={primaryHref} className="marketing-primary">
-                {isSignedInCandidate ? "Open Candidate Hub" : "Create Candidate Account"}
-              </Link>
-              <Link href="/membership" className="marketing-secondary">
-                View Membership
-              </Link>
+          <div className="marketing-container overflow-hidden rounded-[2.3rem] bg-[linear-gradient(135deg,#32d61f_0%,#22b91f_100%)] px-8 py-10 shadow-[0_24px_60px_rgba(31,157,39,0.2)]">
+            <div className="grid items-center gap-8 lg:grid-cols-[0.92fr_1.08fr]">
+              <div className="text-[#07131f]">
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#0a3b11]">Expertise engine</p>
+                <h2 className="mt-3 text-5xl font-semibold leading-[0.95]">Validate your expertise</h2>
+                <p className="mt-4 max-w-xl text-sm leading-7 text-[#0d3414]">
+                  Start with your candidate flow, strengthen your proof, and unlock better guidance for career growth
+                  and opportunity placement.
+                </p>
+                <Link
+                  href={primaryHref}
+                  className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#0f1611] px-6 py-3 text-sm font-semibold text-white"
+                >
+                  Take assessment
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                {expertiseTiles.map((tile, index) => (
+                  <div
+                    key={tile.title}
+                    className={`rounded-[1.5rem] p-5 shadow-[0_16px_34px_rgba(7,19,31,0.08)] ${
+                      index % 2 === 0 ? "bg-[#7ef06c]/95 text-[#08210e]" : "bg-[#55d84b]/92 text-[#08210e]"
+                    }`}
+                  >
+                    <div className="mb-5 flex h-10 w-10 items-center justify-center rounded-2xl bg-white/30">
+                      {tile.kind === "score" ? <BookOpen className="h-4 w-4" /> : null}
+                      {tile.kind === "track" ? <BadgeCheck className="h-4 w-4" /> : null}
+                      {tile.kind === "lift" ? <Target className="h-4 w-4" /> : null}
+                      {tile.kind === "match" ? <BriefcaseBusiness className="h-4 w-4" /> : null}
+                    </div>
+                    <p className="text-sm font-medium text-[#123019]">{tile.title}</p>
+                    <p className="mt-3 text-3xl font-semibold">{tile.value}</p>
+                    <div className="mt-4 h-2 rounded-full bg-black/10">
+                      <div
+                        className="h-2 rounded-full bg-[#0f1611] shadow-[0_0_18px_rgba(15,22,17,0.16)] animate-pulse"
+                        style={{ width: tile.width }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </section>

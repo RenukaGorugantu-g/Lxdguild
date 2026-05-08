@@ -120,7 +120,7 @@ export default async function EmployerDashboard() {
             )}
           </div>
           {showEmployerUpgrade ? (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-white dark:bg-surface-dark border p-3 rounded-xl shadow-sm">
+            <div className="flex flex-col gap-3 border-t border-white/14 pt-4 sm:flex-row sm:items-center">
               <div className="text-sm text-zinc-900 dark:text-white">
                 <p className="font-semibold text-zinc-900 dark:text-white">Free Plan</p>
                 <p className="text-zinc-600 dark:text-zinc-300">You can post jobs, but candidate access is limited.</p>
@@ -155,7 +155,7 @@ export default async function EmployerDashboard() {
         )}
 
         <div className="grid gap-6 lg:grid-cols-3">
-          <div className="premium-card-light p-6">
+          <div className="border-t border-[#dde7d8] px-0 py-6">
             <div className="flex items-center gap-3">
               <Building2 className="h-5 w-5 text-[#138d1a]" />
               <h2 className="text-lg font-semibold text-[#111827]">Employer Profile</h2>
@@ -172,7 +172,7 @@ export default async function EmployerDashboard() {
             </Link>
           </div>
 
-          <div className="premium-card-light p-6">
+          <div className="border-t border-[#dde7d8] px-0 py-6">
             <div className="flex items-center gap-3">
               <Mail className="h-5 w-5 text-[#138d1a]" />
               <h2 className="text-lg font-semibold text-[#111827]">Pricing & Support</h2>
@@ -185,7 +185,7 @@ export default async function EmployerDashboard() {
             </Link>
           </div>
 
-          <div className="premium-card-light p-6">
+          <div className="border-t border-[#dde7d8] px-0 py-6">
             <div className="flex items-center gap-3">
               <PenSquare className="h-5 w-5 text-[#138d1a]" />
               <h2 className="text-lg font-semibold text-[#111827]">Post Faster</h2>
@@ -201,7 +201,7 @@ export default async function EmployerDashboard() {
 
         <PostedJobsSection initialJobs={(postedJobs || []) as PostedJobRow[]} />
 
-        <div className="premium-card p-6">
+        <div className="border-t border-white/14 pt-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h2 className="text-xl font-semibold text-white">Tools & Resources Membership</h2>

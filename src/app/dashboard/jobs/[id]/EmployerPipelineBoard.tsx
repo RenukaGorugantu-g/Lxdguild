@@ -301,7 +301,7 @@ export default function EmployerPipelineBoard({
                       <p className="mt-1 text-sm leading-6 text-[#5f6876]">{applicant.headline}</p>
                     </div>
 
-                    <div className="min-w-[220px]">
+                    <div className="w-full sm:min-w-[220px] sm:max-w-[260px]">
                       <div className="mb-2 flex items-center justify-between gap-3">
                         <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7b8794]">ATS score</p>
                         <span className="rounded-xl bg-[#475569] px-2.5 py-1 text-xs font-semibold text-white [color:#fff] [-webkit-text-fill-color:#fff]">

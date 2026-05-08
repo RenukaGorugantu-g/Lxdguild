@@ -16,9 +16,11 @@ import {
 import {
   BadgeCheck,
   Bell,
+  BookOpen,
   Building2,
   Briefcase,
   ChevronDown,
+  Home,
   LayoutDashboard,
   Lock,
   LogOut,
@@ -81,8 +83,10 @@ export default function Header() {
   const [notifications, setNotifications] = useState<HeaderNotification[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isOfferMenuOpen, setIsOfferMenuOpen] = useState(false);
   const notificationCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userMenuCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const offerMenuCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pathname = usePathname();
   const [supabase] = useState(() => createClient());
 
@@ -193,6 +197,7 @@ export default function Header() {
     return () => {
       if (notificationCloseTimerRef.current) clearTimeout(notificationCloseTimerRef.current);
       if (userMenuCloseTimerRef.current) clearTimeout(userMenuCloseTimerRef.current);
+      if (offerMenuCloseTimerRef.current) clearTimeout(offerMenuCloseTimerRef.current);
     };
   }, []);
 
@@ -211,6 +216,16 @@ export default function Header() {
   const roleLabel = getRoleDisplayLabel(profile);
   const baseRole = getBaseRole(profile);
   const brandHref = baseRole === "candidate" ? "/candidate" : baseRole === "employer" ? "/employer" : "/";
+  const dashboardHref = user ? "/dashboard" : "/login";
+  const jobBoardHref = user && (isCandidate || isVerifiedMVP || canViewJobBoard) ? "/dashboard/jobs" : "/dashboard/jobs";
+  const resourcesHref = user ? "/dashboard/resources" : "/membership";
+  const profileHref = user
+    ? isEmployer
+      ? "/dashboard/employer/profile"
+      : isCandidate || isVerifiedMVP
+        ? "/dashboard/candidate/profile"
+        : "/dashboard"
+    : "/membership";
   const isPublicMarketingRoute =
     !user &&
     (pathname === "/" ||
@@ -220,15 +235,15 @@ export default function Header() {
       pathname === "/login" ||
       pathname === "/register");
 
+  const offerLinks: NavLink[] = [
+    { href: "/candidate", label: "For Candidates" },
+    { href: "/employer", label: "For Employers" },
+    { href: "/membership", label: "Membership" },
+  ];
+
   const primaryLinks: NavLink[] = [
     { href: "/membership", label: "Membership" },
     { href: "/contact", label: "Contact" },
-    { href: "https://lxdguild.com", label: "Community", external: true },
-    { href: "https://lxdguildacademy.com", label: "Academy", external: true },
-    ...(isCandidate || isVerifiedMVP || canViewJobBoard
-      ? [{ href: "/dashboard/jobs", label: "Marketplace", locked: !canApplyToJobs }]
-      : []),
-    { href: user ? "/dashboard/resources" : "/candidate", label: "Resources" },
   ];
 
   const dashboardLinks = user
@@ -269,91 +284,94 @@ export default function Header() {
     }
   };
 
+  const scheduleCloseOfferMenu = () => {
+    if (offerMenuCloseTimerRef.current) clearTimeout(offerMenuCloseTimerRef.current);
+    offerMenuCloseTimerRef.current = setTimeout(() => setIsOfferMenuOpen(false), 180);
+  };
+
+  const cancelCloseOfferMenu = () => {
+    if (offerMenuCloseTimerRef.current) {
+      clearTimeout(offerMenuCloseTimerRef.current);
+      offerMenuCloseTimerRef.current = null;
+    }
+  };
+
   return (
     <header
-      className={`fixed left-0 right-0 top-0 z-50 transition-all duration-300 ${
-        isPublicMarketingRoute
-          ? isScrolled
-            ? "border-b border-[#dfe8d8] bg-[#f9fcf3]/92 backdrop-blur-2xl"
-            : "bg-[#f9fcf3]"
-          : isScrolled
-            ? "border-b border-white/10 bg-[var(--bg-dark)]/92 backdrop-blur-2xl"
-            : "bg-[var(--bg-dark)]"
+      className={`fixed inset-x-0 top-0 z-[70] transition-all duration-300 ${
+        isScrolled ? "bg-[#f9fcf3]/75 backdrop-blur-[12px]" : "bg-transparent"
       }`}
     >
       <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
         <div
-          className={`flex min-h-16 items-center justify-between rounded-[28px] px-4 sm:px-5 ${
-            isPublicMarketingRoute
-              ? "border border-[#dfe8d8] bg-white/86 shadow-[0_18px_45px_rgba(94,119,74,0.08)]"
-              : "border border-white/10 bg-[linear-gradient(180deg,rgba(9,23,55,0.96),rgba(9,23,55,0.88))] shadow-[0_24px_80px_rgba(3,10,26,0.45)]"
-          }`}
+          className="flex min-h-16 items-center justify-between rounded-[30px] border border-[#dfe8d8] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,250,240,0.94))] px-4 shadow-[0_18px_45px_rgba(94,119,74,0.10)] sm:px-5"
         >
           <Link href={brandHref} className="group flex items-center" aria-label="LXD Guild home">
             <img src={BRAND_LOGO_URL} alt="LXD Guild" className="h-11 w-auto sm:h-12" />
           </Link>
 
           <nav className="hidden items-center gap-2 lg:flex">
-            {primaryLinks.map((link) =>
-              link.external ? (
-                <a
-                  key={`${link.label}-${link.href}`}
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
-                    isPublicMarketingRoute
-                      ? "text-[#5e6c5a] hover:bg-[#eef5e5] hover:text-[#111827]"
-                      : "text-[#cde3e1] hover:bg-white/8 hover:text-white"
-                  }`}
+            <div className="relative" onMouseEnter={cancelCloseOfferMenu} onMouseLeave={scheduleCloseOfferMenu}>
+              <button
+                onClick={() => setIsOfferMenuOpen((open) => !open)}
+                className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold text-[#5e6c5a] transition-all hover:bg-[#eef5e5] hover:text-[#111827]"
+              >
+                What we offer
+                <ChevronDown className={`h-4 w-4 transition-transform ${isOfferMenuOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {isOfferMenuOpen && (
+                <div
+                  className="absolute left-0 top-full mt-3 w-72 overflow-hidden rounded-[26px] border border-[#dfe8d8] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,251,240,0.92))] shadow-[0_24px_80px_rgba(94,119,74,0.12)]"
                 >
-                  {link.label}
-                </a>
-              ) : (
-                <Link
-                  key={`${link.label}-${link.href}`}
-                  href={link.href}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
-                    pathname === link.href || pathname.startsWith(link.href + "/")
-                      ? isPublicMarketingRoute
-                        ? "bg-[#ebf7e3] text-[#138d1a]"
-                        : "bg-white/14 text-white"
-                      : isPublicMarketingRoute
-                        ? "text-[#5e6c5a] hover:bg-[#eef5e5] hover:text-[#111827]"
-                        : "text-[#cde3e1] hover:bg-white/8 hover:text-white"
-                  }`}
-                >
-                  <span className="inline-flex items-center gap-2">
-                    {link.label}
-                    {link.locked ? <Lock className="h-3.5 w-3.5 text-[#80ef7a]" /> : null}
-                  </span>
-                </Link>
-              )
-            )}
+                  <div className="border-b border-[#e6eedf] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.22em] text-[#6d7d68]">
+                    What we offer
+                  </div>
+                  <div className="space-y-1 p-2">
+                    {offerLinks.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={() => setIsOfferMenuOpen(false)}
+                        className="block rounded-2xl px-3 py-3 text-sm font-semibold text-[#1f2937] transition-colors hover:bg-[#eef5e5]"
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {primaryLinks.map((link) => (
+              <Link
+                key={`${link.label}-${link.href}`}
+                href={link.href}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+                  pathname === link.href || pathname.startsWith(link.href + "/")
+                    ? "bg-[#ebf7e3] text-[#138d1a]"
+                    : "text-[#5e6c5a] hover:bg-[#eef5e5] hover:text-[#111827]"
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
             {!user && (
-              <div className="hidden items-center gap-2 sm:flex">
+              <div className="hidden items-center gap-2 lg:flex">
                 <Link
                   href="/login"
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${
-                    isPublicMarketingRoute
-                      ? "text-[#111827] hover:bg-[#eef5e5]"
-                      : "text-[#cde3e1] hover:bg-white/8 hover:text-white"
-                  }`}
+                  className="rounded-full px-4 py-2 text-sm font-semibold text-[#111827] transition-all hover:bg-[#eef5e5]"
                 >
                   Sign In
                 </Link>
                 <Link
                   href="/register"
-                  className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-all hover:translate-y-[-1px] ${
-                    isPublicMarketingRoute
-                      ? "bg-[linear-gradient(135deg,#118118,#2aa82b)] text-white shadow-[0_16px_32px_rgba(24,124,29,0.18)]"
-                      : "bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] text-[#091737] shadow-[0_18px_40px_rgba(52,205,47,0.24)]"
-                  }`}
+                  className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#118118,#2aa82b)] px-5 py-2.5 text-sm font-bold text-white transition-all hover:translate-y-[-1px] shadow-[0_16px_32px_rgba(24,124,29,0.18)]"
                 >
-                  <Sparkles className="h-4 w-4" /> Get Started
+                  <Sparkles className="h-4 w-4" /> Join Us
                 </Link>
               </div>
             )}
@@ -362,25 +380,25 @@ export default function Header() {
               <div className="relative" onMouseEnter={cancelCloseNotifications} onMouseLeave={scheduleCloseNotifications}>
                 <button
                   onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                  className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/8 text-white/82 transition-all hover:bg-white/12"
+                  className="relative hidden h-11 w-11 items-center justify-center rounded-full border border-[#dfe8d8] bg-white text-[#475467] transition-all hover:bg-[#eef5e5] hover:text-[#111827] lg:inline-flex"
                 >
                   <Bell className="h-5 w-5" />
                   {unreadNotifications > 0 && (
-                    <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[#34cd2f] ring-2 ring-[#091737]" />
+                    <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[#34cd2f] ring-2 ring-white" />
                   )}
                 </button>
 
                 {isNotificationsOpen && (
-                  <div className="absolute right-0 top-full mt-3 w-80 overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(9,23,55,0.98),rgba(16,33,72,0.92))] shadow-[0_24px_80px_rgba(3,10,26,0.45)] backdrop-blur-2xl">
-                    <div className="border-b border-white/10 px-4 py-3 text-sm font-semibold text-white">Notifications</div>
+                  <div className="absolute right-0 top-full mt-3 w-80 overflow-hidden rounded-[24px] border border-[#dfe8d8] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,251,240,0.96))] shadow-[0_24px_80px_rgba(94,119,74,0.14)]">
+                    <div className="border-b border-[#e6eedf] px-4 py-3 text-sm font-semibold text-[#111827]">Notifications</div>
                     <div className="max-h-72 overflow-y-auto">
                       {notifications.length === 0 ? (
-                        <div className="p-4 text-sm text-[#cde3e1]/72">No notifications yet.</div>
+                        <div className="p-4 text-sm text-[#667085]">No notifications yet.</div>
                       ) : (
                         notifications.map((notification) => (
-                          <div key={notification.id} className="border-b border-white/6 bg-white/[0.04] p-3">
-                            <p className="text-sm font-semibold text-white">{notification.title}</p>
-                            <p className="mt-1 text-xs text-[#cde3e1]/72">{notification.message}</p>
+                          <div key={notification.id} className="border-b border-[#eef3ea] bg-white/60 p-3">
+                            <p className="text-sm font-semibold text-[#111827]">{notification.title}</p>
+                            <p className="mt-1 text-xs text-[#667085]">{notification.message}</p>
                           </div>
                         ))
                       )}
@@ -394,23 +412,23 @@ export default function Header() {
               <div className="relative" onMouseEnter={cancelCloseUserMenu} onMouseLeave={scheduleCloseUserMenu}>
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-2 rounded-full border border-white/10 bg-white/8 px-2.5 py-1.5 transition-all hover:bg-white/12"
+                  className="flex items-center gap-2 rounded-full border border-[#dfe8d8] bg-white px-2.5 py-1.5 transition-all hover:bg-[#eef5e5]"
                 >
                   <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] text-xs font-bold text-[#091737]">
                     {profile?.name?.[0]?.toUpperCase() || "U"}
                   </div>
                   <div className="hidden pr-1 text-left sm:block">
-                    <p className="text-xs font-bold leading-tight text-white">{profile?.name || "User"}</p>
-                    <p className="text-[10px] leading-tight text-[#cde3e1]/72">{isVerifiedMVP ? "MVP Verified" : roleLabel}</p>
+                    <p className="text-xs font-bold leading-tight text-[#111827]">{profile?.name || "User"}</p>
+                    <p className="text-[10px] leading-tight text-[#667085]">{isVerifiedMVP ? "MVP Verified" : roleLabel}</p>
                   </div>
-                  <ChevronDown className={`h-3.5 w-3.5 text-white/55 transition-transform ${isUserMenuOpen ? "rotate-180" : ""}`} />
+                  <ChevronDown className={`h-3.5 w-3.5 text-[#667085] transition-transform ${isUserMenuOpen ? "rotate-180" : ""}`} />
                 </button>
 
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 top-full mt-3 w-60 overflow-hidden rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(9,23,55,0.98),rgba(16,33,72,0.92))] shadow-[0_24px_80px_rgba(3,10,26,0.45)] backdrop-blur-2xl">
+                  <div className="absolute right-0 top-full mt-3 w-60 overflow-hidden rounded-[24px] border border-[#dfe8d8] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,251,240,0.96))] shadow-[0_24px_80px_rgba(94,119,74,0.14)]">
                     {isVerifiedMVP && (
-                      <div className="border-b border-white/10 bg-[linear-gradient(135deg,rgba(52,205,47,0.18),rgba(95,213,255,0.08))] px-4 py-3">
-                        <div className="flex items-center gap-2 text-xs font-bold text-white">
+                      <div className="border-b border-[#e6eedf] bg-[linear-gradient(135deg,rgba(52,205,47,0.12),rgba(95,213,255,0.05))] px-4 py-3">
+                        <div className="flex items-center gap-2 text-xs font-bold text-[#111827]">
                           <BadgeCheck className="h-4 w-4 text-[#34cd2f]" /> MVP Verified Candidate
                         </div>
                       </div>
@@ -421,25 +439,25 @@ export default function Header() {
                           key={link.href}
                           href={link.href}
                           onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm text-[#cde3e1] transition-colors hover:bg-white/8 hover:text-white"
+                          className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm text-[#1f2937] transition-colors hover:bg-[#eef5e5]"
                         >
-                          <link.icon className="h-4 w-4 text-[#34cd2f]" /> {link.label}
+                          <link.icon className="h-4 w-4 text-[#15911b]" /> {link.label}
                         </Link>
                       ))}
                       {isEmployer && profile?.role === "employer_free" && (
                         <Link
                           href="/dashboard/employer/upgrade"
                           onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm text-[#cde3e1] transition-colors hover:bg-white/8 hover:text-white"
+                          className="flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm text-[#1f2937] transition-colors hover:bg-[#eef5e5]"
                         >
-                          <Settings className="h-4 w-4 text-[#34cd2f]" /> Upgrade Plan
+                          <Settings className="h-4 w-4 text-[#15911b]" /> Upgrade Plan
                         </Link>
                       )}
                     </div>
-                    <div className="border-t border-white/10 p-2">
+                    <div className="border-t border-[#e6eedf] p-2">
                       <button
                         onClick={handleSignOut}
-                        className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm text-rose-300 transition-colors hover:bg-rose-500/10 hover:text-rose-200"
+                        className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm text-rose-700 transition-colors hover:bg-rose-50"
                       >
                         <LogOut className="h-4 w-4" /> Sign Out
                       </button>
@@ -449,60 +467,130 @@ export default function Header() {
               </div>
             ) : null}
 
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className={`inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors lg:hidden ${
-                isPublicMarketingRoute
-                  ? "border border-[#dfe8d8] bg-white text-[#111827] hover:bg-[#eef5e5]"
-                  : "border border-white/10 bg-white/8 text-white/82 hover:bg-white/12"
-              }`}
-            >
-              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
+            <div className="lg:hidden">
+              {!user ? (
+                <Link
+                  href="/register"
+                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold transition-all ${
+                    isPublicMarketingRoute
+                      ? "bg-[linear-gradient(135deg,#118118,#2aa82b)] text-white shadow-[0_16px_32px_rgba(24,124,29,0.18)]"
+                      : "bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] text-[#091737] shadow-[0_18px_40px_rgba(52,205,47,0.24)]"
+                  }`}
+                >
+                  <Sparkles className="h-4 w-4" /> Join Us
+                </Link>
+              ) : (
+                <button
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#dfe8d8] bg-white text-[#111827] transition-colors hover:bg-[#eef5e5]"
+                  aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+                >
+                  {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
+      <div className="fixed inset-x-0 bottom-0 z-[72] mx-auto max-w-7xl px-4 pb-[calc(env(safe-area-inset-bottom)+0.7rem)] sm:px-6 lg:hidden">
+        <div
+          className={`grid grid-cols-5 gap-2 rounded-[26px] border px-2 py-2 shadow-[0_18px_45px_rgba(94,119,74,0.12)] backdrop-blur-[20px] ${
+            isPublicMarketingRoute
+              ? "border-[#dfe8d8] bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(244,250,240,0.92))]"
+              : "border-[#dbe6d7] bg-[linear-gradient(180deg,rgba(251,253,248,0.96),rgba(239,247,235,0.94))]"
+          }`}
+        >
+          <Link
+            href={brandHref}
+            className="flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold text-[#1f2937]"
+          >
+            <Home className="h-4 w-4" />
+            <span>Home</span>
+          </Link>
+          <Link
+            href={jobBoardHref}
+            className="flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold text-[#1f2937]"
+          >
+            <Briefcase className="h-4 w-4" />
+            <span>Jobs</span>
+          </Link>
+          <Link
+            href={profileHref}
+            className="flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold text-[#1f2937]"
+          >
+            <User className="h-4 w-4" />
+            <span>Profile</span>
+          </Link>
+          <Link
+            href={resourcesHref}
+            className="flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold text-[#1f2937]"
+          >
+            <BookOpen className="h-4 w-4" />
+            <span>Resources</span>
+          </Link>
+          <Link
+            href={dashboardHref}
+            className="flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold text-[#1f2937]"
+          >
+            <LayoutDashboard className="h-4 w-4" />
+            <span>Dashboard</span>
+          </Link>
+        </div>
+      </div>
+
       {isMobileMenuOpen && (
-        <div className="mx-auto mt-3 max-w-7xl px-4 sm:px-6 lg:hidden">
-          <div className="space-y-1 rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(9,23,55,0.98),rgba(16,33,72,0.94))] px-3 py-3 shadow-[0_24px_80px_rgba(3,10,26,0.45)] backdrop-blur-2xl">
-            {primaryLinks.map((link) =>
-              link.external ? (
-                <a
-                  key={`${link.label}-${link.href}`}
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center rounded-2xl px-3 py-3 text-sm font-semibold text-[#cde3e1] transition-colors hover:bg-white/6 hover:text-white"
-                >
-                  <span className="inline-flex items-center gap-2">
-                    {link.label}
-                    {link.locked ? <Lock className="h-3.5 w-3.5 text-[#80ef7a]" /> : null}
-                  </span>
-                </a>
-              ) : (
-                <Link
-                  key={`${link.label}-${link.href}`}
-                  href={link.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center rounded-2xl px-3 py-3 text-sm font-semibold text-[#cde3e1] transition-colors hover:bg-white/6 hover:text-white"
-                >
-                  <span className="inline-flex items-center gap-2">
-                    {link.label}
-                    {link.locked ? <Lock className="h-3.5 w-3.5 text-[#80ef7a]" /> : null}
-                  </span>
-                </Link>
-              )
-            )}
+        <div className="fixed inset-x-0 bottom-[5.9rem] z-[71] mx-auto max-w-7xl px-4 sm:px-6 lg:hidden">
+          <div className="space-y-1 rounded-[30px] border border-[#dbe6d7] bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(243,249,239,0.96))] px-3 py-3 shadow-[0_24px_80px_rgba(94,119,74,0.16)] backdrop-blur-[22px]">
+            <div className="flex items-center justify-between px-3 pb-1 pt-2">
+              <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#6d7d68]">
+                More options
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#dfe8d8] bg-white text-[#475467]"
+                aria-label="Close menu"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="px-3 pb-1 pt-1 text-[11px] font-bold uppercase tracking-[0.22em] text-[#6d7d68]">
+              What we offer
+            </div>
+            {offerLinks.map((link) => (
+              <Link
+                key={`${link.label}-${link.href}`}
+                href={link.href}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center rounded-2xl px-3 py-3 text-sm font-semibold text-[#1f2937] transition-colors hover:bg-[#eef5e5]"
+              >
+                {link.label}
+              </Link>
+            ))}
+
+            <div className="my-2 h-px bg-[#e4ece0]" />
+            {primaryLinks.map((link) => (
+              <Link
+                key={`${link.label}-${link.href}`}
+                href={link.href}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center rounded-2xl px-3 py-3 text-sm font-semibold text-[#1f2937] transition-colors hover:bg-[#eef5e5]"
+              >
+                <span className="inline-flex items-center gap-2">
+                  {link.label}
+                  {link.locked ? <Lock className="h-3.5 w-3.5 text-[#80ef7a]" /> : null}
+                </span>
+              </Link>
+            ))}
 
             {!user && (
               <>
-                <div className="my-2 h-px bg-white/10" />
+                <div className="my-2 h-px bg-[#e4ece0]" />
                 <Link
                   href="/login"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center rounded-2xl px-3 py-3 text-sm font-semibold text-[#cde3e1] transition-colors hover:bg-white/6 hover:text-white"
+                  className="flex items-center rounded-2xl px-3 py-3 text-sm font-semibold text-[#1f2937] transition-colors hover:bg-[#eef5e5]"
                 >
                   Sign In
                 </Link>
@@ -518,29 +606,19 @@ export default function Header() {
 
             {user && (
               <>
-                <div className="my-2 h-px bg-white/10" />
-                {dashboardLinks.map((link) => (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm text-[#cde3e1] transition-colors hover:bg-white/6 hover:text-white"
-                  >
-                    <link.icon className="h-4 w-4 text-[#34cd2f]" /> {link.label}
-                  </Link>
-                ))}
+                <div className="my-2 h-px bg-[#e4ece0]" />
                 {isEmployer && profile?.role === "employer_free" && (
                   <Link
                     href="/dashboard/employer/upgrade"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm text-[#cde3e1] transition-colors hover:bg-white/6 hover:text-white"
+                    className="flex items-center gap-3 rounded-2xl px-3 py-3 text-sm text-[#1f2937] transition-colors hover:bg-[#eef5e5]"
                   >
-                    <Settings className="h-4 w-4 text-[#34cd2f]" /> Upgrade Plan
+                    <Settings className="h-4 w-4 text-[#15911b]" /> Upgrade Plan
                   </Link>
                 )}
                 <button
                   onClick={handleSignOut}
-                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm text-rose-300 transition-colors hover:bg-rose-500/10"
+                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm text-rose-700 transition-colors hover:bg-rose-50"
                 >
                   <LogOut className="h-4 w-4" /> Sign Out
                 </button>

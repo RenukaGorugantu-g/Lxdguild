@@ -41,7 +41,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-[var(--background)] font-sans text-[var(--foreground)]" style={{ colorScheme: "light" }}>
         <Header />
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 pb-28 lg:pb-0">{children}</main>
         <Footer />
         <GlobalEnhancements />
       </body>

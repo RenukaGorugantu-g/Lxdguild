@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Bot, Loader2, MessageSquare, Send, X } from "lucide-react";
 import { CHATBOT_QUICK_PROMPTS } from "@/lib/chatbot-knowledge";
 
@@ -14,6 +14,7 @@ const STARTER_MESSAGE =
 
 export default function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMobileScrolled, setIsMobileScrolled] = useState(false);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -23,6 +24,24 @@ export default function ChatbotWidget() {
     },
   ]);
   const [quickReplies, setQuickReplies] = useState<string[]>(CHATBOT_QUICK_PROMPTS);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.innerWidth >= 640) {
+        setIsMobileScrolled(false);
+        return;
+      }
+      setIsMobileScrolled(window.scrollY > 32);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", handleScroll);
+    };
+  }, []);
 
   const visibleMessages = useMemo(() => messages.slice(-8), [messages]);
 
@@ -78,7 +97,7 @@ export default function ChatbotWidget() {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-[90] sm:bottom-6 sm:right-6">
+    <div className={`fixed right-4 z-[95] transition-all duration-200 sm:bottom-6 sm:right-6 ${isMobileScrolled ? "bottom-4" : "bottom-[7.8rem]"}`}>
       {isOpen ? (
         <div className="w-[calc(100vw-2rem)] max-w-[380px] overflow-hidden rounded-[2rem] border border-[#dbe6d7] bg-[linear-gradient(180deg,rgba(251,253,248,0.98),rgba(244,249,241,0.98))] shadow-[0_28px_80px_rgba(87,108,67,0.18)] backdrop-blur-2xl">
           <div className="flex items-start justify-between gap-3 border-b border-[#e4ece0] px-5 py-4">
@@ -170,13 +189,13 @@ export default function ChatbotWidget() {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="group relative inline-flex h-16 w-16 items-center justify-center rounded-full border border-white/12 bg-[radial-gradient(circle_at_30%_30%,rgba(128,239,122,0.28),rgba(52,205,47,0.08)_32%,rgba(9,23,55,0.96)_72%)] text-white shadow-[0_26px_70px_rgba(3,10,26,0.48)] backdrop-blur-2xl transition duration-200 hover:scale-[1.04] hover:shadow-[0_30px_85px_rgba(3,10,26,0.54)]"
+          className="group relative inline-flex h-14 w-14 items-center justify-center rounded-full border border-[#dbe6d7] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(242,249,238,0.94))] text-[#091737] shadow-[0_18px_45px_rgba(94,119,74,0.18)] backdrop-blur-2xl transition duration-200 hover:scale-[1.04] hover:shadow-[0_24px_60px_rgba(94,119,74,0.22)] sm:h-16 sm:w-16"
           aria-label="Open chatbot"
         >
-          <span className="absolute inset-[5px] rounded-full border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))]" />
-          <span className="absolute -inset-1 rounded-full bg-[radial-gradient(circle,rgba(52,205,47,0.24),rgba(52,205,47,0)_65%)] opacity-80 blur-md transition group-hover:opacity-100" />
-          <span className="relative flex h-12 w-12 items-center justify-center rounded-full bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] text-[#091737] shadow-[0_12px_24px_rgba(52,205,47,0.3)]">
-            <MessageSquare className="h-5 w-5" />
+          <span className="absolute inset-[4px] rounded-full border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(255,255,255,0.22))]" />
+          <span className="absolute -inset-1 rounded-full bg-[radial-gradient(circle,rgba(52,205,47,0.18),rgba(52,205,47,0)_65%)] opacity-70 blur-md transition group-hover:opacity-100" />
+          <span className="relative flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] text-[#091737] shadow-[0_10px_20px_rgba(52,205,47,0.22)] sm:h-12 sm:w-12">
+            <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
           </span>
         </button>
       )}
