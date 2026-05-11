@@ -16,6 +16,57 @@ function isMissingColumnError(message?: string | null) {
   );
 }
 
+function extractSection(text: string, heading: string) {
+  const normalized = text.replace(/\r/g, "");
+  const pattern = new RegExp(`${heading}\\s*\\n([\\s\\S]*?)(\\n[A-Z][A-Z\\s]{2,}|$)`, "i");
+  const match = normalized.match(pattern);
+  return match?.[1]?.trim() || "";
+}
+
+function extractBulletLines(text: string) {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => /^[-*•]/.test(line))
+    .map((line) => line.replace(/^[-*•]\s*/, ""))
+    .filter(Boolean)
+    .slice(0, 4);
+}
+
+function summarizeText(text: string, maxLength = 220) {
+  const compact = text.replace(/\s+/g, " ").trim();
+  if (compact.length <= maxLength) return compact;
+  return `${compact.slice(0, maxLength).trim()}...`;
+}
+
+function buildOriginalPreview({
+  parsedResume,
+  profile,
+  fileName,
+}: {
+  parsedResume: Awaited<ReturnType<typeof parseResumeFile>>;
+  profile: {
+    name?: string | null;
+    headline?: string | null;
+  } | null;
+  fileName?: string | null;
+}) {
+  const summarySection =
+    extractSection(parsedResume.text, "professional summary") ||
+    extractSection(parsedResume.text, "summary") ||
+    summarizeText(parsedResume.text, 240);
+  const bulletPoints = extractBulletLines(parsedResume.text);
+  const fallbackName = fileName?.replace(/\.[^.]+$/, "").replace(/[-_]/g, " ").trim() || "Resume Draft";
+
+  return {
+    name: profile?.name?.trim() || fallbackName,
+    headline: profile?.headline?.trim() || parsedResume.roles[0] || "Learning and Development Professional",
+    summary: summarySection || "Original resume preview unavailable.",
+    bulletPoints,
+    skills: parsedResume.skills.slice(0, 6),
+  };
+}
+
 async function getResumeRecord(
   supabase: Awaited<ReturnType<typeof createClient>>,
   resumeId: string,
@@ -117,6 +168,11 @@ export async function POST(req: Request) {
       suggestions.recommendedSkills
     );
     const improvement = Math.max(projectedScore - baselineReadiness.score, 0);
+    const originalPreview = buildOriginalPreview({
+      parsedResume,
+      profile: profileQuery.data || null,
+      fileName: resumeRecord.file_name,
+    });
 
     return NextResponse.json({
       success: true,
@@ -131,6 +187,7 @@ export async function POST(req: Request) {
       improvementPercent: improvement,
       strengths: baselineReadiness.strengths,
       focusAreas: baselineReadiness.focusAreas,
+      originalPreview,
     });
   } catch (error) {
     return NextResponse.json(

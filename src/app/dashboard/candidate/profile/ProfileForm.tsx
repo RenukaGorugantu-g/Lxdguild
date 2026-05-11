@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { User, Briefcase, MapPin, AlignLeft, Award, FileText, Upload, Save, Loader2, Link as LinkIcon, Trash2, Sparkles, Wand2, Compass, Mail, TrendingUp, CheckCircle2, X } from "lucide-react";
+import { User, Briefcase, MapPin, AlignLeft, Award, FileText, Upload, Save, Loader2, Link as LinkIcon, Trash2, Sparkles, Wand2, Compass, Mail, CheckCircle2, X } from "lucide-react";
 import SkillAutocomplete from "@/components/SkillAutocomplete";
 import { useRouter } from "next/navigation";
 
@@ -81,6 +81,13 @@ type ResumeOptimizationState = {
   improvementPercent: number;
   strengths: string[];
   focusAreas: string[];
+  originalPreview: {
+    name: string;
+    headline: string;
+    summary: string;
+    bulletPoints: string[];
+    skills: string[];
+  };
 } | null;
 
 type CareerPathPredictionState = {
@@ -104,6 +111,8 @@ type CoverLetterState = {
   note: string;
 } | null;
 
+type ResumeReportPanel = "skills" | "optimize" | "career" | "cover" | null;
+
 const RESUME_SUGGESTIONS_STORAGE_KEY = "lxdguild_resume_skill_suggestions";
 const RESUME_OPTIMIZER_STORAGE_KEY = "lxdguild_resume_optimizer";
 const CAREER_PATHS_STORAGE_KEY = "lxdguild_resume_career_paths";
@@ -117,6 +126,44 @@ const ROADMAP_POSITIONS = [
 
 function getProfileStorageKey(baseKey: string, profileId: string) {
   return `${baseKey}:${profileId}`;
+}
+
+function bulletize(values: string[]) {
+  return values.map((value) => `- ${value}`);
+}
+
+function getExperienceLevelLabel(years?: number | null) {
+  if (!years || years <= 0) return "Building foundation";
+  if (years <= 2) return "0-2 Years";
+  if (years <= 5) return "2-5 Years";
+  if (years <= 8) return "5-8 Years";
+  return "8+ Years";
+}
+
+const SKILL_CATEGORY_RULES = [
+  { label: "Technical", keywords: ["articulate", "rise", "captivate", "scorm", "xapi", "sql", "analytics", "data", "visualization", "lms"] },
+  { label: "Facilitation", keywords: ["facilitation", "training", "workshop", "delivery", "onboarding"] },
+  { label: "Strategy", keywords: ["strategy", "curriculum", "needs analysis", "evaluation", "consulting", "product"] },
+  { label: "Operations", keywords: ["project management", "program management", "reporting", "operations"] },
+  { label: "Stakeholder", keywords: ["stakeholder", "communication", "leadership", "influence"] },
+] as const;
+
+function getSkillCategoryBreakdown(detectedSkills: string[], recommendedSkills: string[]) {
+  return SKILL_CATEGORY_RULES.map((category) => {
+    const detected = detectedSkills.filter((skill) =>
+      category.keywords.some((keyword) => skill.toLowerCase().includes(keyword))
+    ).length;
+    const recommended = recommendedSkills.filter((skill) =>
+      category.keywords.some((keyword) => skill.toLowerCase().includes(keyword))
+    ).length;
+    const total = detected + recommended;
+    const value = total > 0 ? Math.round((detected / total) * 100) : 55;
+
+    return {
+      label: category.label,
+      value: Math.max(35, Math.min(value, 100)),
+    };
+  });
 }
 
 function isMissingColumnError(message?: string | null) {
@@ -220,11 +267,14 @@ export default function ProfileForm({
   const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
   const [copiedOptimization, setCopiedOptimization] = useState(false);
   const [copiedCoverLetter, setCopiedCoverLetter] = useState(false);
+  const [resumeOptimizerTab, setResumeOptimizerTab] = useState<"suggestions" | "enhancements" | "summary">("suggestions");
+  const [activeResumeReport, setActiveResumeReport] = useState<ResumeReportPanel>(null);
   const [resumeSkillSuggestions, setResumeSkillSuggestions] = useState<ResumeSkillSuggestionState>(null);
   const [resumeOptimization, setResumeOptimization] = useState<ResumeOptimizationState>(null);
   const [careerPathPredictions, setCareerPathPredictions] = useState<CareerPathPredictionState>(null);
   const [coverLetterDraft, setCoverLetterDraft] = useState<CoverLetterState>(null);
   const [activeRoadmapIndex, setActiveRoadmapIndex] = useState<number | null>(null);
+  const reportPanelRef = useRef<HTMLDivElement | null>(null);
   const supabase = createClient();
   const router = useRouter();
 
@@ -386,6 +436,17 @@ export default function ProfileForm({
     return () => window.clearTimeout(timeoutId);
   }, [activeRoadmapIndex]);
 
+  useEffect(() => {
+    if (typeof window === "undefined" || window.innerWidth >= 768) return;
+    if (!activeResumeReport || !reportPanelRef.current) return;
+
+    const timeoutId = window.setTimeout(() => {
+      reportPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [activeResumeReport, careerPathPredictions, coverLetterDraft, resumeOptimization, resumeSkillSuggestions]);
+
   const fetchResumeSkillSuggestions = async (resumeId: string) => {
     setIsAnalyzingResume(true);
     try {
@@ -413,6 +474,7 @@ export default function ProfileForm({
           ? result.academyCourseRecommendations
           : [],
       });
+      setActiveResumeReport("skills");
     } catch (error: unknown) {
       alert("Error generating resume skill suggestions: " + getErrorMessage(error));
     } finally {
@@ -447,7 +509,38 @@ export default function ProfileForm({
         improvementPercent: typeof result.improvementPercent === "number" ? result.improvementPercent : 0,
         strengths: Array.isArray(result.strengths) ? result.strengths : [],
         focusAreas: Array.isArray(result.focusAreas) ? result.focusAreas : [],
+        originalPreview:
+          result.originalPreview && typeof result.originalPreview === "object"
+            ? {
+                name:
+                  typeof result.originalPreview.name === "string" && result.originalPreview.name.trim()
+                    ? result.originalPreview.name
+                    : "Resume Draft",
+                headline:
+                  typeof result.originalPreview.headline === "string" && result.originalPreview.headline.trim()
+                    ? result.originalPreview.headline
+                    : "Learning and Development Professional",
+                summary:
+                  typeof result.originalPreview.summary === "string" && result.originalPreview.summary.trim()
+                    ? result.originalPreview.summary
+                    : "Original resume preview unavailable.",
+                bulletPoints: Array.isArray(result.originalPreview.bulletPoints)
+                  ? result.originalPreview.bulletPoints.filter((item: unknown): item is string => typeof item === "string")
+                  : [],
+                skills: Array.isArray(result.originalPreview.skills)
+                  ? result.originalPreview.skills.filter((item: unknown): item is string => typeof item === "string")
+                  : [],
+              }
+            : {
+                name: "Resume Draft",
+                headline: "Learning and Development Professional",
+                summary: "Original resume preview unavailable.",
+                bulletPoints: [],
+                skills: [],
+              },
       });
+      setResumeOptimizerTab("suggestions");
+      setActiveResumeReport("optimize");
     } catch (error: unknown) {
       alert("Error optimizing resume: " + getErrorMessage(error));
     } finally {
@@ -474,6 +567,7 @@ export default function ProfileForm({
         source: result.source === "ai" ? "ai" : "template",
         paths: Array.isArray(result.paths) ? result.paths : [],
       });
+      setActiveResumeReport("career");
     } catch (error: unknown) {
       alert("Error predicting career paths: " + getErrorMessage(error));
     } finally {
@@ -504,6 +598,7 @@ export default function ProfileForm({
         closing: typeof result.closing === "string" ? result.closing : "",
         note: typeof result.note === "string" ? result.note : "",
       });
+      setActiveResumeReport("cover");
     } catch (error: unknown) {
       alert("Error generating cover letter: " + getErrorMessage(error));
     } finally {
@@ -518,6 +613,18 @@ export default function ProfileForm({
   const suggestionReasons = resumeSkillSuggestions?.suggestionReasons ?? [];
   const suggestionAcademyCourses = resumeSkillSuggestions?.academyCourseRecommendations ?? [];
   const suggestionScoreBreakdown = resumeSkillSuggestions?.scoreBreakdown ?? [];
+  const skillCategoryBreakdown = getSkillCategoryBreakdown(suggestionDetectedSkills, suggestionRecommendedSkills);
+  const mobileRecommendedSkills = suggestionRecommendedSkills.slice(0, 3);
+  const desktopRecommendedSkills = suggestionRecommendedSkills.slice(0, 6);
+  const mobileCategoryBreakdown = skillCategoryBreakdown.slice(0, 3);
+  const mobileStrengthSignals = (suggestionStrengthSignals.length > 0
+    ? suggestionStrengthSignals
+    : ["Resume has enough baseline signal to start improving."]).slice(0, 2);
+  const mobileCourseRecommendations = suggestionAcademyCourses.slice(0, 1);
+  const mobileCareerStages = careerPathPredictions?.paths.slice(0, 3) ?? [];
+  const coverLetterPreviewParagraphs = [coverLetterDraft?.intro, ...(coverLetterDraft?.body ?? []), coverLetterDraft?.closing]
+    .filter((paragraph): paragraph is string => Boolean(paragraph))
+    .slice(0, 2);
 
   const handleSave = async () => {
     if (!profile.id) {
@@ -808,66 +915,105 @@ export default function ProfileForm({
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => fetchResumeSkillSuggestions(resume.id)}
-                      disabled={isAnalyzingResume}
-                      className="inline-flex items-center rounded-xl border border-[#dbe4d5] px-3 py-2 text-xs font-semibold text-[#138d1a] hover:bg-[#f4f7f1] disabled:opacity-60"
-                    >
-                      {isAnalyzingResume && resumeSkillSuggestions?.resumeId === resume.id
-                        ? "Analyzing..."
-                        : "Suggest skills from this resume"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => optimizeResume(resume.id)}
-                      disabled={isOptimizingResume}
-                      className="inline-flex items-center gap-2 rounded-xl bg-[linear-gradient(135deg,#118118,#2aa82b)] px-3 py-2 text-xs font-semibold text-white shadow-[0_10px_22px_rgba(24,124,29,0.16)] hover:scale-[1.01] disabled:opacity-60"
-                    >
-                      {isOptimizingResume && resumeOptimization?.resumeId === resume.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Wand2 className="h-3.5 w-3.5" />
-                      )}
-                      {isOptimizingResume && resumeOptimization?.resumeId === resume.id ? "Fixing..." : "Fix my resume"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => predictCareerPaths(resume.id)}
-                      disabled={isPredictingCareerPaths}
-                      className="inline-flex items-center gap-2 rounded-xl border border-[#dbe4d5] bg-white px-3 py-2 text-xs font-semibold text-[#111827] hover:bg-[#f4f7f1] disabled:opacity-60"
-                    >
-                      {isPredictingCareerPaths && careerPathPredictions?.resumeId === resume.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-[#138d1a]" />
-                      ) : (
-                        <Compass className="h-3.5 w-3.5 text-[#138d1a]" />
-                      )}
-                      {isPredictingCareerPaths && careerPathPredictions?.resumeId === resume.id
-                        ? "Predicting..."
-                        : "Predict career paths"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => generateCoverLetter(resume.id)}
-                      disabled={isGeneratingCoverLetter}
-                      className="inline-flex items-center gap-2 rounded-xl border border-[#dbe4d5] bg-white px-3 py-2 text-xs font-semibold text-[#111827] hover:bg-[#f4f7f1] disabled:opacity-60"
-                    >
-                      {isGeneratingCoverLetter && coverLetterDraft?.resumeId === resume.id ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin text-[#138d1a]" />
-                      ) : (
-                        <Mail className="h-3.5 w-3.5 text-[#138d1a]" />
-                      )}
-                      {isGeneratingCoverLetter && coverLetterDraft?.resumeId === resume.id
-                        ? "Drafting..."
-                        : "Create cover letter"}
-                    </button>
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
+                    {[
+                      {
+                        key: "skills" as const,
+                        title: isAnalyzingResume && resumeSkillSuggestions?.resumeId === resume.id ? "Analyzing..." : "Suggest skills from this resume",
+                        icon: <CheckCircle2 className="h-4 w-4" />,
+                        active: activeResumeReport === "skills" && resumeSkillSuggestions?.resumeId === resume.id,
+                        onClick: () =>
+                          resumeSkillSuggestions?.resumeId === resume.id
+                            ? setActiveResumeReport("skills")
+                            : fetchResumeSkillSuggestions(resume.id),
+                        disabled: isAnalyzingResume,
+                      },
+                      {
+                        key: "optimize" as const,
+                        title: isOptimizingResume && resumeOptimization?.resumeId === resume.id ? "Fixing..." : "Fix my resume",
+                        icon:
+                          isOptimizingResume && resumeOptimization?.resumeId === resume.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Wand2 className="h-4 w-4" />
+                          ),
+                        active: activeResumeReport === "optimize" && resumeOptimization?.resumeId === resume.id,
+                        onClick: () =>
+                          resumeOptimization?.resumeId === resume.id
+                            ? setActiveResumeReport("optimize")
+                            : optimizeResume(resume.id),
+                        disabled: isOptimizingResume,
+                      },
+                      {
+                        key: "career" as const,
+                        title:
+                          isPredictingCareerPaths && careerPathPredictions?.resumeId === resume.id
+                            ? "Predicting..."
+                            : "Predict career paths",
+                        icon:
+                          isPredictingCareerPaths && careerPathPredictions?.resumeId === resume.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Compass className="h-4 w-4" />
+                          ),
+                        active: activeResumeReport === "career" && careerPathPredictions?.resumeId === resume.id,
+                        onClick: () =>
+                          careerPathPredictions?.resumeId === resume.id
+                            ? setActiveResumeReport("career")
+                            : predictCareerPaths(resume.id),
+                        disabled: isPredictingCareerPaths,
+                      },
+                      {
+                        key: "cover" as const,
+                        title:
+                          isGeneratingCoverLetter && coverLetterDraft?.resumeId === resume.id
+                            ? "Drafting..."
+                            : "Create cover letter",
+                        icon:
+                          isGeneratingCoverLetter && coverLetterDraft?.resumeId === resume.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Mail className="h-4 w-4" />
+                          ),
+                        active: activeResumeReport === "cover" && coverLetterDraft?.resumeId === resume.id,
+                        onClick: () =>
+                          coverLetterDraft?.resumeId === resume.id
+                            ? setActiveResumeReport("cover")
+                            : generateCoverLetter(resume.id),
+                        disabled: isGeneratingCoverLetter,
+                      },
+                    ].map((action) => (
+                      <button
+                        key={action.key}
+                        type="button"
+                        onClick={action.onClick}
+                        disabled={action.disabled}
+                        className={`flex min-w-0 items-center gap-2 rounded-full border px-3 py-2.5 text-left text-xs font-semibold transition sm:min-w-0 sm:px-4 sm:text-sm ${
+                          action.active
+                            ? "border-[#8fd97e] bg-[#eef9e9] text-[#138d1a] shadow-[0_10px_20px_rgba(87,108,67,0.08)]"
+                            : "border-[#dbe4d5] bg-white text-[#425243] hover:bg-[#f7fbf4]"
+                        } disabled:opacity-60`}
+                      >
+                        <span className={`flex h-8 w-8 items-center justify-center rounded-full ${action.active ? "bg-[#138d1a] text-white" : "bg-[#eef7e9] text-[#138d1a]"}`}>
+                          {action.icon}
+                        </span>
+                        <span className="leading-4">
+                          {action.key === "skills"
+                            ? "Suggest skills"
+                            : action.key === "optimize"
+                              ? "Fix resume"
+                              : action.key === "career"
+                                ? "Career path"
+                                : "Cover letter"}
+                        </span>
+                      </button>
+                    ))}
                   </div>
                 </div>
               ))}
 
               <label className="block w-full cursor-pointer">
-                <div className="flex flex-col items-center justify-center rounded-[1.6rem] border-2 border-dashed border-[#dbe4d5] py-8 transition-all hover:border-[#8fd97e] hover:bg-[#f7fbf4]">
+                <div className="flex flex-col items-center justify-center rounded-[1.25rem] border-2 border-dashed border-[#dbe4d5] px-4 py-6 transition-all hover:border-[#8fd97e] hover:bg-[#f7fbf4] sm:rounded-[1.6rem] sm:py-8">
                   {isUploading ? (
                     <Loader2 className="h-6 w-6 animate-spin text-[#138d1a]" />
                   ) : (
@@ -887,7 +1033,7 @@ export default function ProfileForm({
             </div>
           </div>
 
-          <div className="rounded-[1.6rem] border border-[#e4ebdf] bg-white p-5">
+          <div ref={reportPanelRef} className="rounded-[1.6rem] border border-[#e4ebdf] bg-white p-5">
             <div className="flex items-center gap-3 border-b border-[#eef3ea] pb-4">
               <Award className="h-5 w-5 text-[#138d1a]" />
               <div>
@@ -899,6 +1045,12 @@ export default function ProfileForm({
             </div>
 
             <div className="mt-5 space-y-5">
+              {activeResumeReport ? (
+                <div className="rounded-2xl bg-[#f7fbf4] px-4 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#5b6d58] sm:hidden">
+                  Viewing: {activeResumeReport === "skills" ? "Skill gap report" : activeResumeReport === "optimize" ? "Resume fixer" : activeResumeReport === "career" ? "Career path" : "Cover letter"}
+                </div>
+              ) : null}
+
               {isOptimizingResume && !resumeOptimization ? (
                 <div className="flex items-center gap-3 rounded-2xl border border-[#d5e6d0] bg-[linear-gradient(135deg,#f2f9ef,#ffffff)] px-4 py-4 text-sm text-zinc-600">
                   <Loader2 className="h-4 w-4 animate-spin text-[#138d1a]" />
@@ -927,22 +1079,44 @@ export default function ProfileForm({
                 </div>
               ) : null}
 
-              {!resumeSkillSuggestions && !resumeOptimization && !coverLetterDraft ? (
+              {!resumeSkillSuggestions && !resumeOptimization && !coverLetterDraft && !careerPathPredictions ? (
                 <div className="rounded-2xl border border-dashed border-[#dbe4d5] bg-[#fbfdf8] px-4 py-5 text-sm leading-7 text-[#6d7d68]">
-                  Upload a resume, then run <span className="font-semibold text-[#138d1a]">Suggest skills from this resume</span>, <span className="font-semibold text-[#138d1a]">Fix my resume</span>, and <span className="font-semibold text-[#138d1a]">Create cover letter</span> to keep your full improvement plan here.
+                  <span className="sm:hidden">Upload a resume and open one card at a time to keep mobile clean.</span>
+                  <span className="hidden sm:inline">Upload a resume, then open one of the four action cards above. We will keep only the selected detailed report open so the workspace stays clean.</span>
                 </div>
               ) : null}
 
               {(resumeSkillSuggestions || resumeOptimization || coverLetterDraft || careerPathPredictions) ? (
                 <div className="space-y-5">
-                  {(resumeSkillSuggestions || resumeOptimization) ? (
+                  {(resumeSkillSuggestions || resumeOptimization) &&
+                  (activeResumeReport === "skills" || activeResumeReport === "optimize") ? (
                     <div className="px-1 py-2">
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                      <div className="rounded-[1.4rem] border border-[#e4ebdf] bg-[#fbfdf8] p-4 sm:border-0 sm:bg-transparent sm:p-0">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                         <div>
                           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d7d68]">Current readiness</p>
-                          <h3 className="mt-1 text-lg font-bold text-[#111827]">See the baseline before you rewrite anything.</h3>
+                          <h3 className="mt-1 text-base font-bold text-[#111827] sm:text-lg">See the baseline before you rewrite anything.</h3>
                         </div>
-                        <div className="mt-4 w-full max-w-xl space-y-4">
+                        <div className="mt-2 grid grid-cols-2 gap-2 sm:hidden">
+                          {[
+                            {
+                              label: "Current",
+                              value: `${resumeOptimization ? resumeOptimization.beforeScore : resumeSkillSuggestions?.resumeReadinessScore || 0}%`,
+                            },
+                            ...(resumeOptimization
+                              ? [
+                                  { label: "Projected", value: `${resumeOptimization.afterScore}%` },
+                                  { label: "Boost", value: `+${resumeOptimization.improvementPercent}%` },
+                                ]
+                              : []),
+                          ].map((item) => (
+                            <div key={item.label} className="rounded-2xl bg-white px-3 py-3">
+                              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#7a8a74]">{item.label}</p>
+                              <p className="mt-1 text-xl font-bold text-[#11203b]">{item.value}</p>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="mt-4 hidden w-full max-w-xl space-y-4 sm:block">
                           {[
                             {
                               label: "Current score",
@@ -971,34 +1145,11 @@ export default function ProfileForm({
                             </div>
                           ))}
                         </div>
-
-                        <div className="hidden flex-wrap gap-3">
-                          <div className="rounded-2xl border border-[#dbe6d7] bg-white px-4 py-3">
-                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7a8a74]">Current score</p>
-                            <p className="mt-1 text-2xl font-bold text-[#11203b]">
-                              {resumeOptimization ? resumeOptimization.beforeScore : resumeSkillSuggestions?.resumeReadinessScore || 0}%
-                            </p>
-                          </div>
-                          {resumeOptimization ? (
-                            <>
-                              <div className="rounded-2xl border border-[#dbe6d7] bg-white px-4 py-3">
-                                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7a8a74]">Projected fixed score</p>
-                                <p className="mt-1 text-2xl font-bold text-[#138d1a]">{resumeOptimization.afterScore}%</p>
-                              </div>
-                              <div className="rounded-2xl border border-[#dbe6d7] bg-white px-4 py-3">
-                                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#7a8a74]">Improvement</p>
-                                <p className="mt-1 inline-flex items-center gap-2 text-2xl font-bold text-[#138d1a]">
-                                  <TrendingUp className="h-5 w-5" />
-                                  +{resumeOptimization.improvementPercent}%
-                                </p>
-                              </div>
-                            </>
-                          ) : null}
-                        </div>
+                      </div>
                       </div>
 
                       {suggestionScoreBreakdown.length ? (
-                        <div className="mt-5 space-y-4">
+                        <div className="mt-4 hidden space-y-4 sm:block">
                           {suggestionScoreBreakdown.map((item) => (
                             <div key={item.label}>
                               <div className="mb-2 flex items-center justify-between gap-3">
@@ -1023,116 +1174,456 @@ export default function ProfileForm({
                     </div>
                   ) : null}
 
-                  {resumeSkillSuggestions ? (
-                    <div className="px-1 py-2">
-                      <div className="flex items-start gap-3 pb-4">
-                        <CheckCircle2 className="mt-0.5 h-5 w-5 text-[#138d1a]" />
-                        <div>
-                          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d7d68]">Skill gaps and strengths</p>
-                          <h3 className="mt-1 text-lg font-bold text-[#111827]">Focus on the clearest wins first.</h3>
+                  {resumeSkillSuggestions && activeResumeReport === "skills" ? (
+                    <div className="space-y-5 px-1 py-2">
+                      <div className="space-y-4 rounded-[1.45rem] border border-[#dbe6d7] bg-[linear-gradient(180deg,#f9fcf7_0%,#ffffff_100%)] p-4 shadow-[0_18px_40px_rgba(87,108,67,0.08)] sm:hidden">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d7d68]">Skill gap overview</p>
+                            <h3 className="mt-1 text-lg font-bold text-[#111827]">Your match snapshot</h3>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const report = [
+                                "LXD GUILD SKILL GAP REPORT",
+                                "",
+                                `Overall Match: ${resumeSkillSuggestions.resumeReadinessScore}%`,
+                                `Missing Skills: ${suggestionRecommendedSkills.length}`,
+                              ].join("\n");
+                              const blob = new Blob([report], { type: "text/plain;charset=utf-8" });
+                              const url = URL.createObjectURL(blob);
+                              const link = document.createElement("a");
+                              link.href = url;
+                              link.download = "lxd-skill-gap-report.txt";
+                              link.click();
+                              URL.revokeObjectURL(url);
+                            }}
+                            className="rounded-full border border-[#dbe4d5] bg-white px-3 py-2 text-[11px] font-semibold text-[#11203b]"
+                          >
+                            Download
+                          </button>
                         </div>
-                      </div>
 
-                      <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-                        <div className="space-y-5">
-                          <div>
-                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Detected strengths</p>
-                            <div className="mt-3 space-y-2">
-                              {(suggestionStrengthSignals.length > 0
-                                ? suggestionStrengthSignals
-                                : ["Resume has enough baseline signal to start improving."]).map((item) => (
-                                <p key={item} className="text-sm leading-6 text-zinc-700">{item}</p>
-                              ))}
+                        <div className="space-y-4">
+                          <div className="flex justify-center">
+                            <div
+                              className="relative flex h-24 w-24 items-center justify-center rounded-full"
+                              style={{
+                                background: `conic-gradient(#39c426 0 ${resumeSkillSuggestions.resumeReadinessScore}%, #e9edf0 ${resumeSkillSuggestions.resumeReadinessScore}% 100%)`,
+                              }}
+                            >
+                              <div className="flex h-[4.35rem] w-[4.35rem] flex-col items-center justify-center rounded-full bg-white shadow-inner">
+                                <p className="text-2xl font-bold text-[#111827]">{resumeSkillSuggestions.resumeReadinessScore}%</p>
+                                <p className="text-[10px] font-semibold text-[#39a02f]">Match</p>
+                              </div>
                             </div>
                           </div>
-
-                          <div>
-                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Skills already visible</p>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              {suggestionDetectedSkills.length > 0 ? (
-                                suggestionDetectedSkills.map((skill) => (
-                                  <span key={skill} className="rounded-full border border-[#e4ebdf] bg-white px-3 py-1 text-xs font-medium text-zinc-700">
-                                    {skill}
-                                  </span>
-                                ))
-                              ) : (
-                                <p className="text-sm text-zinc-500">No structured skills were detected from this resume yet.</p>
-                              )}
-                            </div>
-                          </div>
-
-                          <div>
-                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Skills to add or learn</p>
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              {suggestionRecommendedSkills.length > 0 ? (
-                                suggestionRecommendedSkills.map((skill) => {
-                                  const alreadyAdded = (profile.skills || []).includes(skill);
-                                  return (
-                                    <button
-                                      key={skill}
-                                      type="button"
-                                      disabled={alreadyAdded}
-                                      onClick={() =>
-                                        setProfile((current) => ({
-                                          ...current,
-                                          skills: alreadyAdded ? current.skills : [...(current.skills || []), skill],
-                                        }))
-                                      }
-                                      className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                                        alreadyAdded
-                                          ? "bg-[#dff4d8] text-[#138d1a]"
-                                          : "bg-[#138d1a] text-white hover:bg-[#0f7415]"
-                                      }`}
-                                    >
-                                      {alreadyAdded ? `${skill} added` : `Add ${skill}`}
-                                    </button>
-                                  );
-                                })
-                              ) : (
-                                <p className="text-sm text-zinc-500">No additional suggestions right now.</p>
-                              )}
+                          <div className="text-center">
+                            <p className="text-sm leading-6 text-[#667085]">
+                              Focus on the top missing skills first so your resume aligns faster.
+                            </p>
+                            <div className="mt-3 flex flex-wrap justify-center gap-2">
+                              <span className="rounded-full bg-white px-3 py-2 text-xs font-semibold text-[#11203b]">
+                                Role: {profile.headline || "L&D Professional"}
+                              </span>
+                              <span className="rounded-full bg-white px-3 py-2 text-xs font-semibold text-[#11203b]">
+                                {getExperienceLevelLabel(profile.experience_years)}
+                              </span>
                             </div>
                           </div>
                         </div>
 
-                        <div className="space-y-5">
-                          <div>
-                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">What to fix next</p>
-                            <div className="mt-3 space-y-2">
-                              {(suggestionFocusAreas.length > 0
-                                ? suggestionFocusAreas
-                                : suggestionReasons).map((reason) => (
-                                <p key={reason} className="text-sm leading-6 text-zinc-700">{reason}</p>
-                              ))}
-                            </div>
-                          </div>
+                        <div className="border-t border-[#e4ece0] pt-4">
+                          <p className="text-sm font-semibold text-[#111827]">Top missing skills</p>
+                          <div className="mt-3 grid grid-cols-1 gap-2">
+                            {suggestionRecommendedSkills.length > 0 ? suggestionRecommendedSkills.map((skill) => {
+                              const alreadyAdded = (profile.skills || []).includes(skill);
 
-                          {suggestionAcademyCourses.length > 0 ? (
-                            <div className="space-y-3">
-                              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Recommended from LXD Guild Academy</p>
+                              return (
+                                <button
+                                  key={skill}
+                                  type="button"
+                                  disabled={alreadyAdded}
+                                  onClick={() =>
+                                    setProfile((current) => ({
+                                      ...current,
+                                      skills: alreadyAdded ? current.skills : [...(current.skills || []), skill],
+                                    }))
+                                  }
+                                  className={`rounded-2xl border px-3 py-3 text-left text-sm font-semibold leading-6 ${
+                                    alreadyAdded
+                                      ? "border-[#cfe9c8] bg-[#eaf8e3] text-[#138d1a]"
+                                      : "border-[#dbe6d7] bg-white text-[#11203b]"
+                                  }`}
+                                >
+                                  <span className="block break-words whitespace-normal">{skill}</span>
+                                </button>
+                              );
+                            }) : <p className="col-span-2 text-sm text-zinc-500">No additional suggestions right now.</p>}
+                          </div>
+                        </div>
+
+                        <div className="border-t border-[#e4ece0] pt-4">
+                          <p className="text-sm font-semibold text-[#111827]">Strength signals</p>
+                          <div className="mt-3 space-y-2">
+                            {mobileStrengthSignals.map((item) => (
+                              <p key={item} className="text-sm leading-6 text-zinc-700">• {item}</p>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="border-t border-[#e4ece0] pt-4">
+                          <p className="text-sm font-semibold text-[#111827]">Skill categories</p>
+                          <div className="mt-3 space-y-3">
+                            {skillCategoryBreakdown.map((category) => (
+                              <div key={category.label}>
+                                <div className="mb-1.5 flex items-center justify-between gap-3 text-sm text-[#11203b]">
+                                  <span>{category.label}</span>
+                                  <span className="font-semibold text-[#138d1a]">{category.value}%</span>
+                                </div>
+                                <div className="h-2.5 rounded-full bg-[#edf2ed]">
+                                  <div
+                                    className="h-2.5 rounded-full bg-[linear-gradient(90deg,#9be27c_0%,#34cd2f_55%,#138d1a_100%)]"
+                                    style={{ width: `${category.value}%` }}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {suggestionAcademyCourses.length > 0 ? (
+                          <div className="border-t border-[#e4ece0] pt-4">
+                            <p className="text-sm font-semibold text-[#111827]">Recommended courses</p>
+                            <div className="mt-3 space-y-3">
                               {suggestionAcademyCourses.map((course) => (
                                 <a
                                   key={course.code}
                                   href={course.url}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="block rounded-2xl bg-[#fbfdf8] p-4 transition hover:-translate-y-0.5"
+                                  className="flex flex-col items-start gap-3 rounded-[1.2rem] border border-[#dbe6d7] bg-white px-3 py-3 shadow-[0_10px_24px_rgba(87,108,67,0.08)]"
                                 >
-                                  <p className="text-sm font-semibold text-[#111827]">{course.title}</p>
-                                  <p className="mt-2 text-sm leading-6 text-zinc-600">{course.description}</p>
-                                  {course.recommendedFor.length > 0 ? (
-                                    <p className="mt-3 text-sm leading-6 text-zinc-600">
-                                      Recommended for: {course.recommendedFor.join(", ")}
-                                    </p>
-                                  ) : null}
+                                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[1rem] bg-[linear-gradient(135deg,#eaf8e3,#c8f3b7)] text-[#138d1a]">
+                                    <Award className="h-6 w-6" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#7a8a74]">LXD Guild course</p>
+                                    <p className="mt-1 text-sm font-semibold leading-5 text-[#111827]">{course.title}</p>
+                                    {course.description ? (
+                                      <p className="mt-1 text-xs leading-5 text-[#667085] line-clamp-2">{course.description}</p>
+                                    ) : null}
+                                    <span className="mt-3 inline-flex rounded-full bg-[#138d1a] px-3 py-1.5 text-[11px] font-semibold text-white">
+                                      Enroll Now
+                                    </span>
+                                  </div>
                                 </a>
                               ))}
                             </div>
-                          ) : (
-                            <div className="px-0 py-1 text-sm leading-7 text-[#6d7d68]">
-                              Course recommendations will appear here when we detect strong skill-gap matches from the resume.
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div className="hidden flex-col gap-4 rounded-[1.5rem] border border-[#dbe6d7] bg-[linear-gradient(180deg,#f9fcf7_0%,#ffffff_100%)] p-4 shadow-[0_18px_40px_rgba(87,108,67,0.08)] sm:flex sm:rounded-[2rem] sm:p-5">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-[1.1rem] bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] text-[#091737] shadow-[0_10px_22px_rgba(52,205,47,0.18)] sm:h-11 sm:w-11 sm:rounded-2xl">
+                              <CheckCircle2 className="h-5 w-5" />
                             </div>
-                          )}
+                            <div>
+                              <h3 className="text-lg font-bold text-[#111827] sm:text-xl">Your Skill Gap Overview</h3>
+                              <p className="mt-1 text-sm leading-6 text-[#667085] sm:hidden">
+                                See your match score, missing skills, and next learning moves.
+                              </p>
+                              <p className="mt-1 hidden text-sm leading-6 text-[#667085] sm:block">
+                                AI insights to help you grow faster and improve your resume-to-role match.
+                              </p>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const report = [
+                                "LXD GUILD SKILL GAP REPORT",
+                                "",
+                                `Overall Match: ${resumeSkillSuggestions.resumeReadinessScore}%`,
+                                `Missing Skills: ${suggestionRecommendedSkills.length}`,
+                                `Target Role: ${profile.headline || "Learning and Development Professional"}`,
+                                `Experience Level: ${getExperienceLevelLabel(profile.experience_years)}`,
+                                "",
+                                "TOP MISSING SKILLS",
+                                ...suggestionRecommendedSkills.map((skill) => `- ${skill}`),
+                                "",
+                                "STRENGTH SIGNALS",
+                                ...suggestionStrengthSignals.map((item) => `- ${item}`),
+                                "",
+                                "FOCUS AREAS",
+                                ...(suggestionFocusAreas.length > 0 ? suggestionFocusAreas : suggestionReasons).map((item) => `- ${item}`),
+                              ].join("\n");
+                              const blob = new Blob([report], { type: "text/plain;charset=utf-8" });
+                              const url = URL.createObjectURL(blob);
+                              const link = document.createElement("a");
+                              link.href = url;
+                              link.download = "lxd-skill-gap-report.txt";
+                              link.click();
+                              URL.revokeObjectURL(url);
+                            }}
+                            className="inline-flex items-center gap-2 self-start rounded-2xl border border-[#dbe4d5] bg-white px-3 py-2.5 text-xs font-semibold text-[#11203b] shadow-sm hover:bg-[#f7fbf4] sm:px-4 sm:py-3 sm:text-sm"
+                          >
+                            <Save className="h-4 w-4 text-[#138d1a]" />
+                            <span className="sm:hidden">Download</span>
+                            <span className="hidden sm:inline">Download Report</span>
+                          </button>
+                        </div>
+
+                        <div className="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+                          <div className="rounded-[1.4rem] border border-[#e4ebdf] bg-white p-4 sm:rounded-[1.8rem] sm:p-5">
+                            <div className="grid gap-4 md:grid-cols-[170px_minmax(0,1fr)] md:items-center">
+                              <div className="flex justify-center">
+                                <div
+                                  className="relative flex h-28 w-28 items-center justify-center rounded-full sm:h-40 sm:w-40"
+                                  style={{
+                                    background: `conic-gradient(#39c426 0 ${resumeSkillSuggestions.resumeReadinessScore}%, #e9edf0 ${resumeSkillSuggestions.resumeReadinessScore}% 100%)`,
+                                  }}
+                                >
+                                  <div className="flex flex-col items-center justify-center rounded-full bg-white shadow-inner" style={{ width: "6rem", height: "6rem" }}>
+                                    <p className="text-3xl font-bold text-[#111827] sm:text-4xl">{resumeSkillSuggestions.resumeReadinessScore}%</p>
+                                    <p className="mt-1 text-xs font-semibold text-[#39a02f]">Good Match</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div>
+                                <p className="text-sm font-semibold text-[#111827]">
+                                  You&apos;re missing {suggestionRecommendedSkills.length} important skill{suggestionRecommendedSkills.length === 1 ? "" : "s"}
+                                </p>
+                                <p className="mt-2 hidden text-sm leading-6 text-[#667085] sm:block">
+                                  Focus on these skills to improve your match and boost your career opportunities.
+                                </p>
+
+                                <div className="mt-4 grid gap-2 sm:mt-5 sm:gap-3 sm:grid-cols-2">
+                                  <div className="rounded-2xl bg-[#f8fbf6] px-4 py-3">
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#7a8a74]">Target Role</p>
+                                    <p className="mt-2 text-sm font-semibold text-[#111827]">
+                                      {profile.headline || "Learning and Development Professional"}
+                                    </p>
+                                  </div>
+                                  <div className="rounded-2xl bg-[#f8fbf6] px-4 py-3">
+                                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#7a8a74]">Experience Level</p>
+                                    <p className="mt-2 text-sm font-semibold text-[#111827]">
+                                      {getExperienceLevelLabel(profile.experience_years)}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="rounded-[1.4rem] border border-[#e4ebdf] bg-white p-4 sm:rounded-[1.8rem] sm:p-5">
+                            <p className="text-sm font-semibold text-[#111827]">Top Missing Skills</p>
+                            <div className="mt-4 space-y-2.5 sm:space-y-3">
+                              {suggestionRecommendedSkills.length > 0 ? (
+                                <>
+                                  <div className="space-y-2.5 sm:hidden">
+                                    {mobileRecommendedSkills.map((skill, index) => {
+                                      const priority =
+                                        index < 2 ? { label: "High", tone: "bg-[#fff1f0] text-[#d94d3f]" }
+                                        : { label: "Medium", tone: "bg-[#fff6ea] text-[#dd8a1a]" };
+                                      const alreadyAdded = (profile.skills || []).includes(skill);
+
+                                      return (
+                                        <div key={skill} className="flex items-center justify-between gap-2 rounded-2xl bg-[#fbfdf8] px-3 py-3">
+                                          <p className="min-w-0 truncate text-sm font-medium text-[#111827]">{skill}</p>
+                                          <div className="flex items-center gap-2">
+                                            <span className={`rounded-full px-2 py-1 text-[10px] font-semibold ${priority.tone}`}>
+                                              {priority.label}
+                                            </span>
+                                            <button
+                                              type="button"
+                                              disabled={alreadyAdded}
+                                              onClick={() =>
+                                                setProfile((current) => ({
+                                                  ...current,
+                                                  skills: alreadyAdded ? current.skills : [...(current.skills || []), skill],
+                                                }))
+                                              }
+                                              className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${
+                                                alreadyAdded ? "bg-[#dff4d8] text-[#138d1a]" : "bg-[#138d1a] text-white"
+                                              }`}
+                                            >
+                                              {alreadyAdded ? "Added" : "Add"}
+                                            </button>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                  <div className="hidden space-y-3 sm:block">
+                                    {desktopRecommendedSkills.map((skill, index) => {
+                                  const priority =
+                                    index < 2 ? { label: "High", tone: "bg-[#fff1f0] text-[#d94d3f]" }
+                                    : index < 4 ? { label: "Medium", tone: "bg-[#fff6ea] text-[#dd8a1a]" }
+                                    : { label: "Low", tone: "bg-[#eef8ea] text-[#4d9f2e]" };
+                                  const alreadyAdded = (profile.skills || []).includes(skill);
+
+                                  return (
+                                    <div key={skill} className="flex items-center justify-between gap-3 rounded-2xl bg-[#fbfdf8] px-4 py-3">
+                                      <div className="flex items-center gap-3">
+                                        <span className={`h-2.5 w-2.5 rounded-full ${index < 2 ? "bg-[#ef4444]" : index < 4 ? "bg-[#f59e0b]" : "bg-[#eab308]"}`} />
+                                        <p className="text-sm font-medium text-[#111827]">{skill}</p>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${priority.tone}`}>
+                                          {priority.label}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          disabled={alreadyAdded}
+                                          onClick={() =>
+                                            setProfile((current) => ({
+                                              ...current,
+                                              skills: alreadyAdded ? current.skills : [...(current.skills || []), skill],
+                                            }))
+                                          }
+                                          className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                                            alreadyAdded ? "bg-[#dff4d8] text-[#138d1a]" : "bg-[#138d1a] text-white"
+                                          }`}
+                                        >
+                                          {alreadyAdded ? "Added" : "Add"}
+                                        </button>
+                                      </div>
+                                    </div>
+                                  );
+                                    })}
+                                  </div>
+                                </>
+                              ) : (
+                                <p className="text-sm text-zinc-500">No additional gap skills were found right now.</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+                          <div className="rounded-[1.4rem] border border-[#e4ebdf] bg-white p-4 sm:rounded-[1.8rem] sm:p-5">
+                            <p className="text-sm font-semibold text-[#111827]">Skill Category Breakdown</p>
+                            <div className="mt-4 grid gap-2 sm:hidden">
+                              {mobileCategoryBreakdown.map((category) => (
+                                <div key={category.label} className="rounded-2xl bg-[#fbfdf8] px-3 py-3">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <p className="text-sm font-medium text-[#11203b]">{category.label}</p>
+                                    <span className="text-sm font-semibold text-[#39a02f]">{category.value}%</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            <div className="mt-5 hidden space-y-4 sm:block">
+                              {skillCategoryBreakdown.map((category) => (
+                                <div key={category.label}>
+                                  <div className="mb-2 flex items-center justify-between gap-3">
+                                    <p className="text-sm font-medium text-[#11203b]">{category.label}</p>
+                                    <span className="text-sm font-semibold text-[#39a02f]">{category.value}%</span>
+                                  </div>
+                                  <div className="h-2.5 rounded-full bg-[#edf2ed]">
+                                    <div
+                                      className="h-2.5 rounded-full bg-[linear-gradient(90deg,#9be27c_0%,#34cd2f_55%,#138d1a_100%)]"
+                                      style={{ width: `${category.value}%` }}
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="mt-4 rounded-2xl bg-[#fbfdf8] px-4 py-4 sm:mt-5">
+                              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Detected strengths</p>
+                              <div className="mt-3 space-y-2">
+                                <div className="space-y-2 sm:hidden">
+                                  {mobileStrengthSignals.map((item) => (
+                                    <p key={item} className="text-sm leading-6 text-zinc-700">{item}</p>
+                                  ))}
+                                </div>
+                                <div className="hidden space-y-2 sm:block">
+                                  {(suggestionStrengthSignals.length > 0
+                                    ? suggestionStrengthSignals
+                                    : ["Resume has enough baseline signal to start improving."]).slice(0, 3).map((item) => (
+                                    <p key={item} className="text-sm leading-6 text-zinc-700">{item}</p>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="rounded-[1.4rem] border border-[#e4ebdf] bg-white p-4 sm:rounded-[1.8rem] sm:p-5">
+                            <p className="text-sm font-semibold text-[#111827]">Recommended Learning Path</p>
+                            <div className="mt-4 grid grid-cols-2 gap-3 sm:mt-5 sm:grid-cols-4 sm:gap-4">
+                              {[
+                                { title: "Learn Basics", copy: "2-3 Weeks" },
+                                { title: "Practice Skills", copy: "3-4 Weeks" },
+                                { title: "Real Projects", copy: "4-6 Weeks" },
+                                { title: "Get Certified", copy: "2-3 Weeks" },
+                              ].map((step, index) => (
+                                <div key={step.title} className="rounded-2xl bg-[#fbfdf8] px-3 py-3 text-center sm:px-4 sm:py-4">
+                                  <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl bg-[#eaf8e3] text-[#138d1a] sm:h-11 sm:w-11">
+                                    <Award className="h-4 w-4" />
+                                  </div>
+                                  <p className="mt-3 text-sm font-semibold text-[#111827]">{step.title}</p>
+                                  <p className="mt-1 text-xs text-[#667085]">{step.copy}</p>
+                                  {index < 3 ? <p className="mt-2 hidden text-xs text-[#a7b3ac] sm:block">Next</p> : null}
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="mt-5">
+                              <div className="flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#7a8a74]">
+                                <span>Your Progress</span>
+                                <span>{Math.min(100, resumeSkillSuggestions.resumeReadinessScore)}% completed</span>
+                              </div>
+                              <div className="mt-3 h-2.5 rounded-full bg-[#edf2ed]">
+                                <div
+                                  className="h-2.5 rounded-full bg-[linear-gradient(90deg,#7ee46b_0%,#138d1a_100%)]"
+                                  style={{ width: `${Math.min(100, resumeSkillSuggestions.resumeReadinessScore)}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            {suggestionAcademyCourses.length > 0 ? (
+                              <div className="mt-5 space-y-3">
+                                <div className="space-y-3 sm:hidden">
+                                  {mobileCourseRecommendations.map((course) => (
+                                    <a
+                                      key={course.code}
+                                      href={course.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="block rounded-2xl border border-[#e4ebdf] bg-[#fbfdf8] p-4 transition hover:-translate-y-0.5 hover:border-[#c8ddbf]"
+                                    >
+                                      <p className="text-sm font-semibold text-[#111827]">{course.title}</p>
+                                    </a>
+                                  ))}
+                                </div>
+                                <div className="hidden space-y-3 sm:block">
+                                  {suggestionAcademyCourses.slice(0, 2).map((course) => (
+                                    <a
+                                      key={course.code}
+                                      href={course.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="block rounded-2xl border border-[#e4ebdf] bg-[#fbfdf8] p-4 transition hover:-translate-y-0.5 hover:border-[#c8ddbf]"
+                                    >
+                                      <p className="text-sm font-semibold text-[#111827]">{course.title}</p>
+                                      <p className="mt-2 text-sm leading-6 text-zinc-600">{course.description}</p>
+                                    </a>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="mt-5 text-sm leading-7 text-[#6d7d68]">
+                                Course recommendations will appear here when we detect strong skill-gap matches from the resume.
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1239,7 +1730,290 @@ export default function ProfileForm({
                 </div>
               ) : null}
 
-              {resumeOptimization ? (
+              {resumeOptimization && activeResumeReport === "optimize" ? (
+                <div className="rounded-[1.5rem] border border-[#dbe6d7] bg-[linear-gradient(180deg,#f8fcf5_0%,#ffffff_100%)] p-4 shadow-[0_20px_44px_rgba(87,108,67,0.08)] sm:rounded-[2rem] sm:p-5">
+                  <div className="flex flex-col gap-4 border-b border-[#e4ece0] pb-5 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-[1.1rem] bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] text-[#091737] shadow-[0_10px_22px_rgba(52,205,47,0.18)] sm:h-12 sm:w-12 sm:rounded-2xl">
+                        <Sparkles className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-[#111827] sm:text-xl">Fix My Resume</h3>
+                        <p className="mt-1 text-sm leading-6 text-[#667085] sm:hidden">
+                          Before and after improvements, simplified for a quick mobile review.
+                        </p>
+                        <p className="mt-1 hidden text-sm leading-6 text-[#667085] sm:block">
+                          {resumeOptimization.note || "AI suggestions to improve your resume with a clearer before-and-after view."}
+                        </p>
+                      </div>
+                    </div>
+
+                    <label className="inline-flex cursor-pointer items-center gap-2 self-start rounded-2xl border border-[#dbe4d5] bg-white px-3 py-2.5 text-xs font-semibold text-[#11203b] shadow-sm hover:bg-[#f7fbf4] sm:px-4 sm:py-3 sm:text-sm">
+                      <Upload className="h-4 w-4 text-[#138d1a]" />
+                      Upload New Resume
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept=".pdf,.docx"
+                        onChange={handleResumeUpload}
+                        disabled={isUploading}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap gap-2 sm:mt-5 sm:gap-3">
+                    {[
+                      { key: "suggestions", label: "AI Suggestions" },
+                      { key: "enhancements", label: "Content Enhancements" },
+                      { key: "summary", label: "Summary" },
+                    ].map((tab) => (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={() => setResumeOptimizerTab(tab.key as "suggestions" | "enhancements" | "summary")}
+                        className={`rounded-full px-3 py-2 text-xs font-semibold transition sm:px-4 sm:text-sm ${
+                          resumeOptimizerTab === tab.key
+                            ? "bg-[#e5f8dd] text-[#138d1a]"
+                            : "bg-white text-[#667085] hover:bg-[#f4f7f1]"
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mt-6 grid gap-4 xl:mt-8 xl:grid-cols-[minmax(0,1fr)_96px_minmax(0,1fr)] xl:items-center xl:gap-6">
+                    <div className="rounded-[1.35rem] border border-[#e8ede5] bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.04)] sm:rounded-[1.8rem] sm:p-5">
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#d05f5f]">Before</p>
+                      <div className="mt-4 border-b border-[#eef2ee] pb-4 sm:mt-5 sm:pb-5">
+                        <h4 className="text-xl font-bold text-[#111827] sm:text-2xl">{resumeOptimization.originalPreview.name}</h4>
+                        <p className="mt-1 text-sm font-medium text-[#667085]">{resumeOptimization.originalPreview.headline}</p>
+                      </div>
+
+                      {resumeOptimizerTab === "suggestions" ? (
+                        <div className="mt-5 space-y-5">
+                          <div>
+                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Summary</p>
+                            <p className="mt-3 text-sm leading-6 text-zinc-600 sm:leading-7">{resumeOptimization.originalPreview.summary}</p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Experience</p>
+                            <div className="mt-3 space-y-2">
+                              {bulletize(
+                                (resumeOptimization.originalPreview.bulletPoints.length > 0
+                                  ? resumeOptimization.originalPreview.bulletPoints
+                                  : [
+                                      "Experience bullets are present but need stronger impact language.",
+                                      "Keywords and tools can be surfaced more clearly.",
+                                      "Outcomes can be made easier for ATS and recruiters to scan.",
+                                    ]).slice(0, 2)
+                              ).map((point) => (
+                                <p key={point} className="text-sm leading-6 text-zinc-600 sm:leading-7">{point}</p>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Skills</p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {(resumeOptimization.originalPreview.skills.length > 0
+                                ? resumeOptimization.originalPreview.skills
+                                : ["Resume draft"]).map((skill) => (
+                                <span key={skill} className="rounded-full bg-[#f5f7f8] px-3 py-1 text-xs font-medium text-zinc-600">
+                                  {skill}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ) : resumeOptimizerTab === "enhancements" ? (
+                        <div className="mt-5 space-y-3">
+                          {(resumeOptimization.focusAreas.length > 0
+                            ? resumeOptimization.focusAreas
+                            : ["This resume has good baseline signal but still needs clearer positioning and better ATS phrasing."]).map((item) => (
+                            <p key={item} className="text-sm leading-6 text-zinc-600 sm:leading-7">{item}</p>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="mt-5 space-y-4">
+                          <div>
+                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Current score</p>
+                            <p className="mt-2 text-4xl font-bold text-[#111827]">{resumeOptimization.beforeScore}%</p>
+                          </div>
+                          <p className="text-sm leading-6 text-zinc-600 sm:leading-7">
+                            This is the current baseline before cleaner summary language, stronger bullet structure, and ATS-friendly keyword surfacing.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="hidden items-center justify-center xl:flex">
+                      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[radial-gradient(circle_at_top,#ffffff,#eef8e9)] shadow-[0_10px_24px_rgba(87,108,67,0.12)]">
+                        <Sparkles className="h-8 w-8 text-[#34cd2f]" />
+                      </div>
+                    </div>
+
+                    <div className="rounded-[1.35rem] border border-[#ddedd8] bg-white p-4 shadow-[0_16px_32px_rgba(52,205,47,0.08)] sm:rounded-[1.8rem] sm:p-5">
+                      <div className="flex items-start justify-between gap-3 border-b border-[#eef5eb] pb-5">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#138d1a]">After</p>
+                          <h4 className="mt-3 text-xl font-bold text-[#111827] sm:text-2xl">{profile.name || resumeOptimization.originalPreview.name}</h4>
+                          <p className="mt-1 text-sm font-semibold text-[#2aa82b]">{profile.headline || resumeOptimization.originalPreview.headline}</p>
+                        </div>
+                        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#e8f8e3] text-[#138d1a]">
+                          <CheckCircle2 className="h-4 w-4" />
+                        </span>
+                      </div>
+
+                      {resumeOptimizerTab === "suggestions" ? (
+                        <div className="mt-5 space-y-5">
+                          <div>
+                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Professional summary</p>
+                            <div className="mt-3 rounded-[1.15rem] bg-[linear-gradient(135deg,rgba(52,205,47,0.14),rgba(128,239,122,0.08)_55%,rgba(255,255,255,0.98))] px-4 py-3 shadow-[0_10px_24px_rgba(52,205,47,0.10)] ring-1 ring-[#d9f3d0]">
+                              <p className="text-sm leading-6 text-zinc-800 sm:leading-7">{resumeOptimization.summary}</p>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Experience</p>
+                            <div className="mt-3 space-y-2">
+                              {bulletize(resumeOptimization.bulletPoints.slice(0, 3)).map((point) => (
+                                <div
+                                  key={point}
+                                  className="rounded-[1rem] bg-[linear-gradient(135deg,rgba(52,205,47,0.16),rgba(234,248,227,0.92)_58%,rgba(255,255,255,0.98))] px-3.5 py-3 shadow-[0_8px_20px_rgba(52,205,47,0.08)] ring-1 ring-[#dbf1d2]"
+                                >
+                                  <p className="text-sm leading-6 text-zinc-800 sm:leading-7">{point}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Skills</p>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {resumeOptimization.skillsSection.slice(0, 8).map((skill) => (
+                                <span
+                                  key={skill}
+                                  className="rounded-full bg-[linear-gradient(135deg,#c8f3b7,#ecfae7)] px-3 py-1.5 text-xs font-semibold text-[#138d1a] shadow-[0_6px_16px_rgba(52,205,47,0.12)] ring-1 ring-[#d7f1cd]"
+                                >
+                                  {skill}
+                                </span>
+                              ))}
+                              {resumeOptimization.skillsSection.length > 8 ? (
+                                <span className="rounded-full bg-[#f4f7f1] px-3 py-1 text-xs font-medium text-zinc-600">
+                                  + {resumeOptimization.skillsSection.length - 8} more
+                                </span>
+                              ) : null}
+                            </div>
+                          </div>
+                        </div>
+                      ) : resumeOptimizerTab === "enhancements" ? (
+                        <div className="mt-5 space-y-5">
+                          <div>
+                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">What improved</p>
+                            <div className="mt-3 space-y-2">
+                              {(resumeOptimization.strengths.length > 0
+                                ? resumeOptimization.strengths
+                                : ["This version is clearer, stronger, and better aligned for ATS scanning."]).map((item) => (
+                                <div
+                                  key={item}
+                                  className="rounded-[1rem] bg-[linear-gradient(135deg,rgba(52,205,47,0.16),rgba(234,248,227,0.92)_58%,rgba(255,255,255,0.98))] px-3.5 py-3 shadow-[0_8px_20px_rgba(52,205,47,0.08)] ring-1 ring-[#dbf1d2]"
+                                >
+                                  <p className="text-sm leading-6 text-zinc-800 sm:leading-7">{item}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">ATS formatting</p>
+                            <div className="mt-3 space-y-2">
+                              {bulletize(resumeOptimization.atsFormattingTips.slice(0, 2)).map((tip) => (
+                                <div
+                                  key={tip}
+                                  className="rounded-[1rem] bg-[linear-gradient(135deg,rgba(128,239,122,0.18),rgba(240,252,234,0.94)_58%,rgba(255,255,255,0.98))] px-3.5 py-3 shadow-[0_8px_20px_rgba(52,205,47,0.08)] ring-1 ring-[#dbf1d2]"
+                                >
+                                  <p className="text-sm leading-6 text-zinc-800 sm:leading-7">{tip}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-5 space-y-4">
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                            {[
+                              { label: "Improvements", value: resumeOptimization.bulletPoints.length + resumeOptimization.atsFormattingTips.length },
+                              { label: "Readability Score", value: `${resumeOptimization.afterScore}%` },
+                              { label: "ATS Score Boost", value: `+${resumeOptimization.improvementPercent}%` },
+                            ].map((item) => (
+                              <div key={item.label} className="rounded-2xl bg-[#f8fbf6] px-4 py-3">
+                                <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#7a8a74]">{item.label}</p>
+                                <p className="mt-2 text-2xl font-bold text-[#111827]">{item.value}</p>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-sm leading-6 text-zinc-700 sm:leading-7">
+                            This optimized version is designed to read more clearly, surface stronger keywords, and make your best experience easier for both recruiters and ATS systems to understand.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-6 grid grid-cols-1 gap-3 rounded-[1.3rem] border border-[#dbe6d7] bg-[#fbfdf8] p-3 sm:grid-cols-2 sm:rounded-[1.6rem] sm:p-4 lg:grid-cols-4">
+                    <div className="rounded-2xl bg-white px-4 py-3">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#7a8a74]">Improvements</p>
+                      <p className="mt-2 text-2xl font-bold text-[#111827]">
+                        {resumeOptimization.bulletPoints.length + resumeOptimization.atsFormattingTips.length}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-white px-4 py-3">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#7a8a74]">Readability Score</p>
+                      <p className="mt-2 text-2xl font-bold text-[#111827]">{resumeOptimization.afterScore}%</p>
+                    </div>
+                    <div className="rounded-2xl bg-white px-4 py-3">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#7a8a74]">ATS Score Boost</p>
+                      <p className="mt-2 text-2xl font-bold text-[#138d1a]">+{resumeOptimization.improvementPercent}%</p>
+                    </div>
+                    <div className="rounded-2xl bg-white px-4 py-3">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#7a8a74]">Impact Level</p>
+                      <p className="mt-2 text-2xl font-bold text-[#111827]">
+                        {resumeOptimization.improvementPercent >= 25 ? "High" : resumeOptimization.improvementPercent >= 12 ? "Medium" : "Low"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-col gap-3 border-t border-[#e4ece0] pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6d7d68]">
+                      Generated via {resumeOptimization.source === "ai" ? "AI action engine" : "smart template engine"}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(
+                          [
+                            "SUMMARY",
+                            resumeOptimization.summary,
+                            "",
+                            "SKILLS",
+                            resumeOptimization.skillsSection.join(", "),
+                            "",
+                            "BULLET POINTS",
+                            ...resumeOptimization.bulletPoints.map((point) => `- ${point}`),
+                            "",
+                            "ATS FORMATTING TIPS",
+                            ...resumeOptimization.atsFormattingTips.map((tip) => `- ${tip}`),
+                          ].join("\n")
+                        );
+                        setCopiedOptimization(true);
+                        window.setTimeout(() => setCopiedOptimization(false), 1800);
+                      }}
+                      className="rounded-xl border border-[#dbe4d5] bg-white px-3 py-2 text-xs font-semibold text-[#138d1a] hover:bg-[#f4f7f1]"
+                    >
+                      {copiedOptimization ? "Copied" : "Copy optimized draft"}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {false && resumeOptimization ? (
                 <div className="space-y-4 rounded-[1.8rem] border border-[#dbe6d7] bg-[linear-gradient(135deg,#f4fbf0,#ffffff_65%)] p-5 shadow-[0_16px_34px_rgba(87,108,67,0.06)]">
                   <div className="flex items-start gap-3 border-b border-[#e4ece0] pb-4">
                     <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] text-[#091737] shadow-[0_10px_22px_rgba(52,205,47,0.18)]">
@@ -1255,10 +2029,10 @@ export default function ProfileForm({
                   </div>
 
                   <div className="space-y-4">
-                    {[
-                      { label: "Original score", value: resumeOptimization.beforeScore },
-                      { label: "Fixed score", value: resumeOptimization.afterScore },
-                      { label: "Improvement", value: resumeOptimization.improvementPercent },
+                    {[ 
+                      { label: "Original score", value: resumeOptimization!.beforeScore },
+                      { label: "Fixed score", value: resumeOptimization!.afterScore },
+                      { label: "Improvement", value: resumeOptimization!.improvementPercent },
                     ].map((item) => (
                       <div key={item.label}>
                         <div className="mb-2 flex items-center justify-between gap-3">
@@ -1353,20 +2127,21 @@ export default function ProfileForm({
                 </div>
               ) : null}
 
-              {coverLetterDraft ? (
-                <div className="space-y-5 px-1 py-2">
+              {coverLetterDraft && activeResumeReport === "cover" ? (
+                <div className="space-y-4 px-1 py-2">
                   <div className="flex items-start gap-3 pb-1">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#edf8ea,#ffffff)] text-[#138d1a] shadow-[0_10px_22px_rgba(87,108,67,0.1)]">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-[1.1rem] bg-[linear-gradient(135deg,#edf8ea,#ffffff)] text-[#138d1a] shadow-[0_10px_22px_rgba(87,108,67,0.1)] sm:h-11 sm:w-11 sm:rounded-2xl">
                       <Mail className="h-5 w-5" />
                     </div>
                     <div>
                       <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d7d68]">Cover letter draft</p>
-                      <h3 className="mt-1 text-lg font-bold text-[#111827]">Turn the resume into an employer-ready introduction.</h3>
-                      <p className="mt-1 text-sm leading-6 text-[#667085]">{coverLetterDraft.note}</p>
+                      <h3 className="mt-1 text-base font-bold text-[#111827] sm:text-lg">Turn the resume into an employer-ready introduction.</h3>
+                      <p className="mt-1 text-sm leading-6 text-[#667085] sm:hidden">A shorter preview for mobile, with the full draft ready to copy.</p>
+                      <p className="mt-1 hidden text-sm leading-6 text-[#667085] sm:block">{coverLetterDraft.note}</p>
                     </div>
                   </div>
 
-                  <div className="grid gap-5 xl:grid-cols-[240px_minmax(0,1fr)]">
+                  <div className="grid gap-4 rounded-[1.4rem] border border-[#e4ebdf] bg-white p-4 xl:grid-cols-[240px_minmax(0,1fr)]">
                     <div className="space-y-2">
                       <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Subject</p>
                       <p className="text-sm font-semibold leading-6 text-zinc-800">{coverLetterDraft.subject}</p>
@@ -1374,12 +2149,17 @@ export default function ProfileForm({
 
                     <div className="space-y-3 border-l-0 border-[#e4ebdf] pl-0 xl:border-l xl:pl-5">
                       <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Draft preview</p>
-                      <div className="space-y-3 text-sm leading-7 text-zinc-700">
+                      <div className="hidden space-y-3 text-sm leading-7 text-zinc-700 sm:block">
                         <p>{coverLetterDraft.intro}</p>
                         {coverLetterDraft.body.map((paragraph) => (
                           <p key={paragraph}>{paragraph}</p>
                         ))}
                         <p>{coverLetterDraft.closing}</p>
+                      </div>
+                      <div className="space-y-3 text-sm leading-6 text-zinc-700 sm:hidden">
+                        {coverLetterPreviewParagraphs.map((paragraph) => (
+                          <p key={paragraph}>{paragraph}</p>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -1560,25 +2340,107 @@ export default function ProfileForm({
                 </div>
               ) : null}
 
-              {careerPathPredictions && careerPathPredictions.paths.length > 0 ? (
+              {careerPathPredictions && careerPathPredictions.paths.length > 0 && activeResumeReport === "career" ? (
                 <div className="space-y-4 px-1 py-2">
                   <div className="flex items-start gap-3 pb-4">
                     <Compass className="mt-0.5 h-5 w-5 text-[#138d1a]" />
                     <div>
                       <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d7d68]">Learning path</p>
-                      <h3 className="mt-1 text-lg font-bold text-[#111827]">Map the next learning path, not just isolated roles.</h3>
-                      <p className="mt-1 text-sm leading-6 text-[#667085]">
+                      <h3 className="mt-1 text-base font-bold text-[#111827] sm:text-lg">Map the next learning path, not just isolated roles.</h3>
+                      <p className="mt-1 hidden text-sm leading-6 text-[#667085] sm:block">
                         Follow the sequence below to see the most realistic next moves and the skills each move still needs.
                       </p>
                     </div>
                   </div>
 
-                  <div className="relative overflow-hidden rounded-[2rem] border border-[#dbe6d7] bg-[linear-gradient(180deg,#f7fcf4_0%,#ffffff_100%)] p-5 shadow-[0_18px_42px_rgba(87,108,67,0.08)]">
+                  <div className="space-y-4 sm:hidden">
+                    <div className="relative h-40 overflow-visible bg-[linear-gradient(180deg,#0e2216_0%,#102919_50%,#163521_100%)] px-2">
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_left_center,rgba(126,228,107,0.12),transparent_28%)]" />
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(116,211,255,0.08),transparent_24%)]" />
+                      <div className="relative h-full">
+                        <svg
+                          viewBox="0 0 320 140"
+                          className="absolute inset-0 h-full w-full"
+                          aria-hidden="true"
+                        >
+                          <defs>
+                            <linearGradient id="mobile-career-line" x1="0%" y1="100%" x2="100%" y2="0%">
+                              <stop offset="0%" stopColor="#7ee46b" />
+                              <stop offset="55%" stopColor="#74d3ff" />
+                              <stop offset="100%" stopColor="#ffd86b" />
+                            </linearGradient>
+                          </defs>
+                          <path
+                            d="M 14 126 C 52 126, 88 104, 144 82 S 228 54, 306 20"
+                            fill="none"
+                            stroke="rgba(255,255,255,0.08)"
+                            strokeWidth="10"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M 14 126 C 52 126, 88 104, 144 82 S 228 54, 306 20"
+                            fill="none"
+                            stroke="url(#mobile-career-line)"
+                            strokeWidth="5"
+                            strokeLinecap="round"
+                          />
+                          <path d="M 36 120 L 36 136" stroke="rgba(255,255,255,0.5)" strokeWidth="1.2" strokeDasharray="3 4" />
+                          <path d="M 158 82 L 158 136" stroke="rgba(255,255,255,0.5)" strokeWidth="1.2" strokeDasharray="3 4" />
+                          <path d="M 286 20 L 286 136" stroke="rgba(255,255,255,0.5)" strokeWidth="1.2" strokeDasharray="3 4" />
+                        </svg>
+
+                        {mobileCareerStages[0] ? (
+                          <div className="absolute left-[10%] top-[72%] -translate-x-1/2">
+                            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white/15 shadow-[0_0_22px_rgba(126,228,107,0.28)]">
+                              <div className="h-3.5 w-3.5 rounded-full border-2 border-white bg-[#7ee46b] shadow-[0_0_18px_rgba(126,228,107,0.8)]" />
+                            </div>
+                          </div>
+                        ) : null}
+                        {mobileCareerStages[1] ? (
+                          <div className="absolute left-1/2 top-[44%] -translate-x-1/2">
+                            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white/15 shadow-[0_0_22px_rgba(116,211,255,0.24)]">
+                              <div className="h-3.5 w-3.5 rounded-full border-2 border-white bg-[#74d3ff] shadow-[0_0_18px_rgba(116,211,255,0.75)]" />
+                            </div>
+                          </div>
+                        ) : null}
+                        {mobileCareerStages[2] ? (
+                          <div className="absolute left-[88%] top-[10%] -translate-x-1/2">
+                            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-white/15 shadow-[0_0_22px_rgba(255,216,107,0.22)]">
+                              <div className="h-3.5 w-3.5 rounded-full border-2 border-white bg-[#ffd86b] shadow-[0_0_18px_rgba(255,216,107,0.78)]" />
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      {mobileCareerStages.map((path, index) => {
+                        const tones = [
+                          "bg-[#7ee46b] text-[#0d2512]",
+                          "bg-[#74d3ff] text-[#0b2231]",
+                          "bg-[#ffd86b] text-[#342200]",
+                        ];
+
+                        return (
+                          <div key={`${path.title}-${path.timeline}-mobile-summary`} className="text-center">
+                            <div className="flex flex-col items-center gap-2">
+                              <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold ${tones[index] || tones[0]}`}>
+                                {index + 1}
+                              </span>
+                              <p className="text-[11px] font-semibold leading-4 text-[#111827]">{path.title}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="relative hidden overflow-hidden rounded-[1.5rem] border border-[#dbe6d7] bg-[linear-gradient(180deg,#f7fcf4_0%,#ffffff_100%)] p-4 shadow-[0_18px_42px_rgba(87,108,67,0.08)] sm:block sm:rounded-[2rem] sm:p-5">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(52,205,47,0.10),transparent_26%)]" />
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(95,213,255,0.06),transparent_22%)]" />
 
-                    <div className="relative grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-                      <div className="space-y-4 rounded-[1.6rem] border border-[#e3ebde] bg-white/82 p-4 backdrop-blur-sm">
+                    <div className="relative grid gap-4 sm:gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+                      <div className="hidden space-y-4 rounded-[1.6rem] border border-[#e3ebde] bg-white/82 p-4 backdrop-blur-sm lg:block">
                         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d7d68]">Roadmap view</p>
                         <h4 className="text-xl font-bold text-[#111827]">See your growth like a guided journey.</h4>
                         <p className="text-sm leading-7 text-[#667085]">
@@ -1601,8 +2463,8 @@ export default function ProfileForm({
                         </div>
                       </div>
 
-                      <div className="relative min-h-[420px] overflow-hidden rounded-[1.8rem] border border-[#dbe6d7] bg-[linear-gradient(180deg,#f4fbef_0%,#ffffff_100%)] p-4 pb-28 sm:min-h-[500px] sm:pb-28 lg:min-h-[470px] lg:pb-24">
-                        <div className="absolute left-4 top-4 z-10 rounded-full border border-white/80 bg-white/88 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5d6d58] shadow-[0_8px_20px_rgba(87,108,67,0.08)] backdrop-blur-sm">
+                      <div className="relative min-h-[340px] overflow-hidden rounded-[1.4rem] border border-[#dbe6d7] bg-[linear-gradient(180deg,#f4fbef_0%,#ffffff_100%)] p-3 pb-24 sm:min-h-[500px] sm:rounded-[1.8rem] sm:p-4 sm:pb-28 lg:min-h-[470px] lg:pb-24">
+                        <div className="absolute left-3 top-3 z-10 rounded-full border border-white/80 bg-white/88 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#5d6d58] shadow-[0_8px_20px_rgba(87,108,67,0.08)] backdrop-blur-sm sm:left-4 sm:top-4 sm:text-[11px]">
                           Tap a stage to preview details
                         </div>
                         <svg
@@ -1653,7 +2515,7 @@ export default function ProfileForm({
                                 aria-label={`Open roadmap details for ${path.title}`}
                                 aria-expanded={isActive}
                                 onClick={() => setActiveRoadmapIndex((current) => (current === index ? null : index))}
-                                className={`absolute z-20 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 border-white text-sm font-bold text-white shadow-[0_16px_30px_rgba(19,141,26,0.22)] transition duration-200 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-[#b9efaa] ${
+                                className={`absolute z-20 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 border-white text-sm font-bold text-white shadow-[0_16px_30px_rgba(19,141,26,0.22)] transition duration-200 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-[#b9efaa] sm:h-12 sm:w-12 ${
                                   isActive
                                     ? "bg-[linear-gradient(135deg,#0f172a,#138d1a)]"
                                     : "bg-[linear-gradient(135deg,#34cd2f,#138d1a)]"
@@ -1665,9 +2527,9 @@ export default function ProfileForm({
 
                               <div
                                 className="pointer-events-none absolute z-10 -translate-x-1/2 text-center"
-                                style={{ left: point.left, top: `calc(${point.top} - 4.2rem)` }}
+                                style={{ left: point.left, top: `calc(${point.top} - 3.7rem)` }}
                               >
-                                <span className="inline-flex max-w-[120px] rounded-full bg-white/92 px-2.5 py-1 text-[10px] font-semibold leading-4 text-[#2b3a2a] shadow-[0_8px_20px_rgba(87,108,67,0.08)] backdrop-blur-sm sm:max-w-[148px]">
+                                <span className="inline-flex max-w-[94px] rounded-full bg-white/92 px-2 py-1 text-[9px] font-semibold leading-3 text-[#2b3a2a] shadow-[0_8px_20px_rgba(87,108,67,0.08)] backdrop-blur-sm sm:max-w-[148px] sm:px-2.5 sm:text-[10px] sm:leading-4">
                                   {path.title}
                                 </span>
                               </div>

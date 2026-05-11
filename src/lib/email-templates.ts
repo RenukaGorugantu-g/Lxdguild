@@ -627,8 +627,8 @@ function renderEmailHtml(content: TemplateContent) {
                         <div class="email-chip" style="width:46px;height:46px;border-radius:14px;background:${content.theme.accent};color:#ffffff;font-size:11px;font-weight:800;line-height:46px;text-align:center;letter-spacing:0.08em;box-shadow:0 10px 18px rgba(15,23,42,0.14);">${escapeHtml(item.icon)}</div>
                       </td>
                       <td style="vertical-align:top;">
-                        <p style="margin:0;font-size:15px;font-weight:700;color:#13202d;">${escapeHtml(item.title)}</p>
-                        <p style="margin:8px 0 0;font-size:14px;line-height:1.8;color:#475569;">${escapeHtml(item.copy)}</p>
+                        <p class="content-title" style="margin:0;font-size:15px;font-weight:700;color:#13202d;">${escapeHtml(item.title)}</p>
+                        <p class="content-copy" style="margin:8px 0 0;font-size:14px;line-height:1.8;color:#475569;">${escapeHtml(item.copy)}</p>
                       </td>
                     </tr>
                   </table>
@@ -649,8 +649,8 @@ function renderEmailHtml(content: TemplateContent) {
               (item) => `<table class="email-card" role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:12px;border-collapse:separate;border-spacing:0;background:#fffdf9;border:1px solid ${content.theme.border};border-radius:22px;">
                 <tr>
                   <td style="padding:18px;">
-                    <p style="margin:0;font-size:15px;font-weight:700;color:#13202d;">${escapeHtml(item.title)}</p>
-                    <p style="margin:8px 0 0;font-size:14px;line-height:1.8;color:#475569;">${escapeHtml(item.copy)}</p>
+                    <p class="content-title" style="margin:0;font-size:15px;font-weight:700;color:#13202d;">${escapeHtml(item.title)}</p>
+                    <p class="content-copy" style="margin:8px 0 0;font-size:14px;line-height:1.8;color:#475569;">${escapeHtml(item.copy)}</p>
                     ${item.href ? `<div style="margin-top:12px;"><a href="${escapeHtml(item.href)}" style="color:${content.theme.accent};font-size:13px;font-weight:800;text-decoration:none;">Open resource</a></div>` : ""}
                   </td>
                 </tr>
@@ -672,8 +672,8 @@ function renderEmailHtml(content: TemplateContent) {
             .map(
               (detail) =>
                 `<tr>
-                  <td style="padding:10px 0;border-bottom:1px solid #eef2f7;font-size:13px;font-weight:700;color:#64748b;vertical-align:top;width:34%;">${escapeHtml(detail.label)}</td>
-                  <td style="padding:10px 0;border-bottom:1px solid #eef2f7;font-size:14px;line-height:1.7;color:#0f172a;vertical-align:top;">${escapeHtml(detail.value)}</td>
+                  <td class="content-label" style="padding:10px 0;border-bottom:1px solid #eef2f7;font-size:13px;font-weight:700;color:#64748b;vertical-align:top;width:34%;">${escapeHtml(detail.label)}</td>
+                  <td class="content-value" style="padding:10px 0;border-bottom:1px solid #eef2f7;font-size:14px;line-height:1.7;color:#0f172a;vertical-align:top;">${escapeHtml(detail.value)}</td>
                 </tr>`
             )
             .join("")}
@@ -843,6 +843,30 @@ function renderEmailHtml(content: TemplateContent) {
       [data-ogsb] .hero-note {
         background: ${heroNoteBg} !important;
         border-color: ${heroNoteBorder} !important;
+      }
+
+      [data-ogsc] .content-title,
+      [data-ogsb] .content-title {
+        color: #13202d !important;
+        -webkit-text-fill-color: #13202d !important;
+      }
+
+      [data-ogsc] .content-copy,
+      [data-ogsb] .content-copy {
+        color: #475569 !important;
+        -webkit-text-fill-color: #475569 !important;
+      }
+
+      [data-ogsc] .content-label,
+      [data-ogsb] .content-label {
+        color: #64748b !important;
+        -webkit-text-fill-color: #64748b !important;
+      }
+
+      [data-ogsc] .content-value,
+      [data-ogsb] .content-value {
+        color: #0f172a !important;
+        -webkit-text-fill-color: #0f172a !important;
       }
     </style>
   </head>
