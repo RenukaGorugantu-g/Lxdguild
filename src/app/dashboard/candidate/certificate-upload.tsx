@@ -90,19 +90,19 @@ export default function CertificateUpload({ userId }: { userId: string }) {
 
   if (status === 'success') {
     return (
-      <div className="p-6 bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/30 rounded-2xl flex items-center gap-4">
-        <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-full">
+      <div className="flex items-center gap-4 rounded-2xl border border-green-400/30 bg-[linear-gradient(180deg,#17305a_0%,#11203b_100%)] p-6 text-white">
+        <div className="rounded-full bg-green-500/15 p-2">
           <CheckCircle className="w-6 h-6 text-green-600" />
         </div>
         <div>
-          <h4 className="font-bold text-green-900 dark:text-green-400">Certificate Uploaded</h4>
-          <p className="text-sm text-green-700 dark:text-green-500">
+          <h4 className="font-bold text-white">Certificate Uploaded</h4>
+          <p className="text-sm text-white/80">
             {submitOutcome === 'approved'
               ? 'Your certificate is approved. You can browse and apply to jobs from the Job Board.'
               : 'Our team will review your certificate within 24-48 hours.'}
           </p>
           {submitOutcome === 'pending_review' && validationHint && (
-            <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-1">{validationHint}</p>
+            <p className="mt-1 text-xs text-white/65">{validationHint}</p>
           )}
         </div>
       </div>
@@ -110,17 +110,17 @@ export default function CertificateUpload({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="p-6 bg-white dark:bg-surface-dark border border-zinc-200 dark:border-zinc-800 rounded-2xl space-y-4">
+    <div className="space-y-4 rounded-2xl border border-[#2a4368] bg-[linear-gradient(180deg,#17305a_0%,#11203b_100%)] p-6 text-white shadow-[0_18px_34px_rgba(17,32,59,0.28)]">
       <div className="flex items-center gap-3 mb-2">
-        <Upload className="w-6 h-6 text-brand-600" />
-        <h3 className="text-lg font-bold">Submit External Certificate</h3>
+        <Upload className="w-6 h-6 text-[#49e63d]" />
+        <h3 className="text-lg font-bold text-white">Submit External Certificate</h3>
       </div>
-      <p className="text-sm text-zinc-500">
+      <p className="text-sm text-white/78">
         Upload your certificate here and enter the certificate code from LearnDash. Matching codes can auto-approve instantly, while unmatched uploads fall back to template validation or admin review.
       </p>
 
       <div className="space-y-2">
-        <label htmlFor="certificate-code" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <label htmlFor="certificate-code" className="text-sm font-medium text-white/90">
           Certificate code
         </label>
         <input
@@ -128,9 +128,9 @@ export default function CertificateUpload({ userId }: { userId: string }) {
           value={certificateCode}
           onChange={(event) => setCertificateCode(event.target.value)}
           placeholder="Example: CLXD202604123"
-          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-brand-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+          className="w-full rounded-xl border border-[#334f7a] bg-[#08111f] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/35 focus:border-[#49e63d]"
         />
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-white/62">
           Use the same code printed on your LearnDash certificate.
         </p>
       </div>
@@ -149,16 +149,16 @@ export default function CertificateUpload({ userId }: { userId: string }) {
           }}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" 
         />
-        <div className="border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl p-8 text-center group-hover:border-brand-500 transition-colors">
-          <Upload className="w-8 h-8 text-zinc-300 mx-auto mb-2 group-hover:text-brand-500" />
-          <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+        <div className="rounded-xl border-2 border-dashed border-[#3a557c] p-8 text-center transition-colors group-hover:border-[#49e63d]">
+          <Upload className="mx-auto mb-2 h-8 w-8 text-white/75 group-hover:text-[#49e63d]" />
+          <p className="text-sm font-medium text-white/78">
             {file ? file.name : "Click or drag to upload (PNG, JPG, PDF)"}
           </p>
         </div>
       </div>
 
       {previewUrl ? (
-        <div className="overflow-hidden rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50">
+        <div className="overflow-hidden rounded-xl border border-[#334f7a] bg-white/5">
           <Image
             src={previewUrl}
             alt="Certificate preview"
@@ -169,7 +169,7 @@ export default function CertificateUpload({ userId }: { userId: string }) {
           />
         </div>
       ) : file ? (
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-white/62">
           {isPdf
             ? "PDF selected. We will score-check the first page of the PDF against the certificate template."
             : "Image selected. Clear PNG/JPG certificate images usually validate best."}
@@ -177,7 +177,7 @@ export default function CertificateUpload({ userId }: { userId: string }) {
       ) : null}
 
       {status === 'error' && (
-        <p className="text-xs text-red-500 flex items-center gap-1">
+        <p className="flex items-center gap-1 text-xs text-red-300">
           <AlertCircle className="w-3 h-3" /> Failed to upload. Please try again.
         </p>
       )}

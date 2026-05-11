@@ -134,17 +134,17 @@ export default async function CandidateApplicationsPage({
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black pt-28 pb-16 px-6">
+    <div className="min-h-screen bg-zinc-50 px-4 pt-28 pb-16 sm:px-6">
       <div className="max-w-5xl mx-auto space-y-6">
         <div>
           <Link href="/dashboard/candidate" className="inline-flex items-center gap-2 text-sm text-brand-600 hover:text-brand-700">
             <ArrowLeft className="w-4 h-4" /> Back to Candidate Dashboard
           </Link>
-          <h1 className="text-3xl font-bold mt-4">My Applied Jobs</h1>
-          <p className="text-zinc-500 mt-1">Track application outcomes from employers in one place.</p>
+          <h1 className="mt-4 text-3xl font-bold text-[#111827]">My Applied Jobs</h1>
+          <p className="mt-1 text-zinc-500">Track application outcomes from employers in one place.</p>
         </div>
 
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex flex-wrap items-center gap-2 text-sm">
           {["all", ...validStatuses].map((item) => (
             <Link
               key={item}
@@ -160,7 +160,7 @@ export default async function CandidateApplicationsPage({
           ))}
         </div>
 
-        <div className="bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-2xl p-6">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6">
           {applications && applications.length > 0 ? (
             <ul className="space-y-4">
               {applications.map((application: ApplicationRow) => {
@@ -171,12 +171,12 @@ export default async function CandidateApplicationsPage({
                 const interviewSchedule = interviewSchedulesByApplicationId.get(application.id) || null;
                 const formattedInterviewDate = formatInterviewDate(interviewSchedule?.startAt);
                 return (
-                  <li key={application.id} className="rounded-2xl border border-zinc-200 dark:border-zinc-800 p-4">
+                  <li key={application.id} className="rounded-2xl border border-zinc-200 p-4">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <Briefcase className="w-4 h-4 text-brand-600" />
-                          <p className="font-semibold">{job?.title || "Job listing"}</p>
+                          <p className="font-semibold text-[#111827]">{job?.title || "Job listing"}</p>
                         </div>
                         <p className="text-sm text-zinc-500">
                           {[job?.company, job?.location].filter(Boolean).join(" | ") || "Company details unavailable"}
@@ -272,7 +272,7 @@ export default async function CandidateApplicationsPage({
               })}
             </ul>
           ) : (
-            <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 p-8 text-center text-zinc-500">
+            <div className="rounded-2xl border border-dashed border-zinc-200 p-8 text-center text-zinc-500">
               No applications found for this filter.
             </div>
           )}

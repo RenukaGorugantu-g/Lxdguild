@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { User, Briefcase, MapPin, AlignLeft, Award, FileText, Upload, Save, Loader2, Link as LinkIcon, Trash2, Sparkles, Wand2, Compass, Mail, TrendingUp, CheckCircle2 } from "lucide-react";
+import { User, Briefcase, MapPin, AlignLeft, Award, FileText, Upload, Save, Loader2, Link as LinkIcon, Trash2, Sparkles, Wand2, Compass, Mail, TrendingUp, CheckCircle2, X } from "lucide-react";
 import SkillAutocomplete from "@/components/SkillAutocomplete";
 import { useRouter } from "next/navigation";
 
@@ -108,6 +108,12 @@ const RESUME_SUGGESTIONS_STORAGE_KEY = "lxdguild_resume_skill_suggestions";
 const RESUME_OPTIMIZER_STORAGE_KEY = "lxdguild_resume_optimizer";
 const CAREER_PATHS_STORAGE_KEY = "lxdguild_resume_career_paths";
 const COVER_LETTER_STORAGE_KEY = "lxdguild_resume_cover_letter";
+const ROADMAP_POSITIONS = [
+  { left: "10%", top: "71%" },
+  { left: "37%", top: "53%" },
+  { left: "63%", top: "35%" },
+  { left: "85%", top: "16%" },
+];
 
 function getProfileStorageKey(baseKey: string, profileId: string) {
   return `${baseKey}:${profileId}`;
@@ -218,6 +224,7 @@ export default function ProfileForm({
   const [resumeOptimization, setResumeOptimization] = useState<ResumeOptimizationState>(null);
   const [careerPathPredictions, setCareerPathPredictions] = useState<CareerPathPredictionState>(null);
   const [coverLetterDraft, setCoverLetterDraft] = useState<CoverLetterState>(null);
+  const [activeRoadmapIndex, setActiveRoadmapIndex] = useState<number | null>(null);
   const supabase = createClient();
   const router = useRouter();
 
@@ -368,6 +375,16 @@ export default function ProfileForm({
       window.localStorage.removeItem(getProfileStorageKey(COVER_LETTER_STORAGE_KEY, profile.id));
     }
   }, [coverLetterDraft, profile.id]);
+
+  useEffect(() => {
+    if (activeRoadmapIndex === null) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setActiveRoadmapIndex(null);
+    }, 5000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [activeRoadmapIndex]);
 
   const fetchResumeSkillSuggestions = async (resumeId: string) => {
     setIsAnalyzingResume(true);
@@ -1556,55 +1573,196 @@ export default function ProfileForm({
                     </div>
                   </div>
 
-                  <div className="relative overflow-hidden rounded-[2rem] border border-[#dbe6d7] bg-[linear-gradient(180deg,#f6fbf3_0%,#ffffff_100%)] px-5 py-6">
-                    <div className="pointer-events-none absolute left-[2.1rem] top-12 bottom-12 hidden w-[3px] rounded-full bg-[linear-gradient(180deg,#a7df99_0%,#138d1a_48%,#cfe7c6_100%)] md:block" />
-                    <div className="space-y-8">
-                      {careerPathPredictions.paths.map((path, index) => (
-                        <div
-                          key={`${path.title}-${path.timeline}-details`}
-                          className={`relative grid gap-4 md:grid-cols-[88px_minmax(0,1fr)] ${index % 2 === 1 ? "md:[&_.roadmap-body]:ml-8" : "md:[&_.roadmap-body]:mr-6"}`}
-                        >
-                          <div className="flex flex-col items-start gap-2">
-                            <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[linear-gradient(135deg,#34cd2f,#138d1a)] text-sm font-bold text-white shadow-[0_14px_28px_rgba(19,141,26,0.22)]">
-                              {index + 1}
-                            </span>
-                            <span className="rounded-full bg-[#edf7e8] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#138d1a]">
-                              {path.timeline}
-                            </span>
-                          </div>
-                          <div className="roadmap-body rounded-[1.5rem] bg-[linear-gradient(90deg,rgba(237,247,232,0.9)_0%,rgba(255,255,255,0.92)_48%,rgba(255,255,255,0)_100%)] px-4 py-3 space-y-3">
-                            <div className="flex flex-wrap items-center gap-3">
-                              <h4 className="text-lg font-bold text-[#111827]">{path.title}</h4>
-                              <span className="rounded-full bg-[#edf7e8] px-3 py-1 text-xs font-semibold text-[#138d1a]">
-                                Next move
+                  <div className="relative overflow-hidden rounded-[2rem] border border-[#dbe6d7] bg-[linear-gradient(180deg,#f7fcf4_0%,#ffffff_100%)] p-5 shadow-[0_18px_42px_rgba(87,108,67,0.08)]">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(52,205,47,0.10),transparent_26%)]" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(95,213,255,0.06),transparent_22%)]" />
+
+                    <div className="relative grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+                      <div className="space-y-4 rounded-[1.6rem] border border-[#e3ebde] bg-white/82 p-4 backdrop-blur-sm">
+                        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d7d68]">Roadmap view</p>
+                        <h4 className="text-xl font-bold text-[#111827]">See your growth like a guided journey.</h4>
+                        <p className="text-sm leading-7 text-[#667085]">
+                          Each stop shows a realistic next role, the expected timeline, and the skills that unlock the move.
+                        </p>
+
+                        <div className="space-y-3 pt-2">
+                          {[
+                            "Role progression checkpoints",
+                            "Skill-building milestones",
+                            "Time horizon for each move",
+                          ].map((item) => (
+                            <div key={item} className="flex items-start gap-3">
+                              <span className="mt-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#eaf8e3] text-[#138d1a]">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
                               </span>
+                              <p className="text-sm leading-6 text-[#50604e]">{item}</p>
                             </div>
-                            <p className="text-sm leading-6 text-zinc-600">{path.rationale}</p>
-                            <div className="h-1.5 w-full max-w-[220px] rounded-full bg-[#deead8]">
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="relative min-h-[420px] overflow-hidden rounded-[1.8rem] border border-[#dbe6d7] bg-[linear-gradient(180deg,#f4fbef_0%,#ffffff_100%)] p-4 pb-28 sm:min-h-[500px] sm:pb-28 lg:min-h-[470px] lg:pb-24">
+                        <div className="absolute left-4 top-4 z-10 rounded-full border border-white/80 bg-white/88 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#5d6d58] shadow-[0_8px_20px_rgba(87,108,67,0.08)] backdrop-blur-sm">
+                          Tap a stage to preview details
+                        </div>
+                        <svg
+                          viewBox="0 0 100 100"
+                          preserveAspectRatio="none"
+                          className="pointer-events-none absolute inset-0 h-full w-full"
+                          aria-hidden="true"
+                        >
+                          <defs>
+                            <linearGradient id="learning-road" x1="0%" y1="100%" x2="100%" y2="0%">
+                              <stop offset="0%" stopColor="#7ee46b" />
+                              <stop offset="55%" stopColor="#25b52a" />
+                              <stop offset="100%" stopColor="#138d1a" />
+                            </linearGradient>
+                          </defs>
+                          <path
+                            d="M 10 80 C 22 72, 28 60, 38 56 S 56 50, 62 38 S 74 24, 90 18"
+                            fill="none"
+                            stroke="rgba(213,232,205,0.95)"
+                            strokeWidth="13"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M 10 80 C 22 72, 28 60, 38 56 S 56 50, 62 38 S 74 24, 90 18"
+                            fill="none"
+                            stroke="url(#learning-road)"
+                            strokeWidth="9"
+                            strokeLinecap="round"
+                          />
+                          <path
+                            d="M 10 80 C 22 72, 28 60, 38 56 S 56 50, 62 38 S 74 24, 90 18"
+                            fill="none"
+                            stroke="rgba(255,255,255,0.55)"
+                            strokeWidth="1.4"
+                            strokeDasharray="2.2 4"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+
+                        {careerPathPredictions.paths.map((path, index) => {
+                          const point = ROADMAP_POSITIONS[Math.min(index, ROADMAP_POSITIONS.length - 1)];
+                          const isActive = activeRoadmapIndex === index;
+
+                          return (
+                            <div key={`${path.title}-${path.timeline}-details`}>
+                              <button
+                                type="button"
+                                aria-label={`Open roadmap details for ${path.title}`}
+                                aria-expanded={isActive}
+                                onClick={() => setActiveRoadmapIndex((current) => (current === index ? null : index))}
+                                className={`absolute z-20 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 border-white text-sm font-bold text-white shadow-[0_16px_30px_rgba(19,141,26,0.22)] transition duration-200 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-[#b9efaa] ${
+                                  isActive
+                                    ? "bg-[linear-gradient(135deg,#0f172a,#138d1a)]"
+                                    : "bg-[linear-gradient(135deg,#34cd2f,#138d1a)]"
+                                }`}
+                                style={{ left: point.left, top: point.top }}
+                              >
+                                {index + 1}
+                              </button>
+
                               <div
-                                className="h-1.5 rounded-full bg-[linear-gradient(90deg,#7ee46b_0%,#138d1a_100%)]"
-                                style={{ width: `${Math.min(100, 58 + index * 16)}%` }}
-                              />
+                                className="pointer-events-none absolute z-10 -translate-x-1/2 text-center"
+                                style={{ left: point.left, top: `calc(${point.top} - 4.2rem)` }}
+                              >
+                                <span className="inline-flex max-w-[120px] rounded-full bg-white/92 px-2.5 py-1 text-[10px] font-semibold leading-4 text-[#2b3a2a] shadow-[0_8px_20px_rgba(87,108,67,0.08)] backdrop-blur-sm sm:max-w-[148px]">
+                                  {path.title}
+                                </span>
+                              </div>
+
+                              {isActive ? (
+                                <div
+                                  className="absolute z-20 hidden max-w-[240px] rounded-[1.35rem] border border-[#e2ebde] bg-white/96 p-4 shadow-[0_14px_34px_rgba(87,108,67,0.12)] backdrop-blur-sm md:block"
+                                  style={{
+                                    left: index % 2 === 0 ? `calc(${point.left} + 1.5rem)` : undefined,
+                                    right: index % 2 === 1 ? `calc(100% - ${point.left} + 1.2rem)` : undefined,
+                                    top: `calc(${point.top} - ${index % 2 === 0 ? "3.4rem" : "1rem"})`,
+                                  }}
+                                >
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <h4 className="text-base font-bold text-[#111827]">{path.title}</h4>
+                                      <span className="rounded-full bg-[#edf7e8] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#138d1a]">
+                                        {path.timeline}
+                                      </span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      aria-label={`Close roadmap details for ${path.title}`}
+                                      onClick={() => setActiveRoadmapIndex(null)}
+                                      className="rounded-full border border-[#dde7d8] p-1 text-[#6d7d68] transition hover:bg-[#f4f7f1]"
+                                    >
+                                      <X className="h-3.5 w-3.5" />
+                                    </button>
+                                  </div>
+                                  <p className="mt-2 text-sm leading-6 text-zinc-600">{path.rationale}</p>
+                                  <div className="mt-3 flex flex-wrap gap-2">
+                                    {path.requiredSkills.slice(0, 3).map((skill) => (
+                                      <span
+                                        key={`${path.title}-${skill}`}
+                                        className="rounded-full bg-[#f4f6f8] px-3 py-1 text-[11px] font-medium text-zinc-700"
+                                      >
+                                        {skill}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              ) : null}
                             </div>
-                            <div className="flex flex-wrap gap-2">
-                              {path.requiredSkills.map((skill) => (
+                          );
+                        })}
+
+                        {activeRoadmapIndex !== null ? (
+                          <div className="absolute inset-x-4 bottom-24 z-20 rounded-[1.4rem] border border-[#dbe6d7] bg-white/96 p-4 shadow-[0_16px_38px_rgba(87,108,67,0.14)] backdrop-blur-sm md:hidden">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h4 className="text-base font-bold text-[#111827]">
+                                    {careerPathPredictions.paths[activeRoadmapIndex]?.title}
+                                  </h4>
+                                  <span className="rounded-full bg-[#edf7e8] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#138d1a]">
+                                    {careerPathPredictions.paths[activeRoadmapIndex]?.timeline}
+                                  </span>
+                                </div>
+                                <p className="mt-2 text-sm leading-6 text-zinc-600">
+                                  {careerPathPredictions.paths[activeRoadmapIndex]?.rationale}
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                aria-label="Close roadmap details"
+                                onClick={() => setActiveRoadmapIndex(null)}
+                                className="rounded-full border border-[#dde7d8] p-1 text-[#6d7d68] transition hover:bg-[#f4f7f1]"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {careerPathPredictions.paths[activeRoadmapIndex]?.requiredSkills.slice(0, 4).map((skill) => (
                                 <span
-                                  key={`${path.title}-${skill}`}
-                                  className="rounded-full bg-[#f4f6f8] px-3 py-1 text-xs font-medium text-zinc-700"
+                                  key={`${careerPathPredictions.paths[activeRoadmapIndex]?.title}-${skill}`}
+                                  className="rounded-full bg-[#f4f6f8] px-3 py-1 text-[11px] font-medium text-zinc-700"
                                 >
                                   {skill}
                                 </span>
                               ))}
                             </div>
                           </div>
+                        ) : null}
+
+                        <div className="absolute inset-x-4 bottom-4 rounded-[1.2rem] border border-[#dbe6d7] bg-white/90 px-4 py-3 backdrop-blur-sm">
+                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6d7d68]">
+                            Generated via {careerPathPredictions.source === "ai" ? "AI predictor" : "career path rule engine"}
+                          </p>
+                          <p className="mt-1 text-sm leading-6 text-[#667085]">
+                            This roadmap helps you see the sequence, not just the destination.
+                          </p>
                         </div>
-                      ))}
+                      </div>
                     </div>
                   </div>
-
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6d7d68]">
-                    Generated via {careerPathPredictions.source === "ai" ? "AI predictor" : "career path rule engine"}
-                  </p>
                 </div>
               ) : null}
             </div>
