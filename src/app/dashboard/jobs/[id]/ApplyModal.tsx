@@ -180,21 +180,21 @@ export default function ApplyModal({
 
   const shellClass =
     step === 3
-      ? "bg-white dark:bg-surface-dark w-full max-w-7xl max-h-[calc(100vh-3rem)] rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
-      : "bg-white dark:bg-surface-dark w-full max-w-3xl max-h-[calc(100vh-3rem)] rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300";
+      ? "bg-white w-full max-w-7xl max-h-[calc(100vh-3rem)] rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300"
+      : "bg-white w-full max-w-3xl max-h-[calc(100vh-3rem)] rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-4 duration-300";
 
   return (
     <div className="fixed inset-0 z-[100] overflow-y-auto bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-300 sm:p-6">
       <div className="flex min-h-full items-center justify-center">
       <div className={shellClass}>
-        <div className="sticky top-0 z-10 border-b bg-white p-6 dark:bg-surface-dark flex items-center justify-between">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white p-6">
           <div>
             <h2 className="text-xl font-bold">Apply for Role</h2>
             <p className="text-sm text-zinc-500">
               {job.title} at {job.company}
             </p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
+          <button onClick={onClose} className="rounded-full p-2 transition-colors hover:bg-zinc-100">
             <X className="w-5 h-5 text-zinc-400" />
           </button>
         </div>
@@ -321,15 +321,15 @@ export default function ApplyModal({
                         onClick={() => setSelectedResumeId(resume.id)}
                         className={`w-full rounded-2xl border-2 p-4 text-left transition-all ${
                           selectedResumeId === resume.id
-                            ? "border-brand-600 bg-brand-50/50 dark:bg-brand-900/10"
-                            : "border-zinc-100 dark:border-zinc-800 hover:border-zinc-200"
+                            ? "border-brand-600 bg-brand-50/50"
+                            : "border-zinc-100 hover:border-zinc-200"
                         }`}
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-3">
                             <FileText className={`h-5 w-5 ${selectedResumeId === resume.id ? "text-brand-600" : "text-zinc-400"}`} />
                             <div>
-                              <p className={`text-sm font-bold ${selectedResumeId === resume.id ? "text-brand-900 dark:text-brand-100" : "text-zinc-700 dark:text-zinc-300"}`}>
+                              <p className={`text-sm font-bold ${selectedResumeId === resume.id ? "text-brand-900" : "text-zinc-700"}`}>
                                 {resume.file_name || "Resume"}
                               </p>
                               <p className="mt-1 text-xs text-zinc-500">
@@ -386,7 +386,7 @@ export default function ApplyModal({
               <div className="flex gap-4 lg:col-span-2">
                 <button
                   onClick={() => setStep(1)}
-                  className="flex-1 rounded-2xl bg-zinc-100 py-4 font-bold text-zinc-600 transition-all hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+                  className="flex-1 rounded-2xl bg-zinc-100 py-4 font-bold text-zinc-600 transition-all hover:bg-zinc-200"
                 >
                   Back
                 </button>
@@ -563,7 +563,7 @@ export default function ApplyModal({
                   )}
                   <button
                     onClick={() => router.push(backToJobsHref)}
-                    className="w-full rounded-2xl bg-zinc-100 py-4 font-bold text-zinc-700 transition-all hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+                    className="w-full rounded-2xl bg-zinc-100 py-4 font-bold text-zinc-700 transition-all hover:bg-zinc-200"
                     style={{ colorScheme: "light", forcedColorAdjust: "none", backgroundColor: "#f3f4f6", color: "#334155", WebkitTextFillColor: "#334155" }}
                   >
                     Keep Browsing Jobs

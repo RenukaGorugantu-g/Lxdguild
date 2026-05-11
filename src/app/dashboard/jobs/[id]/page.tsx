@@ -531,15 +531,15 @@ export default async function JobDetailPage({
   const backToJobsHref = `/dashboard/jobs${returnParams.toString() ? `?${returnParams.toString()}` : ""}`;
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black pt-28 pb-16 px-6">
+    <div className="min-h-screen bg-zinc-50 pt-28 pb-16 px-4 sm:px-6">
       <div className={`${isJobOwner ? "max-w-7xl" : "max-w-4xl"} mx-auto`}>
         <Link href={backToJobsHref} className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-brand-600 transition-colors mb-8 group">
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Job Board
         </Link>
 
-        <div className="bg-white dark:bg-surface-dark border border-zinc-200 dark:border-border rounded-3xl overflow-hidden shadow-sm">
-          <div className="h-32 bg-gradient-to-r from-brand-600/10 to-accent-600/10 border-b border-zinc-100 dark:border-zinc-800 flex items-end p-8">
-             <div className="w-16 h-16 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl flex items-center justify-center -mb-12 shadow-md">
+        <div className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+          <div className="flex h-32 items-end border-b border-zinc-100 bg-gradient-to-r from-brand-600/10 to-accent-600/10 p-8">
+             <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-zinc-200 bg-white -mb-12 shadow-md">
                 <Building className="w-8 h-8 text-brand-600" />
              </div>
           </div>
@@ -596,8 +596,8 @@ export default async function JobDetailPage({
                   </p>
                 </div>
               ) : (
-                <div className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:min-w-[220px] sm:w-auto dark:border-zinc-800 dark:bg-zinc-900/50">
-                  <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">Employer view</p>
+                <div className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:min-w-[220px] sm:w-auto">
+                  <p className="text-sm font-semibold text-zinc-700">Employer view</p>
                   <p className="text-xs mt-1 text-zinc-500">Application controls are available in the applicants list below.</p>
                 </div>
               )}
@@ -608,39 +608,39 @@ export default async function JobDetailPage({
                   <section>
                     <h3 className="text-xl font-bold mb-4">Job Description</h3>
                     <div 
-                      className="text-zinc-600 dark:text-zinc-400 leading-relaxed space-y-4"
+                      className="space-y-4 leading-relaxed text-zinc-600"
                       dangerouslySetInnerHTML={{ __html: job.description || "" }}
                     />
                   </section>
                </div>
 
                <div className="space-y-6">
-                  <div className="p-6 bg-zinc-50 dark:bg-zinc-900/50 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+                  <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-6">
                      <h4 className="font-bold mb-4 text-sm uppercase tracking-wider text-zinc-400">Hiring Process</h4>
                      <ul className="space-y-4">
                         <li className="flex gap-3 text-sm">
-                           <div className="w-5 h-5 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center text-[10px] font-bold text-brand-600 shrink-0">1</div>
+                           <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-100 text-[10px] font-bold text-brand-600">1</div>
                            <span>LXD Guild Skill Validation</span>
                         </li>
                         <li className="flex gap-3 text-sm">
-                           <div className="w-5 h-5 rounded-full bg-brand-100 dark:bg-brand-900/30 flex items-center justify-center text-[10px] font-bold text-brand-600 shrink-0">2</div>
+                           <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-100 text-[10px] font-bold text-brand-600">2</div>
                            <span>Internal Portfolio Review</span>
                         </li>
                         <li className="flex gap-3 text-sm">
-                           <div className="w-5 h-5 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-500 shrink-0">3</div>
+                           <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-[10px] font-bold text-zinc-500">3</div>
                            <span className="text-zinc-400">Direct Interview with {job.company}</span>
                         </li>
                      </ul>
                   </div>
 
-                  <div className="p-6 bg-white dark:bg-zinc-900/50 rounded-2xl border border-zinc-100 dark:border-zinc-800 space-y-3">
+                  <div className="space-y-3 rounded-2xl border border-zinc-100 bg-white p-6">
                      <h4 className="font-bold text-sm uppercase tracking-wider text-zinc-400">Listing Freshness</h4>
-                     <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
+                     <div className="flex items-center gap-2 text-sm text-zinc-600">
                        <Clock3 className="w-4 h-4 text-brand-600" />
                        <span>Posted or refreshed on {postedDate}</span>
                      </div>
                      {expiryDate && (
-                       <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
+                       <div className="flex items-center gap-2 text-sm text-amber-700">
                          <Clock3 className="w-4 h-4" />
                          <span>Expected to expire on {expiryDate}</span>
                        </div>
@@ -724,7 +724,7 @@ export default async function JobDetailPage({
                     />
                   </>
                 ) : (
-                  <div className="rounded-3xl border border-dashed border-zinc-200 dark:border-zinc-800 p-6 text-zinc-500 dark:text-zinc-400">
+                  <div className="rounded-3xl border border-dashed border-zinc-200 p-6 text-zinc-500">
                     No applications have been submitted for this job yet.
                   </div>
                 )}
