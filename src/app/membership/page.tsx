@@ -85,36 +85,72 @@ export default async function PublicMembershipPage() {
               </div>
 
               <div className="lg:pl-8">
-                <div className="mx-auto max-w-xl rounded-[1.8rem] border border-white/65 bg-[linear-gradient(145deg,rgba(255,255,255,0.58),rgba(228,248,221,0.34))] p-6 shadow-[0_30px_70px_rgba(87,108,67,0.14)] backdrop-blur-2xl lg:p-7">
-                  <div className="rounded-[1.8rem] border border-white/80 bg-[linear-gradient(160deg,rgba(255,255,255,0.96),rgba(240,250,233,0.90))] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_18px_35px_rgba(87,108,67,0.10)]">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Membership access</p>
-                    <div className="mt-3 flex items-end gap-2">
-                      <span className="text-5xl font-semibold leading-none text-[#111827]">Rs {MEMBER_ANNUAL_PRICE_INR}</span>
-                      <span className="pb-1 text-sm font-medium text-[#5f6d5c]">/ year</span>
+                <div className="relative mx-auto max-w-xl overflow-hidden rounded-[2rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbf1_100%)] p-4 shadow-[0_24px_60px_rgba(87,108,67,0.08)]">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(52,205,47,0.08),transparent_26%)]" />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(95,213,255,0.06),transparent_24%)]" />
+                  <div className="relative min-h-[430px] overflow-hidden rounded-[1.65rem] border border-[#112019] bg-[#11171c] shadow-[0_18px_44px_rgba(15,23,42,0.14)]">
+                    <Image
+                      src="/landing-membership-human.png"
+                      alt="Membership experience with premium learning support"
+                      fill
+                      sizes="(max-width: 1024px) 100vw, 520px"
+                      className="object-cover object-center"
+                      priority
+                    />
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,17,24,0.08),rgba(8,17,24,0.55))]" />
+                    <div className="absolute left-4 top-4 rounded-[1.1rem] border border-white/14 bg-[rgba(10,20,29,0.72)] px-4 py-3 text-white backdrop-blur-md">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9be6a1]">Premium layer</p>
+                      <p className="mt-2 text-sm font-semibold">AI tools + curated resources</p>
                     </div>
-                    <p className="mt-3 max-w-md text-sm leading-7 text-[#5f6d5c]">
-                      {user
-                        ? "Membership is ready to unlock in your dashboard."
-                        : "Not a member yet. Start with access to premium resources and tools."}
-                    </p>
-
-                    <div className="mt-6 flex flex-col gap-3">
-                      <Link
-                        href={primaryHref}
-                        className="marketing-primary w-full px-6"
-                      >
-                        {user ? "Open membership" : "Join the Guild"}
-                        <ArrowRight className="h-4 w-4" />
-                      </Link>
-                      <div className="flex flex-col gap-3 sm:flex-row">
-                        <Link href={freeResourcesHref} className="marketing-secondary flex-1 px-5">
-                          Free resources
-                        </Link>
-                        <Link href={secondaryHref} className="marketing-secondary flex-1 px-5">
-                          Resources page
-                        </Link>
+                    <div className="absolute right-4 top-6 rounded-[1.1rem] border border-white/10 bg-white/90 px-4 py-3 shadow-[0_12px_26px_rgba(15,23,42,0.12)]">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#7a8674]">Guild support</p>
+                      <p className="mt-2 text-2xl font-semibold text-[#111827]">1 ecosystem</p>
+                    </div>
+                    <div className="absolute inset-x-4 bottom-4 grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-[1.1rem] border border-white/10 bg-[rgba(10,20,29,0.72)] px-4 py-3 text-white backdrop-blur-md">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9be6a1]">Resources</p>
+                        <p className="mt-2 text-lg font-semibold">180+</p>
+                      </div>
+                      <div className="rounded-[1.1rem] border border-white/10 bg-[rgba(10,20,29,0.72)] px-4 py-3 text-white backdrop-blur-md">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9be6a1]">Visibility</p>
+                        <p className="mt-2 text-lg font-semibold">Enhanced</p>
+                      </div>
+                      <div className="rounded-[1.1rem] border border-white/10 bg-[rgba(10,20,29,0.72)] px-4 py-3 text-white backdrop-blur-md">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9be6a1]">Support</p>
+                        <p className="mt-2 text-lg font-semibold">Member hub</p>
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 rounded-[2rem] border border-white/70 bg-[linear-gradient(145deg,rgba(255,255,255,0.9),rgba(232,248,223,0.62))] p-5 shadow-[0_24px_50px_rgba(87,108,67,0.10)] backdrop-blur-xl sm:p-6">
+              <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Membership access</p>
+                  <div className="mt-3 flex items-end gap-2">
+                    <span className="text-5xl font-semibold leading-none text-[#111827]">Rs {MEMBER_ANNUAL_PRICE_INR}</span>
+                    <span className="pb-1 text-sm font-medium text-[#5f6d5c]">/ year</span>
+                  </div>
+                  <p className="mt-3 max-w-md text-sm leading-7 text-[#5f6d5c]">
+                    {user
+                      ? "Membership is ready to unlock in your dashboard."
+                      : "Not a member yet. Start with access to premium resources, guided tools, and deeper Guild support."}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-3 lg:items-end">
+                  <Link href={primaryHref} className="marketing-primary w-full justify-center rounded-full px-6 lg:w-auto">
+                    {user ? "Open membership" : "Join the Guild"}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto">
+                    <Link href={freeResourcesHref} className="marketing-secondary flex-1 justify-center rounded-full px-5">
+                      Free resources
+                    </Link>
+                    <Link href={secondaryHref} className="marketing-secondary flex-1 justify-center rounded-full px-5">
+                      Resources page
+                    </Link>
                   </div>
                 </div>
               </div>

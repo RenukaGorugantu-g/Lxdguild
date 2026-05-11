@@ -70,7 +70,7 @@ const socialLinks = [
 export default function Footer() {
   return (
     <footer className="border-t border-white/10 bg-[#08122a] text-white">
-      <div className="border-b border-white/10">
+      <div className="hidden border-b border-white/10 md:block">
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-6 px-6 py-10 md:flex-row md:items-center">
           <div>
             <p className="mb-2 text-xs font-bold uppercase tracking-[0.3em] text-[#34cd2f]">Come. Connect. Collaborate.</p>

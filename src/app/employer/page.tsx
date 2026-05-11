@@ -123,8 +123,8 @@ export default async function EmployerLandingPage() {
                     className="object-cover object-center"
                     priority
                   />
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,20,14,0.04),rgba(10,20,14,0.46))]" />
-                  <div className="absolute inset-x-4 bottom-4 rounded-[1.15rem] bg-[#38d62a] px-4 py-3 text-[#092012] shadow-[0_14px_28px_rgba(56,214,42,0.22)]">
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,20,14,0.06),rgba(10,20,14,0.42))]" />
+                  <div className="absolute inset-x-4 bottom-4 rounded-[1.15rem] bg-[#38d62a] px-4 py-3 text-[#092012] shadow-[0_14px_28px_rgba(56,214,42,0.24)]">
                     <p className="text-[11px] font-semibold">Talent match found</p>
                     <p className="mt-1 text-sm font-medium">93% skill overlap</p>
                   </div>

@@ -467,32 +467,20 @@ export default function Header() {
               </div>
             ) : null}
 
-            <div className="lg:hidden">
-              {!user ? (
-                <Link
-                  href="/register"
-                  className={`inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold transition-all ${
-                    isPublicMarketingRoute
-                      ? "bg-[linear-gradient(135deg,#118118,#2aa82b)] text-white shadow-[0_16px_32px_rgba(24,124,29,0.18)]"
-                      : "bg-[linear-gradient(135deg,#34cd2f,#80ef7a)] text-[#091737] shadow-[0_18px_40px_rgba(52,205,47,0.24)]"
-                  }`}
-                >
-                  <Sparkles className="h-4 w-4" /> Join the Guild
-                </Link>
-              ) : (
-                <button
-                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#dfe8d8] bg-white text-[#111827] transition-colors hover:bg-[#eef5e5]"
-                  aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
-                >
-                  {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-                </button>
-              )}
+            <div className="flex items-center gap-2 lg:hidden">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#dfe8d8] bg-white text-[#111827] transition-colors hover:bg-[#eef5e5]"
+                aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+              >
+                {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              </button>
             </div>
           </div>
         </div>
       </div>
 
+      {user ? (
       <div className="fixed inset-x-0 bottom-0 z-[72] mx-auto max-w-7xl px-4 pb-[calc(env(safe-area-inset-bottom)+0.7rem)] sm:px-6 lg:hidden">
         <div
           className={`grid grid-cols-5 gap-2 rounded-[26px] border px-2 py-2 shadow-[0_18px_45px_rgba(94,119,74,0.12)] backdrop-blur-[20px] ${
@@ -538,9 +526,10 @@ export default function Header() {
           </Link>
         </div>
       </div>
+      ) : null}
 
       {isMobileMenuOpen && (
-        <div className="fixed inset-x-0 bottom-[5.9rem] z-[71] mx-auto max-w-7xl px-4 sm:px-6 lg:hidden">
+        <div className={`fixed inset-x-0 z-[71] mx-auto max-w-7xl px-4 sm:px-6 lg:hidden ${user ? "bottom-[5.9rem]" : "top-[5.6rem]"}`}>
           <div className="space-y-1 rounded-[30px] border border-[#dbe6d7] bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(243,249,239,0.96))] px-3 py-3 shadow-[0_24px_80px_rgba(94,119,74,0.16)] backdrop-blur-[22px]">
             <div className="flex items-center justify-between px-3 pb-1 pt-2">
               <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#6d7d68]">

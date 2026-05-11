@@ -147,59 +147,24 @@ export default async function CandidateLandingPage() {
               <div className="relative overflow-hidden rounded-[2rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbf1_100%)] p-4 shadow-[0_24px_60px_rgba(87,108,67,0.08)]">
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(52,205,47,0.08),transparent_28%)]" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(95,213,255,0.06),transparent_24%)]" />
-                <div className="absolute inset-0">
+                <div className="relative min-h-[470px] overflow-hidden rounded-[1.7rem] border border-[#102028] bg-[#10161d] shadow-[0_18px_44px_rgba(15,23,42,0.14)]">
                   <Image
                     src="/landing-candidate-human.png"
                     alt="Candidate using AI-powered career tools"
                     fill
                     sizes="(max-width: 1024px) 100vw, 620px"
-                    className="object-cover object-[center_20%] opacity-[0.1]"
+                    className="object-cover object-[center_28%]"
                     priority
                   />
-                </div>
-                <div className="relative">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Candidate insight layer</p>
-                    <h2 className="mt-3 max-w-lg text-2xl font-semibold leading-tight text-[#111827]">
-                      Know how hiring teams see your resume before you apply.
-                    </h2>
-
-                    <div className="mt-10 rounded-[1.5rem] border border-[#dfe9d8] bg-[rgba(255,255,255,0.9)] p-4 backdrop-blur-md">
-                      <div className="grid gap-4 sm:grid-cols-[0.72fr_1.28fr]">
-                        <div>
-                          <div className="rounded-[1.25rem] bg-white px-4 py-4 shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
-                            <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7a8674]">Career score</p>
-                            <p className="mt-2 text-4xl font-semibold text-[#111827]">94</p>
-                            <p className="mt-4 text-sm font-semibold text-[#17931b]">Strong match trend</p>
-                          </div>
-                        </div>
-
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#7c8875]">Signal map</p>
-                          <div className="mt-3 space-y-3">
-                            {[
-                              ["ATS readiness", "88%"],
-                              ["Resume clarity", "84%"],
-                              ["Role fit", "91%"],
-                            ].map(([label, value]) => (
-                              <div key={label}>
-                                <div className="mb-1 flex items-center justify-between text-[11px] text-[#5e6a59]">
-                                  <span>{label}</span>
-                                  <span>{value}</span>
-                                </div>
-                                <div className="h-2 rounded-full bg-[#e3ecd9]">
-                                  <div
-                                    className="h-2 rounded-full bg-[linear-gradient(90deg,#63db52,#17931b)]"
-                                    style={{ width: value }}
-                                  />
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,14,19,0.06),rgba(7,14,19,0.58))]" />
+                  <div className="absolute inset-x-4 bottom-4 rounded-[1.3rem] border border-white/10 bg-[rgba(8,17,24,0.72)] px-4 py-4 text-white backdrop-blur-md">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#9be6a1]">Candidate insight layer</p>
+                    <p className="mt-2 max-w-lg text-sm leading-7 text-white/80">
+                      Diagnose positioning gaps, strengthen proof, and improve your application materials before you enter the market.
+                    </p>
                   </div>
                 </div>
+              </div>
             </div>
           </div>
         </section>

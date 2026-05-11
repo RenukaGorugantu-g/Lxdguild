@@ -4,6 +4,7 @@ import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { loadProfile } from "@/lib/load-profile";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { ArrowRight, Briefcase, FileText } from "lucide-react";
 import ProfileForm from "./ProfileForm";
 
 type CandidateProfileRecord = {
@@ -127,22 +128,48 @@ export default async function CandidateProfilePage() {
             <div className="grid gap-4 md:grid-cols-2">
               <Link
                 href="/dashboard/jobs"
-                className="border-t border-[#dde7d8] px-0 py-5 transition hover:-translate-y-0.5"
+                className="group rounded-[1.8rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbf1_100%)] px-6 py-6 shadow-[0_16px_40px_rgba(87,108,67,0.08)] transition hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(87,108,67,0.12)]"
               >
-                <h3 className="text-xl font-bold text-[#111827]">Job Marketplace</h3>
-                <p className="mt-2 text-sm text-[#7f8a7b]">
-                  {access.isFreeAccessCandidate
-                    ? `${access.freeApplicationsRemaining} free applications remaining`
-                    : "Browse and apply with your verified profile."}
-                </p>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eaf8e3] text-[#138d1a]">
+                      <Briefcase className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-[#111827]">Job Marketplace</h3>
+                      <p className="mt-2 text-sm leading-7 text-[#7f8a7b]">
+                        {access.isFreeAccessCandidate
+                          ? `${access.freeApplicationsRemaining} free applications remaining`
+                          : "Browse and apply with your verified profile."}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[#dbe6d6] bg-white text-[#8f9a8b] transition group-hover:border-[#b8dfb1] group-hover:text-[#138d1a]">
+                    <ArrowRight className="h-4 w-4" />
+                  </div>
+                </div>
               </Link>
 
               <Link
                 href="/dashboard/candidate/applications"
-                className="border-t border-[#dde7d8] px-0 py-5 transition hover:-translate-y-0.5"
+                className="group rounded-[1.8rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbf1_100%)] px-6 py-6 shadow-[0_16px_40px_rgba(87,108,67,0.08)] transition hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(87,108,67,0.12)]"
               >
-                <h3 className="text-xl font-bold text-[#111827]">My Applications</h3>
-                <p className="mt-2 text-sm text-[#7f8a7b]">Track your submissions and employer movement in one place.</p>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef1ff] text-[#6172cf]">
+                      <FileText className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-[#111827]">My Applications</h3>
+                      <p className="mt-2 text-sm leading-7 text-[#7f8a7b]">
+                        Track your submissions and employer movement in one place.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[#dbe6d6] bg-white text-[#8f9a8b] transition group-hover:border-[#b8dfb1] group-hover:text-[#138d1a]">
+                    <ArrowRight className="h-4 w-4" />
+                  </div>
+                </div>
               </Link>
             </div>
           </section>
