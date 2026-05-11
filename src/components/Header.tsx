@@ -297,15 +297,16 @@ export default function Header() {
   };
 
   return (
-    <header
-      className={`fixed inset-x-0 top-0 z-[70] transition-all duration-300 ${
-        isScrolled ? "bg-[#f9fcf3]/75 backdrop-blur-[12px]" : "bg-transparent"
-      }`}
-    >
-      <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
-        <div
-          className="flex min-h-16 items-center justify-between rounded-[30px] border border-[#dfe8d8] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,250,240,0.94))] px-4 shadow-[0_18px_45px_rgba(94,119,74,0.10)] sm:px-5"
-        >
+    <>
+      <header
+        className={`fixed inset-x-0 top-0 z-[70] transition-all duration-300 ${
+          isScrolled ? "bg-[#f9fcf3]/75 backdrop-blur-[12px]" : "bg-transparent"
+        }`}
+      >
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
+          <div
+            className="flex min-h-16 items-center justify-between rounded-[30px] border border-[#dfe8d8] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,250,240,0.94))] px-4 shadow-[0_18px_45px_rgba(94,119,74,0.10)] sm:px-5"
+          >
           <Link href={brandHref} className="group flex items-center" aria-label="LXD Guild home">
             <img src={BRAND_LOGO_URL} alt="LXD Guild" className="h-11 w-auto sm:h-12" />
           </Link>
@@ -479,9 +480,10 @@ export default function Header() {
           </div>
         </div>
       </div>
+      </header>
 
       {user ? (
-      <div className="fixed inset-x-0 bottom-0 z-[72] mx-auto max-w-7xl px-4 pb-[calc(env(safe-area-inset-bottom)+0.7rem)] sm:px-6 lg:hidden">
+      <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+0.7rem)] z-[72] mx-auto max-w-7xl px-4 sm:px-6 lg:hidden">
         <div
           className={`grid grid-cols-5 gap-2 rounded-[26px] border px-2 py-2 shadow-[0_18px_45px_rgba(94,119,74,0.12)] backdrop-blur-[20px] ${
             isPublicMarketingRoute
@@ -616,7 +618,7 @@ export default function Header() {
           </div>
         </div>
       )}
-    </header>
+    </>
   );
 }
 

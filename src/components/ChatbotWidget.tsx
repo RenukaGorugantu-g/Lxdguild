@@ -97,7 +97,7 @@ export default function ChatbotWidget() {
   };
 
   return (
-    <div className={`fixed right-4 z-[95] transition-all duration-200 sm:bottom-6 sm:right-6 ${isMobileScrolled ? "bottom-4" : "bottom-[7.8rem]"}`}>
+    <div className={`fixed right-4 z-[95] transition-all duration-200 sm:bottom-6 sm:right-6 ${isMobileScrolled ? "bottom-[6.6rem]" : "bottom-[10rem]"}`}>
       {isOpen ? (
         <div className="w-[calc(100vw-2rem)] max-w-[380px] overflow-hidden rounded-[2rem] border border-[#dbe6d7] bg-[linear-gradient(180deg,rgba(251,253,248,0.98),rgba(244,249,241,0.98))] shadow-[0_28px_80px_rgba(87,108,67,0.18)] backdrop-blur-2xl">
           <div className="flex items-start justify-between gap-3 border-b border-[#e4ece0] px-5 py-4">

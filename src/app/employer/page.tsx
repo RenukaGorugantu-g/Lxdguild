@@ -338,15 +338,20 @@ export default async function EmployerLandingPage() {
               <div className="relative min-h-[320px] overflow-hidden rounded-[1.8rem] border border-[#0f2028] bg-[#11171c] p-3 shadow-[0_24px_60px_rgba(15,23,42,0.14)] lg:min-h-[360px]">
                 <div className="relative h-full overflow-hidden rounded-[1.35rem]">
                   <Image
-                    src="/landing-membership-human.png"
+                    src="/landing-employer-human.png"
                     alt="Collaborative hiring and interview review"
                     fill
                     sizes="(max-width: 1024px) 100vw, 520px"
-                    className="object-cover object-center"
+                    className="object-cover object-[center_35%]"
                   />
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,17,24,0.1),rgba(8,17,24,0.42))]" />
-                  <div className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/88 text-[#111827] shadow-[0_14px_28px_rgba(15,23,42,0.16)]">
-                    <ArrowRight className="h-6 w-6" />
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,17,24,0.08),rgba(8,17,24,0.48))]" />
+                  <div className="absolute left-4 top-4 rounded-[1.1rem] border border-white/12 bg-[rgba(8,17,24,0.68)] px-4 py-3 text-white backdrop-blur-md">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9be6a1]">Hiring workflow</p>
+                    <p className="mt-2 text-sm font-semibold">Interview, evaluate, and move candidates faster</p>
+                  </div>
+                  <div className="absolute inset-x-4 bottom-4 rounded-[1.15rem] bg-[#38d62a] px-4 py-3 text-[#092012] shadow-[0_14px_28px_rgba(56,214,42,0.24)]">
+                    <p className="text-[11px] font-semibold">Direct employer flow</p>
+                    <p className="mt-1 text-sm font-medium">Shortlist, schedule, and close hiring in one place</p>
                   </div>
                 </div>
               </div>
