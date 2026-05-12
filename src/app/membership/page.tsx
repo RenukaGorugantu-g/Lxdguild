@@ -125,37 +125,6 @@ export default async function PublicMembershipPage() {
               </div>
             </div>
 
-            <div className="mt-8 rounded-[2rem] border border-white/70 bg-[linear-gradient(145deg,rgba(255,255,255,0.9),rgba(232,248,223,0.62))] p-5 shadow-[0_24px_50px_rgba(87,108,67,0.10)] backdrop-blur-xl sm:p-6">
-              <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Membership access</p>
-                  <div className="mt-3 flex items-end gap-2">
-                    <span className="text-5xl font-semibold leading-none text-[#111827]">Rs {MEMBER_ANNUAL_PRICE_INR}</span>
-                    <span className="pb-1 text-sm font-medium text-[#5f6d5c]">/ year</span>
-                  </div>
-                  <p className="mt-3 max-w-md text-sm leading-7 text-[#5f6d5c]">
-                    {user
-                      ? "Membership is ready to unlock in your dashboard."
-                      : "Not a member yet. Start with access to premium resources, guided tools, and deeper Guild support."}
-                  </p>
-                </div>
-                <div className="flex flex-col gap-3 lg:items-end">
-                  <Link href={primaryHref} className="marketing-primary w-full justify-center rounded-full px-6 lg:w-auto">
-                    {user ? "Open membership" : "Join the Guild"}
-                    <ArrowRight className="h-4 w-4" />
-                  </Link>
-                  <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto">
-                    <Link href={freeResourcesHref} className="marketing-secondary flex-1 justify-center rounded-full px-5">
-                      Free resources
-                    </Link>
-                    <Link href={secondaryHref} className="marketing-secondary flex-1 justify-center rounded-full px-5">
-                      Resources page
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <div className="mt-12 grid gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
               <article className="space-y-5">
                 <div>
@@ -307,6 +276,37 @@ export default async function PublicMembershipPage() {
 
         <section className="marketing-section pb-24">
           <div className="marketing-container relative overflow-hidden rounded-[2.5rem] border border-[#101a1d] bg-[#091116] px-8 py-18 text-center text-white shadow-[0_28px_80px_rgba(7,19,31,0.18)]">
+            <div className="relative z-10 mx-auto mb-10 max-w-5xl rounded-[2rem] border border-white/12 bg-[linear-gradient(145deg,rgba(255,255,255,0.12),rgba(255,255,255,0.04))] p-5 text-left shadow-[0_24px_50px_rgba(7,19,31,0.18)] backdrop-blur-xl sm:p-6">
+              <div className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#a8b7a7]">Membership access</p>
+                  <div className="mt-3 flex items-end gap-2">
+                    <span className="text-5xl font-semibold leading-none text-white">Rs {MEMBER_ANNUAL_PRICE_INR}</span>
+                    <span className="pb-1 text-sm font-medium text-white/70">/ year</span>
+                  </div>
+                  <p className="mt-3 max-w-md text-sm leading-7 text-white/72">
+                    {user
+                      ? "Membership is ready to unlock in your dashboard."
+                      : "Not a member yet. Start with access to premium resources, guided tools, and deeper Guild support."}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-3 lg:items-end">
+                  <Link href={primaryHref} className="marketing-primary w-full justify-center rounded-full px-6 lg:w-auto">
+                    {user ? "Open membership" : "Join the Guild"}
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                  <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto">
+                    <Link href={freeResourcesHref} className="marketing-secondary flex-1 justify-center rounded-full px-5">
+                      Free resources
+                    </Link>
+                    <Link href={secondaryHref} className="marketing-secondary flex-1 justify-center rounded-full px-5">
+                      Resources page
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="landing-cta-panel absolute inset-0 rounded-[2.5rem]" />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(46,201,78,0.16),transparent_48%),linear-gradient(180deg,rgba(8,16,22,0.82),rgba(8,16,22,0.94))]" />
             <div className="relative">

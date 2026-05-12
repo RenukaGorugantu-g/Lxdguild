@@ -273,7 +273,7 @@ export default async function CandidateDashboard() {
                   <h3 className="mt-5 text-4xl font-bold text-[#111827]">{examTitle}</h3>
                   <p className="mt-4 max-w-2xl text-base leading-8 text-[#5b6757]">{examCopy}</p>
 
-                  <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+                  <div className="mt-8 flex flex-col gap-4">
                     {!isVerified && hasFailedExam ? (
                       certificate?.status === "pending" ? (
                         <div className="rounded-full bg-[#eef4ea] px-6 py-4 text-sm font-semibold text-[#5b6757]">
@@ -285,7 +285,7 @@ export default async function CandidateDashboard() {
                           <ArrowRight className="h-4 w-4" />
                         </Link>
                       ) : (
-                        <div className="w-full max-w-sm">
+                        <div className="w-full max-w-2xl">
                           <CertificateUpload userId={user.id} />
                         </div>
                       )
@@ -303,9 +303,29 @@ export default async function CandidateDashboard() {
 
                     <Link
                       href={membership.active ? "/dashboard/resources" : "/dashboard/membership"}
-                      className="marketing-secondary"
+                      className={`${
+                        !isVerified && hasFailedExam && !candidate.reattempt_allowed && certificate?.status !== "pending"
+                          ? "inline-flex w-full max-w-2xl items-center justify-between rounded-[1.4rem] border border-[#d9e4d2] bg-white px-5 py-4 text-left shadow-[0_12px_26px_rgba(87,108,67,0.08)] transition hover:border-[#bdd5b3] hover:bg-[#f8fbf6]"
+                          : "marketing-secondary"
+                      }`}
                     >
-                      {membership.active ? "Open Resources" : "Prepare First"}
+                      {!isVerified && hasFailedExam && !candidate.reattempt_allowed && certificate?.status !== "pending" ? (
+                        <>
+                          <span>
+                            <span className="block text-[11px] font-bold uppercase tracking-[0.16em] text-[#7a8577]">
+                              Next Step
+                            </span>
+                            <span className="mt-1 block text-base font-semibold text-[#111827]">
+                              {membership.active ? "Open Resources" : "Prepare First"}
+                            </span>
+                          </span>
+                          <ArrowRight className="h-4 w-4 text-[#138d1a]" />
+                        </>
+                      ) : (
+                        <>
+                          {membership.active ? "Open Resources" : "Prepare First"}
+                        </>
+                      )}
                     </Link>
                   </div>
                 </div>

@@ -18,13 +18,27 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://lxdguild.com"),
   title: "LXD Guild - Skill-First Verified Talent Marketplace",
   description:
     "The premier verified talent marketplace for Learning & Development professionals. Validate your skills, access exclusive jobs, and connect with top L&D employers.",
+  icons: {
+    icon: [
+      { url: "/lxd-guild-email-logo.png" },
+    ],
+    shortcut: ["/lxd-guild-email-logo.png"],
+    apple: ["/lxd-guild-email-logo.png"],
+  },
   openGraph: {
     title: "LXD Guild - Skill-First Verified Talent Marketplace",
     description: "Discover verified Learning & Development professionals through skill exams.",
     siteName: "LXD Guild",
+    images: [
+      {
+        url: "/lxd-guild-email-logo.png",
+        alt: "LXD Guild logo",
+      },
+    ],
   },
 };
 

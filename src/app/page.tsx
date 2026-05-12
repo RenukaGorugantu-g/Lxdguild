@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { createClient } from "@/utils/supabase/server";
 import {
   ArrowRight,
   Bot,
@@ -62,7 +63,13 @@ const journeySteps = [
   },
 ] as const;
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const primaryHref = user ? "/dashboard" : "/register";
+
   return (
     <div className="marketing-page">
       <main className="pt-22 sm:pt-24">
@@ -86,12 +93,12 @@ export default function LandingPage() {
                 </div>
 
                 <div className="flex flex-col gap-4 sm:flex-row">
-                  <Link href="/register" className="marketing-primary rounded-full px-6">
+                  <Link href={primaryHref} className="marketing-primary rounded-full px-6">
                     Join the Guild
                     <ArrowRight className="h-4 w-4" />
                   </Link>
-                  <Link href="/dashboard/jobs" className="marketing-secondary rounded-full px-6">
-                    View marketplace
+                  <Link href="/contact" className="marketing-secondary rounded-full px-6">
+                    Contact Us
                   </Link>
                 </div>
               </div>
@@ -360,7 +367,7 @@ export default function LandingPage() {
                 Join the marketplace
               </Link>
               <Link href="/contact" className="inline-flex items-center justify-center rounded-full border border-white/18 bg-white/10 px-7 py-3 text-sm font-semibold text-white">
-                Request a demo
+                Contact Us
               </Link>
             </div>
           </div>
