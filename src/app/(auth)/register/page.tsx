@@ -97,7 +97,6 @@ function RegisterPageContent() {
         candidateDesignation: selectedRole === "candidate_onhold" ? candidateBucket : null,
         employerDesignation: selectedRole === "employer_free" ? employerDesignation : null,
         companyName: selectedRole === "employer_free" ? companyName : null,
-        userId: data?.user?.id,
       }),
     });
 

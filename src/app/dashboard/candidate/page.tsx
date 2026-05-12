@@ -18,6 +18,7 @@ import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { getMembershipState } from "@/lib/membership";
 import { isVerifiedCandidateRole } from "@/lib/profile-role";
 import { loadProfile } from "@/lib/load-profile";
+import { maybeSendPostVerificationWelcome } from "@/lib/post-verification-welcome";
 import CertificateUpload from "./certificate-upload";
 
 type CandidateDashboardProfile = {
@@ -55,6 +56,8 @@ export default async function CandidateDashboard() {
   }
 
   if (!profile) return <div>Loading profile...</div>;
+
+  await maybeSendPostVerificationWelcome(supabase, user, profile);
 
   const [
     candidateResult,
@@ -165,15 +168,16 @@ export default async function CandidateDashboard() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="border-b border-[#dde7d8] pb-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Latest Score</p>
-                  <p className="mt-3 text-4xl font-bold text-[#17a21c]">
-                    {candidate?.latest_score ? `${candidate.latest_score}%` : "--"}
-                  </p>
+                  <p className="mt-3 text-4xl font-bold text-[#17a21c]">{candidate?.latest_score ? `${candidate.latest_score}%` : "--"}</p>
                   <div className="mt-3 h-1.5 rounded-full bg-[#e2ecd8]">
                     <div
                       className="h-1.5 rounded-full bg-[#23b61f]"
-                      style={{ width: `${Math.max(Math.min(candidate?.latest_score ?? 0, 100), 12)}%` }}
+                      style={{ width: `${candidate?.latest_score ? Math.max(Math.min(candidate.latest_score, 100), 12) : 18}%` }}
                     />
                   </div>
+                  {!candidate?.latest_score && (
+                    <p className="mt-3 text-xs text-[#7a8577]">Your score will appear here after your first completed assessment.</p>
+                  )}
                 </div>
                 <div className="border-b border-[#dde7d8] pb-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Applications</p>
@@ -189,14 +193,29 @@ export default async function CandidateDashboard() {
               </div>
               <div className="pt-1">
                 <p className="text-sm font-semibold text-[#111827]">Candidate Progress</p>
-                <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {[34, 52, 28, 68].map((height, index) => (
-                    <div
-                      key={index}
-                      className={`${index === 1 ? "bg-[#35d421]" : "bg-[#dff5d8]"} rounded-t-xl`}
-                      style={{ height: `${height}px` }}
-                    />
-                  ))}
+                <div className="mt-5 rounded-[1.5rem] border border-[#dde7d8] bg-white px-4 py-4">
+                  <div className="flex items-center justify-between gap-2">
+                    {journey.map((step, index) => {
+                      const isCurrent = step.state === "active";
+                      const isDone = step.state === "completed";
+                      return (
+                        <div key={step.title} className="flex min-w-0 flex-1 items-center gap-2">
+                          <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border ${isDone || isCurrent ? "border-[#23b61f] bg-[#eaf8e3] text-[#138d1a]" : "border-[#dbe6d6] bg-[#f5f7f2] text-[#a0aa9b]"}`}>
+                            {step.icon}
+                          </div>
+                          {index < journey.length - 1 && <div className={`h-[3px] flex-1 rounded-full ${isDone ? "bg-[#23b61f]" : "bg-[#dfe7d8]"}`} />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {journey.map((step) => (
+                      <div key={step.title} className="min-w-0">
+                        <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#111827]">{step.title}</p>
+                        <p className="mt-1 text-xs leading-5 text-[#7a8577]">{step.caption}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

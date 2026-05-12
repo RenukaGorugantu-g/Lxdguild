@@ -86,32 +86,32 @@ export default async function ScorecardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black pt-28 pb-16 px-6">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <div className="min-h-screen bg-zinc-50 px-6 pb-16 pt-28">
+      <div className="mx-auto max-w-4xl space-y-6">
         
         {/* Header/Score Summary */}
-        <div className={`p-8 rounded-3xl border ${isPass ? 'bg-green-50 border-green-200 dark:bg-green-900/10 dark:border-green-900/30' : 'bg-orange-50 border-orange-200 dark:bg-orange-900/10 dark:border-orange-900/30'}`}>
+        <div className={`rounded-3xl border p-7 ${isPass ? 'border-green-200 bg-green-50' : 'border-orange-200 bg-orange-50'}`}>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
-               <div className={`p-4 rounded-2xl ${isPass ? 'bg-green-100 dark:bg-green-900/40' : 'bg-orange-100 dark:bg-orange-900/40'}`}>
+               <div className={`rounded-2xl p-4 ${isPass ? 'bg-green-100' : 'bg-orange-100'}`}>
                   {isPass ? <CheckCircle2 className="w-8 h-8 text-green-600" /> : <AlertTriangle className="w-8 h-8 text-orange-600" />}
                </div>
               <div>
                   <h1 className="text-2xl font-bold">{isPass ? "Validation Successful" : "Validation Incomplete"}</h1>
-                  <p className="text-zinc-600 dark:text-zinc-400">Score: <span className="font-bold text-lg">{attempt.score}%</span></p>
+                  <p className="text-zinc-600">Score: <span className="font-bold text-lg">{attempt.score}%</span></p>
                   <p className="text-xs uppercase tracking-[0.16em] text-zinc-500 mt-1">Pass threshold: {PASS_THRESHOLD}%</p>
                </div>
             </div>
-            <Link href="/dashboard/candidate" className="px-6 py-2 border border-zinc-200 dark:border-zinc-800 rounded-xl bg-white dark:bg-black font-medium text-sm hover:bg-zinc-50 transition-colors">
+            <Link href="/dashboard/candidate" className="rounded-xl border border-zinc-200 bg-white px-6 py-2 text-sm font-medium transition-colors hover:bg-zinc-50">
                Back to Dashboard
             </Link>
           </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid gap-6 md:grid-cols-2">
           
           {/* Skill Breakdown */}
-          <div className="bg-white dark:bg-surface-dark border p-6 rounded-2xl shadow-sm">
+          <div className="rounded-2xl border bg-white p-5 shadow-sm">
             <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
               <Award className="w-5 h-5 text-brand-600" /> Skill Breakdown
             </h3>
@@ -124,7 +124,7 @@ export default async function ScorecardPage() {
                       <span>{skill}</span>
                       <span className={percent >= 70 ? "text-green-600" : "text-orange-600"}>{percent}%</span>
                     </div>
-                    <div className="h-2 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                    <div className="h-2 rounded-full bg-zinc-100 overflow-hidden">
                       <div 
                         className={`h-full transition-all duration-1000 ${percent >= 70 ? 'bg-green-500' : 'bg-orange-500'}`} 
                         style={{ width: `${percent}%` }}
@@ -139,7 +139,7 @@ export default async function ScorecardPage() {
           </div>
 
           {/* Learning Path */}
-          <div className="bg-white dark:bg-surface-dark border p-6 rounded-2xl shadow-sm">
+          <div className="rounded-2xl border bg-white p-5 shadow-sm">
             <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-brand-600" /> Recommended Learning Path
             </h3>
@@ -224,9 +224,9 @@ export default async function ScorecardPage() {
         />
 
         {!isPass && (
-          <div className="p-6 bg-brand-50 dark:bg-brand-900/10 border border-brand-100 dark:border-brand-900/30 rounded-2xl text-center">
-            <p className="text-sm font-medium text-brand-900 dark:text-brand-400 mb-2">Ready to reattempt?</p>
-            <p className="text-xs text-zinc-600 dark:text-zinc-500 mb-4">Complete the courses above and submit your certificate on the dashboard to unlock a retry.</p>
+          <div className="rounded-2xl border border-brand-100 bg-brand-50 p-5 text-center">
+            <p className="mb-2 text-sm font-medium text-brand-900">Ready to reattempt?</p>
+            <p className="mb-4 text-xs text-zinc-600">Complete the courses above and submit your certificate on the dashboard to unlock a retry.</p>
           </div>
         )}
 

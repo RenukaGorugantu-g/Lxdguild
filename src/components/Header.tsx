@@ -259,6 +259,7 @@ export default function Header() {
     : [];
 
   const unreadNotifications = notifications.filter((notification) => !notification.is_read).length;
+  const mobileTopNavVisible = Boolean(user) && isScrolled;
 
   const scheduleCloseNotifications = () => {
     if (notificationCloseTimerRef.current) clearTimeout(notificationCloseTimerRef.current);
@@ -300,12 +301,12 @@ export default function Header() {
     <>
       <header
         className={`fixed inset-x-0 top-0 z-[70] transition-all duration-300 ${
-          isScrolled ? "bg-[#f9fcf3]/75 backdrop-blur-[12px]" : "bg-transparent"
+          isScrolled && user ? "pointer-events-none -translate-y-full opacity-0 lg:pointer-events-auto lg:translate-y-0 lg:opacity-100 lg:bg-[#f9fcf3]" : isScrolled ? "bg-[#f9fcf3]" : "bg-transparent"
         }`}
       >
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
           <div
-            className="flex min-h-16 items-center justify-between rounded-[30px] border border-[#dfe8d8] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,250,240,0.94))] px-4 shadow-[0_18px_45px_rgba(94,119,74,0.10)] sm:px-5"
+            className="flex min-h-16 items-center justify-between rounded-[30px] border border-[#dfe8d8] bg-[#f9fcf3] px-4 shadow-[0_18px_45px_rgba(94,119,74,0.10)] sm:px-5"
           >
           <Link href={brandHref} className="group flex items-center" aria-label="LXD Guild home">
             <img src={BRAND_LOGO_URL} alt="LXD Guild" className="h-11 w-auto sm:h-12" />
@@ -322,9 +323,7 @@ export default function Header() {
               </button>
 
               {isOfferMenuOpen && (
-                <div
-                  className="absolute left-0 top-full mt-3 w-72 overflow-hidden rounded-[26px] border border-[#dfe8d8] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(244,251,240,0.92))] shadow-[0_24px_80px_rgba(94,119,74,0.12)]"
-                >
+                <div className="absolute left-0 top-full mt-3 w-72 overflow-hidden rounded-[26px] border border-[#dfe8d8] bg-[#f9fcf3] shadow-[0_24px_80px_rgba(94,119,74,0.12)]">
                   <div className="border-b border-[#e6eedf] px-4 py-3 text-[11px] font-bold uppercase tracking-[0.22em] text-[#6d7d68]">
                     What we offer
                   </div>
@@ -390,7 +389,7 @@ export default function Header() {
                 </button>
 
                 {isNotificationsOpen && (
-                  <div className="absolute right-0 top-full mt-3 w-80 overflow-hidden rounded-[24px] border border-[#dfe8d8] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,251,240,0.96))] shadow-[0_24px_80px_rgba(94,119,74,0.14)]">
+                  <div className="absolute right-0 top-full mt-3 w-80 overflow-hidden rounded-[24px] border border-[#dfe8d8] bg-[#f9fcf3] shadow-[0_24px_80px_rgba(94,119,74,0.14)]">
                     <div className="border-b border-[#e6eedf] px-4 py-3 text-sm font-semibold text-[#111827]">Notifications</div>
                     <div className="max-h-72 overflow-y-auto">
                       {notifications.length === 0 ? (
@@ -426,7 +425,7 @@ export default function Header() {
                 </button>
 
                 {isUserMenuOpen && (
-                  <div className="absolute right-0 top-full mt-3 w-60 overflow-hidden rounded-[24px] border border-[#dfe8d8] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(244,251,240,0.96))] shadow-[0_24px_80px_rgba(94,119,74,0.14)]">
+                  <div className="absolute right-0 top-full mt-3 w-60 overflow-hidden rounded-[24px] border border-[#dfe8d8] bg-[#f9fcf3] shadow-[0_24px_80px_rgba(94,119,74,0.14)]">
                     {isVerifiedMVP && (
                       <div className="border-b border-[#e6eedf] bg-[linear-gradient(135deg,rgba(52,205,47,0.12),rgba(95,213,255,0.05))] px-4 py-3">
                         <div className="flex items-center gap-2 text-xs font-bold text-[#111827]">
@@ -482,46 +481,60 @@ export default function Header() {
       </div>
       </header>
 
-      {user ? (
-      <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+0.7rem)] z-[72] mx-auto max-w-7xl px-4 sm:px-6 lg:hidden">
+      {mobileTopNavVisible ? (
+      <div className="fixed inset-x-0 top-0 z-[69] mx-auto max-w-7xl px-4 sm:px-6 lg:hidden">
         <div
-          className={`grid grid-cols-5 gap-2 rounded-[26px] border px-2 py-2 shadow-[0_18px_45px_rgba(94,119,74,0.12)] backdrop-blur-[20px] ${
+          className={`grid grid-cols-5 gap-2 rounded-b-[26px] border border-t-0 px-2 py-2 shadow-[0_18px_45px_rgba(94,119,74,0.12)] ${
             isPublicMarketingRoute
-              ? "border-[#dfe8d8] bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(244,250,240,0.92))]"
-              : "border-[#dbe6d7] bg-[linear-gradient(180deg,rgba(251,253,248,0.96),rgba(239,247,235,0.94))]"
+              ? "border-[#dfe8d8] bg-[#f9fcf3]"
+              : "border-[#dbe6d7] bg-[#f9fcf3]"
           }`}
         >
           <Link
             href={brandHref}
-            className="flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold text-[#1f2937]"
+            className={`flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold transition-colors ${
+              pathname === brandHref ? "bg-[#eaf8e3] text-[#138d1a]" : "text-[#1f2937]"
+            }`}
           >
             <Home className="h-4 w-4" />
             <span>Home</span>
           </Link>
           <Link
             href={jobBoardHref}
-            className="flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold text-[#1f2937]"
+            className={`flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold transition-colors ${
+              pathname.startsWith("/dashboard/jobs") ? "bg-[#eaf8e3] text-[#138d1a]" : "text-[#1f2937]"
+            }`}
           >
             <Briefcase className="h-4 w-4" />
             <span>Jobs</span>
           </Link>
           <Link
             href={profileHref}
-            className="flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold text-[#1f2937]"
+            className={`flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold transition-colors ${
+              pathname.startsWith("/dashboard/candidate/profile") || pathname.startsWith("/dashboard/employer/profile")
+                ? "bg-[#eaf8e3] text-[#138d1a]"
+                : "text-[#1f2937]"
+            }`}
           >
             <User className="h-4 w-4" />
             <span>Profile</span>
           </Link>
           <Link
             href={resourcesHref}
-            className="flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold text-[#1f2937]"
+            className={`flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold transition-colors ${
+              pathname.startsWith("/dashboard/resources") ? "bg-[#eaf8e3] text-[#138d1a]" : "text-[#1f2937]"
+            }`}
           >
             <BookOpen className="h-4 w-4" />
             <span>Resources</span>
           </Link>
           <Link
             href={dashboardHref}
-            className="flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold text-[#1f2937]"
+            className={`flex flex-col items-center gap-1 rounded-2xl px-2 py-2 text-[11px] font-semibold transition-colors ${
+              pathname === "/dashboard" || pathname === "/dashboard/candidate" || pathname === "/dashboard/employer" || pathname === "/dashboard/admin"
+                ? "bg-[#eaf8e3] text-[#138d1a]"
+                : "text-[#1f2937]"
+            }`}
           >
             <LayoutDashboard className="h-4 w-4" />
             <span>Dashboard</span>
@@ -531,8 +544,8 @@ export default function Header() {
       ) : null}
 
       {isMobileMenuOpen && (
-        <div className={`fixed inset-x-0 z-[71] mx-auto max-w-7xl px-4 sm:px-6 lg:hidden ${user ? "bottom-[5.9rem]" : "top-[5.6rem]"}`}>
-          <div className="space-y-1 rounded-[30px] border border-[#dbe6d7] bg-[linear-gradient(180deg,rgba(255,255,255,0.97),rgba(243,249,239,0.96))] px-3 py-3 shadow-[0_24px_80px_rgba(94,119,74,0.16)] backdrop-blur-[22px]">
+        <div className={`fixed inset-x-0 z-[71] mx-auto max-w-7xl px-4 sm:px-6 lg:hidden ${user ? (mobileTopNavVisible ? "top-[5.9rem]" : "top-[5.6rem]") : "top-[5.6rem]"}`}>
+          <div className="space-y-1 rounded-[30px] border border-[#dbe6d7] bg-[#f9fcf3] px-3 py-3 shadow-[0_24px_80px_rgba(94,119,74,0.16)]">
             <div className="flex items-center justify-between px-3 pb-1 pt-2">
               <div className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#6d7d68]">
                 More options
@@ -618,6 +631,7 @@ export default function Header() {
           </div>
         </div>
       )}
+
     </>
   );
 }

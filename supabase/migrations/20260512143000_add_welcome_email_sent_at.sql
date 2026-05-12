@@ -1,0 +1,2 @@
+ALTER TABLE profiles
+ADD COLUMN IF NOT EXISTS welcome_email_sent_at TIMESTAMP WITH TIME ZONE;

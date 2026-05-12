@@ -14,7 +14,6 @@ const STARTER_MESSAGE =
 
 export default function ChatbotWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isMobileScrolled, setIsMobileScrolled] = useState(false);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -24,24 +23,6 @@ export default function ChatbotWidget() {
     },
   ]);
   const [quickReplies, setQuickReplies] = useState<string[]>(CHATBOT_QUICK_PROMPTS);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.innerWidth >= 640) {
-        setIsMobileScrolled(false);
-        return;
-      }
-      setIsMobileScrolled(window.scrollY > 32);
-    };
-
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", handleScroll);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleScroll);
-    };
-  }, []);
 
   const visibleMessages = useMemo(() => messages.slice(-8), [messages]);
 
@@ -97,7 +78,7 @@ export default function ChatbotWidget() {
   };
 
   return (
-    <div className={`fixed right-4 z-[95] transition-all duration-200 sm:bottom-6 sm:right-6 ${isMobileScrolled ? "bottom-[6.6rem]" : "bottom-[10rem]"}`}>
+    <div className="fixed bottom-4 right-4 z-[95] transition-all duration-200 sm:bottom-6 sm:right-6">
       {isOpen ? (
         <div className="w-[calc(100vw-2rem)] max-w-[380px] overflow-hidden rounded-[2rem] border border-[#dbe6d7] bg-[linear-gradient(180deg,rgba(251,253,248,0.98),rgba(244,249,241,0.98))] shadow-[0_28px_80px_rgba(87,108,67,0.18)] backdrop-blur-2xl">
           <div className="flex items-start justify-between gap-3 border-b border-[#e4ece0] px-5 py-4">

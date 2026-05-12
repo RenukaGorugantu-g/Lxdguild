@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getBaseRole } from "@/lib/profile-role";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { loadProfile } from "@/lib/load-profile";
+import { maybeSendPostVerificationWelcome } from "@/lib/post-verification-welcome";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,8 @@ export default async function DashboardPage() {
       </div>
     );
   }
+
+  await maybeSendPostVerificationWelcome(supabase, user, profile);
 
   const roleStr = String(profile.role || "").toLowerCase();
   if (!roleStr) {

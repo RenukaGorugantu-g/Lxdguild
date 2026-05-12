@@ -7,7 +7,7 @@ export function getSiteUrl() {
   const fallbackUrl =
     process.env.NODE_ENV === "development"
       ? "http://localhost:3000"
-      : "https://lxdguild.vercel.app";
+      : "https://lxdmarketplace.lxdguild.com";
 
   return (
     configuredUrl || fallbackUrl

@@ -51,7 +51,7 @@ export default async function ExamPage() {
 
   if (profile?.role === "candidate_mvp") {
     return (
-      <div className="flex h-screen items-center justify-center bg-zinc-50 dark:bg-black">
+      <div className="flex h-screen items-center justify-center bg-zinc-50">
         <p>You have already passed the exam.</p>
       </div>
     );
@@ -101,7 +101,7 @@ export default async function ExamPage() {
   const weightedQuestions = buildRoleMatchedAssessment(questions, designationBucket, DEFAULT_TOTAL_QUESTIONS);
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-black pt-28 pb-16 px-4">
+    <div className="min-h-screen bg-zinc-50 px-4 pb-16 pt-28">
       <div className="max-w-3xl mx-auto">
         <ExamClient 
           questions={weightedQuestions || []}
