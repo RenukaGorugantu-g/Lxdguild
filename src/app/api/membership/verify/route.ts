@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
+import Razorpay from "razorpay";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import {
@@ -9,6 +10,11 @@ import {
   hasActiveMembership,
 } from "@/lib/membership";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID || "rzp_live_jOXWfiSjhOX7IX",
+  key_secret: process.env.RAZORPAY_KEY_SECRET || "P4hRxesj7MOwZx1nWovLtNv5",
+});
 
 type MembershipRouteProfile = {
   role?: string | null;
@@ -71,6 +77,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, alreadyActive: true });
   }
 
+  const orderDetails = await razorpay.orders.fetch(razorpay_order_id);
+  const orderNotes = (orderDetails.notes || {}) as Record<string, string | undefined>;
+  const orderAmountInr = typeof orderDetails.amount === "number" ? orderDetails.amount / 100 : MEMBER_ANNUAL_PRICE_INR;
+  const originalAmountInr = Number(orderNotes.original_amount_inr || MEMBER_ANNUAL_PRICE_INR);
+  const discountAmountInr = Number(orderNotes.discount_amount_inr || 0);
+  const finalAmountInr = Number(orderNotes.final_amount_inr || orderAmountInr || MEMBER_ANNUAL_PRICE_INR);
+  const couponCode = orderNotes.coupon_code?.trim() || null;
+
   const now = new Date();
   const expiresAt = addMembershipYear(now);
 
@@ -100,11 +114,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
 
-  const { error: paymentError } = await admin
+  const { data: paymentRecord, error: paymentError } = await admin
     .from("membership_payments")
     .insert({
       user_id: user.id,
-      amount_inr: MEMBER_ANNUAL_PRICE_INR,
+      amount_inr: finalAmountInr,
+      original_amount_inr: originalAmountInr,
+      discount_amount_inr: discountAmountInr,
+      coupon_code: couponCode,
       currency: "INR",
       plan_code: MEMBER_ANNUAL_PLAN_CODE,
       status: "paid",
@@ -112,10 +129,39 @@ export async function POST(req: Request) {
       razorpay_payment_id,
       membership_started_at: now.toISOString(),
       membership_expires_at: expiresAt.toISOString(),
-    });
+    })
+    .select("id")
+    .single();
 
   if (paymentError && paymentError.code !== "PGRST205" && paymentError.code !== "42P01") {
     return NextResponse.json({ error: paymentError.message }, { status: 500 });
+  }
+
+  if (couponCode) {
+    const { data: coupon } = await admin
+      .from("membership_coupons")
+      .select("id")
+      .eq("code", couponCode)
+      .maybeSingle<{ id: string }>();
+
+    if (coupon?.id) {
+      const { error: redemptionError } = await admin
+        .from("membership_coupon_redemptions")
+        .insert({
+          coupon_id: coupon.id,
+          user_id: user.id,
+          membership_payment_id: paymentRecord?.id || null,
+          razorpay_order_id,
+          razorpay_payment_id,
+          original_amount_inr: originalAmountInr,
+          discount_amount_inr: discountAmountInr,
+          final_amount_inr: finalAmountInr,
+        });
+
+      if (redemptionError && redemptionError.code !== "42P01") {
+        return NextResponse.json({ error: redemptionError.message }, { status: 500 });
+      }
+    }
   }
 
   return NextResponse.json({

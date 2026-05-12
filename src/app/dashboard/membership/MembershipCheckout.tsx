@@ -12,6 +12,19 @@ type MembershipCheckoutProps = {
   userEmail: string | null;
 };
 
+type AppliedCoupon = {
+  code: string;
+  description: string | null;
+  discountType: "flat" | "percent";
+  discountValue: number;
+};
+
+type PricingPreview = {
+  originalAmountInr: number;
+  discountAmountInr: number;
+  finalAmountInr: number;
+};
+
 declare global {
   interface Window {
     Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
@@ -26,6 +39,16 @@ export default function MembershipCheckout({
   userEmail,
 }: MembershipCheckoutProps) {
   const [loading, setLoading] = useState(false);
+  const [showCheckoutPopup, setShowCheckoutPopup] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+  const [pricingPreview, setPricingPreview] = useState<PricingPreview>({
+    originalAmountInr: amountInr,
+    discountAmountInr: 0,
+    finalAmountInr: amountInr,
+  });
   const router = useRouter();
 
   useEffect(() => {
@@ -38,10 +61,73 @@ export default function MembershipCheckout({
     };
   }, []);
 
+  const resetPricing = () => {
+    setPricingPreview({
+      originalAmountInr: amountInr,
+      discountAmountInr: 0,
+      finalAmountInr: amountInr,
+    });
+  };
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError("Enter a coupon code.");
+      return;
+    }
+
+    setCouponLoading(true);
+    setCouponError(null);
+    try {
+      const response = await fetch("/api/membership/coupon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ couponCode }),
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Unable to apply coupon.");
+      }
+
+      setAppliedCoupon(result.coupon);
+      setPricingPreview(result.pricing);
+      setCouponCode(result.coupon.code);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to apply coupon.";
+      setAppliedCoupon(null);
+      resetPricing();
+      setCouponError(message);
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const clearCoupon = () => {
+    setCouponCode("");
+    setAppliedCoupon(null);
+    setCouponError(null);
+    resetPricing();
+  };
+
+  const openCheckoutPopup = () => {
+    if (isActive || loading) return;
+    setCouponError(null);
+    setShowCheckoutPopup(true);
+  };
+
+  const closeCheckoutPopup = () => {
+    if (loading) return;
+    setShowCheckoutPopup(false);
+  };
+
   const handlePurchase = async () => {
     setLoading(true);
     try {
-      const orderResponse = await fetch("/api/membership/order", { method: "POST" });
+      const orderResponse = await fetch("/api/membership/order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ couponCode: appliedCoupon?.code || "" }),
+      });
       const order = await orderResponse.json();
 
       if (!orderResponse.ok || !order.id) {
@@ -53,7 +139,7 @@ export default function MembershipCheckout({
         amount: order.amount,
         currency: order.currency,
         name: "LXD Guild",
-        description: "Annual Member Access",
+        description: appliedCoupon ? `Annual Member Access (${appliedCoupon.code})` : "Annual Member Access",
         order_id: order.id,
         prefill: {
           name: userName || "",
@@ -72,6 +158,7 @@ export default function MembershipCheckout({
           }
           router.push("/dashboard/resources?activated=1");
           router.refresh();
+          setShowCheckoutPopup(false);
         },
       });
 
@@ -100,7 +187,7 @@ export default function MembershipCheckout({
             </p>
           </div>
           <div className="flex flex-col gap-4 sm:flex-row">
-            <button onClick={handlePurchase} disabled={isActive || loading} className="marketing-primary disabled:cursor-not-allowed disabled:opacity-60">
+            <button onClick={openCheckoutPopup} disabled={isActive || loading} className="marketing-primary disabled:cursor-not-allowed disabled:opacity-60">
               {isActive ? "Membership Active" : loading ? "Opening checkout..." : "Get Member Access"}
               {!isActive && !loading && <ArrowRight className="h-4 w-4" />}
             </button>
@@ -206,51 +293,118 @@ export default function MembershipCheckout({
               A premium layer built for deeper learning, stronger hiring systems, and full access to the Guild ecosystem.
             </p>
             <div className="mt-6 space-y-2 text-sm text-white/84">
-              <p>• Premium templates and guides</p>
-              <p>• Candidate and employer support</p>
-              <p>• Annual access to the full library</p>
+              <p>Premium templates and guides</p>
+              <p>Candidate and employer support</p>
+              <p>Annual access to the full library</p>
             </div>
-          </div>
-
-          <div className="marketing-grid-card p-8">
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
-                <Crown className="h-6 w-6" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#6d7d68]">Member Plan</p>
-                <p className="text-xl font-bold text-[#111827]">1 year access</p>
-              </div>
-            </div>
-
-            <div className="mt-6 flex items-baseline gap-2">
-              <span className="text-5xl font-extrabold tracking-tight text-[#111827]">Rs {amountInr}</span>
-              <span className="text-sm text-[#6d7d68]">/ year</span>
-            </div>
-
-            {isActive ? (
-              <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900">
-                <p className="font-semibold">Membership active</p>
-                <p className="mt-1">Your pay button stays disabled until {expiresAtLabel || "your membership expires"}.</p>
-              </div>
-            ) : (
-              <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
-                <p className="font-semibold">Purchase required for locked resources</p>
-                <p className="mt-1">Free resources remain downloadable without membership.</p>
-              </div>
-            )}
-
-            <button onClick={handlePurchase} disabled={isActive || loading} className="marketing-primary mt-6 flex w-full justify-center disabled:cursor-not-allowed disabled:opacity-60">
-              {isActive ? <Lock className="h-4 w-4" /> : <Crown className="h-4 w-4" />}
-              {isActive ? "Membership Active" : loading ? "Opening checkout..." : "Get Started"}
-            </button>
-
-            <a href="/dashboard/resources" className="marketing-secondary mt-3 flex w-full justify-center">
-              Continue to Library
-            </a>
           </div>
         </div>
       </section>
+
+      {showCheckoutPopup && !isActive && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(8,16,22,0.58)] p-4 pt-20 sm:items-start sm:pt-24">
+          <div className="w-full max-w-xl rounded-[2rem] border border-[#dbe6d6] bg-white p-5 shadow-[0_28px_80px_rgba(7,19,31,0.28)] sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d7d68]">Membership checkout</p>
+                <h3 className="mt-2 text-2xl font-bold text-[#111827]">Apply coupon before payment</h3>
+                <p className="mt-2 text-sm leading-6 text-[#5b6757]">
+                  Add an early-user coupon here if you have one, then continue to Razorpay checkout.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeCheckoutPopup}
+                className="rounded-full border border-[#dbe6d6] px-3 py-1.5 text-sm font-semibold text-[#5b6757] transition hover:border-[#23b61f] hover:text-[#15803d]"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="mt-5 rounded-[1.6rem] border border-[#dbe6d6] bg-[#f8fbf5] p-4">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d7d68]">Early user coupon</p>
+              <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                <input
+                  value={couponCode}
+                  onChange={(event) => {
+                    setCouponCode(event.target.value.toUpperCase());
+                    setCouponError(null);
+                  }}
+                  placeholder="Enter coupon code"
+                  className="min-w-0 flex-1 rounded-2xl border border-[#dbe6d6] bg-white px-4 py-3 text-sm font-medium uppercase tracking-[0.12em] text-[#111827] outline-none transition focus:border-[#23b61f]"
+                />
+                <button
+                  type="button"
+                  onClick={handleApplyCoupon}
+                  disabled={couponLoading || loading}
+                  className="rounded-2xl border border-[#beddaf] bg-white px-5 py-3 text-sm font-semibold text-[#111827] transition hover:border-[#23b61f] hover:text-[#15803d] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {couponLoading ? "Applying..." : "Apply"}
+                </button>
+              </div>
+
+              {appliedCoupon && (
+                <div className="mt-3 flex flex-col gap-3 rounded-2xl bg-[#eafbe4] px-4 py-3 text-sm text-[#166534] sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-semibold">{appliedCoupon.code} applied</p>
+                    <p className="mt-1 text-xs text-[#3d6c45]">
+                      {appliedCoupon.description ||
+                        (appliedCoupon.discountType === "percent"
+                          ? `${appliedCoupon.discountValue}% off membership`
+                          : `Rs ${appliedCoupon.discountValue} off membership`)}
+                    </p>
+                  </div>
+                  <button type="button" onClick={clearCoupon} className="text-left text-xs font-semibold uppercase tracking-[0.16em] text-[#15803d]">
+                    Remove
+                  </button>
+                </div>
+              )}
+
+              {couponError && <p className="mt-3 text-sm font-medium text-[#b42318]">{couponError}</p>}
+            </div>
+
+            <div className="mt-4 rounded-[1.6rem] border border-[#dbe6d6] bg-white p-4">
+              <div className="flex items-center justify-between gap-4 text-sm">
+                <span className="font-medium text-[#5b6757]">Membership price</span>
+                <span className={`font-semibold ${pricingPreview.discountAmountInr > 0 ? "line-through text-[#7a8773]" : "text-[#111827]"}`}>
+                  Rs {pricingPreview.originalAmountInr}
+                </span>
+              </div>
+              {pricingPreview.discountAmountInr > 0 && (
+                <>
+                  <div className="mt-3 flex items-center justify-between gap-4 text-sm">
+                    <span className="font-medium text-[#15803d]">Coupon discount</span>
+                    <span className="font-semibold text-[#15803d]">- Rs {pricingPreview.discountAmountInr}</span>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-4 border-t border-[#e7eee1] pt-3">
+                    <span className="text-base font-semibold text-[#111827]">Final payable</span>
+                    <span className="text-2xl font-extrabold text-[#111827]">Rs {pricingPreview.finalAmountInr}</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+              <button
+                type="button"
+                onClick={handlePurchase}
+                disabled={loading}
+                className="marketing-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loading ? "Opening checkout..." : "Continue to Payment"}
+              </button>
+              <button
+                type="button"
+                onClick={closeCheckoutPopup}
+                disabled={loading}
+                className="marketing-secondary w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Not now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
