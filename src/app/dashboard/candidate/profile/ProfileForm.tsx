@@ -1868,20 +1868,15 @@ export default function ProfileForm({
                         <div className="mt-5 space-y-5">
                           <div>
                             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Professional summary</p>
-                            <div className="mt-3 rounded-[1.15rem] bg-[linear-gradient(135deg,rgba(52,205,47,0.14),rgba(128,239,122,0.08)_55%,rgba(255,255,255,0.98))] px-4 py-3 shadow-[0_10px_24px_rgba(52,205,47,0.10)] ring-1 ring-[#d9f3d0]">
-                              <p className="text-sm leading-6 text-zinc-800 sm:leading-7">{resumeOptimization.summary}</p>
+                            <div className="mt-3">
+                              <p className="text-sm leading-6 text-[#138d1a] sm:leading-7">{resumeOptimization.summary}</p>
                             </div>
                           </div>
                           <div>
                             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Experience</p>
                             <div className="mt-3 space-y-2">
                               {bulletize(resumeOptimization.bulletPoints.slice(0, 3)).map((point) => (
-                                <div
-                                  key={point}
-                                  className="rounded-[1rem] bg-[linear-gradient(135deg,rgba(52,205,47,0.16),rgba(234,248,227,0.92)_58%,rgba(255,255,255,0.98))] px-3.5 py-3 shadow-[0_8px_20px_rgba(52,205,47,0.08)] ring-1 ring-[#dbf1d2]"
-                                >
-                                  <p className="text-sm leading-6 text-zinc-800 sm:leading-7">{point}</p>
-                                </div>
+                                <p key={point} className="text-sm leading-6 text-[#138d1a] sm:leading-7">{point}</p>
                               ))}
                             </div>
                           </div>
@@ -1912,12 +1907,7 @@ export default function ProfileForm({
                               {(resumeOptimization.strengths.length > 0
                                 ? resumeOptimization.strengths
                                 : ["This version is clearer, stronger, and better aligned for ATS scanning."]).map((item) => (
-                                <div
-                                  key={item}
-                                  className="rounded-[1rem] bg-[linear-gradient(135deg,rgba(52,205,47,0.16),rgba(234,248,227,0.92)_58%,rgba(255,255,255,0.98))] px-3.5 py-3 shadow-[0_8px_20px_rgba(52,205,47,0.08)] ring-1 ring-[#dbf1d2]"
-                                >
-                                  <p className="text-sm leading-6 text-zinc-800 sm:leading-7">{item}</p>
-                                </div>
+                                <p key={item} className="text-sm leading-6 text-[#138d1a] sm:leading-7">{item}</p>
                               ))}
                             </div>
                           </div>
@@ -1925,12 +1915,7 @@ export default function ProfileForm({
                             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">ATS formatting</p>
                             <div className="mt-3 space-y-2">
                               {bulletize(resumeOptimization.atsFormattingTips.slice(0, 2)).map((tip) => (
-                                <div
-                                  key={tip}
-                                  className="rounded-[1rem] bg-[linear-gradient(135deg,rgba(128,239,122,0.18),rgba(240,252,234,0.94)_58%,rgba(255,255,255,0.98))] px-3.5 py-3 shadow-[0_8px_20px_rgba(52,205,47,0.08)] ring-1 ring-[#dbf1d2]"
-                                >
-                                  <p className="text-sm leading-6 text-zinc-800 sm:leading-7">{tip}</p>
-                                </div>
+                                <p key={tip} className="text-sm leading-6 text-[#138d1a] sm:leading-7">{tip}</p>
                               ))}
                             </div>
                           </div>
