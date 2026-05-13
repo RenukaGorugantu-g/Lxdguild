@@ -236,6 +236,37 @@ export default async function CandidateDashboard() {
                 </span>{" "}
                 phase. Complete the right next step to unlock stronger-fit roles, premium resources, and cleaner visibility.
               </p>
+              {!isVerified ? (
+                <div className="max-w-2xl rounded-[1.5rem] border border-[#d8e6d3] bg-white px-4 py-4 shadow-[0_16px_34px_rgba(94,119,74,0.08)] sm:px-5">
+                  <div className="flex flex-col gap-4 sm:gap-3">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#15911b]">
+                        Assessment unlock
+                      </p>
+                      <p className="mt-2 text-base font-semibold text-[#111827] sm:text-lg">
+                        You have only 15 free job applications.
+                      </p>
+                      <p className="mt-1 text-sm leading-6 text-[#5f6d5b] sm:text-[15px]">
+                        Pass the skill assessment to unlock ATS insights, stronger role-fit visibility, and the full Guild experience.
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Link
+                        href="/dashboard/candidate/exam"
+                        className="inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,#118118,#2aa82b)] px-5 py-2.5 text-sm font-bold text-white shadow-[0_14px_28px_rgba(24,124,29,0.16)] transition-all hover:translate-y-[-1px]"
+                      >
+                        Take Skill Assessment
+                      </Link>
+                      <Link
+                        href="/dashboard/jobs"
+                        className="inline-flex items-center justify-center rounded-full border border-[#d7e4d1] bg-white px-5 py-2.5 text-sm font-semibold text-[#111827] transition-colors hover:bg-[#eef5e5]"
+                      >
+                        View Jobs
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             <div className="space-y-4 border-t border-[#dde7d8] pt-4">
@@ -292,55 +323,6 @@ export default async function CandidateDashboard() {
                   </div>
                 </div>
               </div>
-            </div>
-          </section>
-
-          <section className="space-y-5">
-            <div className="flex items-center gap-3">
-              <Sparkles className="h-5 w-5 text-[#138d1a]" />
-              <h2 className="text-3xl font-bold text-[#111827]">Your Journey</h2>
-            </div>
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-              {journey.map((step) => {
-                const isCompleted = step.state === "completed";
-                const isActive = step.state === "active";
-                const isLocked = step.state === "locked";
-                return (
-                  <article
-                    key={step.title}
-                    className={`rounded-[1.9rem] border p-7 shadow-[0_16px_40px_rgba(87,108,67,0.08)] ${
-                      isActive
-                        ? "border-[#8fd97e] bg-white ring-2 ring-[#a9e99d]/70"
-                        : isLocked
-                          ? "border-[#e7ece2] bg-white/72 text-[#b4bdb0]"
-                          : "border-[#d8e6d3] bg-white"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div
-                        className={`flex h-10 w-10 items-center justify-center rounded-full ${
-                          isCompleted
-                            ? "bg-[#138d1a] text-white"
-                            : isActive
-                              ? "bg-[#138d1a] text-white"
-                              : "bg-[#ecf1e7] text-[#a0aa9b]"
-                        }`}
-                      >
-                        {step.icon}
-                      </div>
-                      <p
-                        className={`text-[11px] font-bold uppercase tracking-[0.18em] ${
-                          isCompleted ? "text-[#138d1a]" : isActive ? "text-[#138d1a]" : "text-[#b4bdb0]"
-                        }`}
-                      >
-                        {isCompleted ? "Completed" : isActive ? "In Progress" : "Locked"}
-                      </p>
-                    </div>
-                    <h3 className={`mt-8 text-2xl font-bold ${isLocked ? "text-[#bac1b8]" : "text-[#111827]"}`}>{step.title}</h3>
-                    <p className={`mt-3 text-base leading-7 ${isLocked ? "text-[#c4cbc2]" : "text-[#647061]"}`}>{step.caption}</p>
-                  </article>
-                );
-              })}
             </div>
           </section>
 

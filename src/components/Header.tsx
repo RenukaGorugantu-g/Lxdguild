@@ -311,7 +311,7 @@ export default function Header() {
             className="flex min-h-16 items-center justify-between rounded-[30px] border border-[#dfe8d8] bg-[#f9fcf3] px-4 shadow-[0_18px_45px_rgba(94,119,74,0.10)] sm:px-5"
           >
           <Link href={brandHref} className="group flex items-center" aria-label="LXD Guild home">
-            <img src={BRAND_LOGO_URL} alt="LXD Guild" className="h-9 w-auto sm:h-10" />
+            <img src={BRAND_LOGO_URL} alt="LXD Guild" className="h-7 w-auto sm:h-8" />
           </Link>
 
           <nav className="hidden items-center gap-2 lg:flex">
