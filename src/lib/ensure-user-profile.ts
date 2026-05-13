@@ -47,14 +47,34 @@ export async function ensureUserProfile(user: AuthLikeUser) {
       : user.email?.split("@")[0] || null;
 
   const metadataRole = isValidRole(rawMetadataRole) ? rawMetadataRole : null;
-  const existingProfileResult = await admin.from("profiles").select("role, name").eq("id", user.id).maybeSingle();
+  const metadataTargetRole =
+    typeof user.user_metadata?.candidate_target_role === "string" && user.user_metadata.candidate_target_role.length > 0
+      ? user.user_metadata.candidate_target_role
+      : null;
+  const metadataExperienceYears =
+    typeof user.user_metadata?.experience_years === "number"
+      ? user.user_metadata.experience_years
+      : typeof user.user_metadata?.experience_years === "string"
+        ? Number(user.user_metadata.experience_years)
+        : null;
+  const existingProfileResult = await admin
+    .from("profiles")
+    .select("role, name, candidate_target_role, experience_years")
+    .eq("id", user.id)
+    .maybeSingle();
   const existingProfile = existingProfileResult.data;
 
   if (existingProfile && isValidRole(existingProfile.role)) {
-    if (existingProfile.name || !metadataName) {
+    if (
+      (existingProfile.name || !metadataName) &&
+      (existingProfile.candidate_target_role || !metadataTargetRole) &&
+      ((existingProfile.experience_years !== null && existingProfile.experience_years !== undefined) || metadataExperienceYears === null)
+    ) {
       return {
         role: existingProfile.role,
         name: existingProfile.name || metadataName,
+        candidate_target_role: existingProfile.candidate_target_role || metadataTargetRole,
+        experience_years: existingProfile.experience_years ?? metadataExperienceYears,
       };
     }
 
@@ -63,14 +83,18 @@ export async function ensureUserProfile(user: AuthLikeUser) {
       .update({
         email: user.email ?? null,
         name: metadataName,
+        candidate_target_role: existingProfile.candidate_target_role || metadataTargetRole,
+        experience_years: existingProfile.experience_years ?? metadataExperienceYears,
       })
       .eq("id", user.id)
-      .select("role, name")
+      .select("role, name, candidate_target_role, experience_years")
       .single();
 
     return updateNameResult.data ?? {
       role: existingProfile.role,
       name: metadataName,
+      candidate_target_role: existingProfile.candidate_target_role || metadataTargetRole,
+      experience_years: existingProfile.experience_years ?? metadataExperienceYears,
     };
   }
 
@@ -82,8 +106,10 @@ export async function ensureUserProfile(user: AuthLikeUser) {
         email: user.email ?? null,
         name: metadataName,
         role: metadataRole,
+        candidate_target_role: metadataTargetRole,
+        experience_years: metadataExperienceYears,
       })
-      .select("role, name")
+      .select("role, name, candidate_target_role, experience_years")
       .single();
 
     if (!insertResult.error && insertResult.data) {
@@ -137,8 +163,10 @@ export async function ensureUserProfile(user: AuthLikeUser) {
         email: user.email ?? null,
         name: safeName,
         role: safeRole,
+        candidate_target_role: metadataTargetRole,
+        experience_years: metadataExperienceYears,
       })
-      .select("role, name")
+      .select("role, name, candidate_target_role, experience_years")
       .single();
 
     data = insertResult.data;
@@ -146,16 +174,23 @@ export async function ensureUserProfile(user: AuthLikeUser) {
     if (insertResult.error) {
       return null;
     }
-  } else if (existingProfile.role !== safeRole || (!existingProfile.name && safeName)) {
+  } else if (
+    existingProfile.role !== safeRole ||
+    (!existingProfile.name && safeName) ||
+    (!existingProfile.candidate_target_role && metadataTargetRole) ||
+    ((existingProfile.experience_years === null || existingProfile.experience_years === undefined) && metadataExperienceYears !== null)
+  ) {
     const updateResult = await admin
       .from("profiles")
       .update({
         email: user.email ?? null,
         name: safeName,
         role: safeRole,
+        candidate_target_role: existingProfile.candidate_target_role || metadataTargetRole,
+        experience_years: existingProfile.experience_years ?? metadataExperienceYears,
       })
       .eq("id", user.id)
-      .select("role, name")
+      .select("role, name, candidate_target_role, experience_years")
       .single();
 
     data = updateResult.data;

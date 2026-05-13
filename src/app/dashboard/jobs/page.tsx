@@ -209,41 +209,49 @@ export default async function JobsDashboard({
     data: { user },
   } = await supabase.auth.getUser();
   const { category, view, remote, schedule, page, q } = await searchParams;
+  const isGuestViewer = !user;
+  let profile: { role?: string | null } | null = null;
+  let canApplyToJobs = false;
+  let isFreeAccessCandidate = false;
+  let freeApplicationLimit = 0;
+  let freeApplicationsUsed = 0;
+  let freeApplicationsRemaining = 0;
+  let lockReason = "Sign in to apply and unlock the full job board.";
 
-  if (!user) redirect("/login");
+  if (user) {
+    let profileResult = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    profile = profileResult.data;
 
-  let { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-
-  if (!profile) {
-    const ensuredProfile = await ensureUserProfile(user);
-    if (!ensuredProfile) {
-      redirect("/login");
-    }
-    profile = ensuredProfile;
-  }
-
-  // Verify role is set and valid for job board access
-  const roleStr = String(profile.role || "").toLowerCase();
-  if (!roleStr || (!roleStr.startsWith("candidate") && roleStr !== "admin")) {
-    const ensuredProfile = await ensureUserProfile(user);
-    if (ensuredProfile) {
+    if (!profile) {
+      const ensuredProfile = await ensureUserProfile(user);
+      if (!ensuredProfile) {
+        redirect("/login");
+      }
       profile = ensuredProfile;
     }
+
+    const roleStr = String(profile.role || "").toLowerCase();
+    if (!roleStr || (!roleStr.startsWith("candidate") && roleStr !== "admin")) {
+      const ensuredProfile = await ensureUserProfile(user);
+      if (ensuredProfile) {
+        profile = ensuredProfile;
+      }
+    }
+
+    const access = await getJobBoardAccessForUser(supabase, user.id, profile);
+    if (!access.canViewJobBoard) {
+      redirect("/dashboard");
+    }
+
+    canApplyToJobs = access.canApplyToJobs;
+    isFreeAccessCandidate = access.isFreeAccessCandidate;
+    freeApplicationLimit = access.freeApplicationLimit;
+    freeApplicationsUsed = access.freeApplicationsUsed;
+    freeApplicationsRemaining = access.freeApplicationsRemaining;
+    lockReason = access.lockReason || lockReason;
   }
 
-  const {
-    canViewJobBoard,
-    canApplyToJobs,
-    isFreeAccessCandidate,
-    freeApplicationLimit,
-    freeApplicationsUsed,
-    freeApplicationsRemaining,
-    lockReason,
-  } = await getJobBoardAccessForUser(supabase, user.id, profile);
-  if (!canViewJobBoard) {
-    redirect("/dashboard");
-  }
-  const pageSize = 12;
+  const pageSize = isGuestViewer ? 10 : 12;
   const normalizedQuery = q?.trim() || "";
   const parsedPage = Number(page || "1");
   const requestedPage = Number.isFinite(parsedPage) ? Math.max(1, Math.trunc(parsedPage)) : 1;
@@ -278,7 +286,9 @@ export default async function JobsDashboard({
   const pageDescription =
     view === "freelance"
       ? "Short-term, contract, and freelance-friendly L&D opportunities."
-      : "Exclusive roles for verified LXD Guild professionals.";
+      : isGuestViewer
+        ? "Preview a curated set of marketplace roles. Sign in to unlock the full board and apply."
+        : "Exclusive roles for verified LXD Guild professionals.";
   const activeFilterChips = [
     normalizedQuery ? `Search: ${normalizedQuery}` : null,
     remote === "remote" ? "Remote" : null,
@@ -323,29 +333,31 @@ export default async function JobsDashboard({
               )}
             </div>
 
-            <div className="marketing-panel p-5">
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="marketing-soft-card p-4">
+              <div className="marketing-panel p-5">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="marketing-soft-card p-4">
                   <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Visible Roles</p>
                   <p className="mt-3 text-4xl font-bold text-[#17a21c]">{totalJobs}</p>
                   <div className="mt-3 h-1.5 rounded-full bg-[#e2ecd8]">
                     <div className="h-1.5 w-[82%] rounded-full bg-[#23b61f]" />
                   </div>
                 </div>
-                <div className="marketing-soft-card p-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Application Access</p>
-                  <p className="mt-3 text-4xl font-bold text-[#111827]">
-                    {canApplyToJobs ? (isFreeAccessCandidate ? "Free" : "Open") : "Locked"}
-                  </p>
-                  <p className="mt-4 text-xs text-[#1da326]">
-                    {canApplyToJobs
-                      ? isFreeAccessCandidate
-                        ? `${freeApplicationsRemaining} of ${freeApplicationLimit} free applications left`
-                        : "Verified candidates can apply"
-                      : lockReason || "Assessment required first"}
-                  </p>
+                  <div className="marketing-soft-card p-4">
+                    <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Application Access</p>
+                    <p className="mt-3 text-4xl font-bold text-[#111827]">
+                    {isGuestViewer ? "Preview" : canApplyToJobs ? (isFreeAccessCandidate ? "Free" : "Open") : "Locked"}
+                    </p>
+                    <p className="mt-4 text-xs text-[#1da326]">
+                    {isGuestViewer
+                      ? "10 roles are visible before sign-in. Apply access unlocks after login."
+                      : canApplyToJobs
+                        ? isFreeAccessCandidate
+                          ? `${freeApplicationsRemaining} of ${freeApplicationLimit} free applications left`
+                          : "Verified candidates can apply"
+                        : lockReason || "Assessment required first"}
+                    </p>
+                  </div>
                 </div>
-              </div>
               <div className="marketing-soft-card mt-4 p-4">
                 <p className="text-sm font-semibold text-[#111827]">Marketplace Flow</p>
                 <div className="mt-5 grid grid-cols-3 gap-3 sm:grid-cols-5">
@@ -380,7 +392,7 @@ export default async function JobsDashboard({
                     </Link>
                   </div>
                   <div className="mt-4 grid gap-3">
-                    {freelanceJobs.map((job: JobListItem) => (
+                    {(isGuestViewer ? freelanceJobs.slice(0, 2) : freelanceJobs).map((job: JobListItem) => (
                       <JobCard
                         key={job.id}
                         job={job}
@@ -413,10 +425,10 @@ export default async function JobsDashboard({
                     {lockReason || "Jobs are visible, but applying is locked. Complete the assessment to unlock applications."}
                   </div>
                   <Link
-                    href={isFreeAccessCandidate ? "/dashboard/candidate/profile" : "/dashboard/candidate/exam"}
+                    href={isGuestViewer ? "/register?role=candidate" : isFreeAccessCandidate ? "/dashboard/candidate/profile" : "/dashboard/candidate/exam"}
                     className="marketing-primary px-4 py-2 text-sm"
                   >
-                    {isFreeAccessCandidate ? "Verify to Continue" : "Write Assessment"}
+                    {isGuestViewer ? "Sign in to apply" : isFreeAccessCandidate ? "Verify to Continue" : "Write Assessment"}
                   </Link>
                 </div>
               )}

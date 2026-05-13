@@ -7,6 +7,11 @@ import { createClient } from "@/utils/supabase/client";
 import { getBucketForTargetRole, TARGET_ROLE_OPTIONS } from "@/lib/assessment";
 import { ArrowRight, BriefcaseBusiness, Check, Eye, EyeOff, SearchCheck } from "lucide-react";
 
+const CANONICAL_AUTH_REDIRECT_BASE =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.NEXT_PUBLIC_APP_URL ||
+  "https://lxdmarketplace.lxdguild.com";
+
 type PathCardProps = {
   selected: boolean;
   title: string;
@@ -23,6 +28,23 @@ export default function RegisterPage() {
   );
 }
 
+function getExperienceMetadata(value: string) {
+  switch (value) {
+    case "0.5":
+      return { years: 0.5, level: "entry_level" };
+    case "2":
+      return { years: 2, level: "mid_level" };
+    case "4":
+      return { years: 4, level: "mid_level" };
+    case "7":
+      return { years: 7, level: "senior_level" };
+    case "10":
+      return { years: 10, level: "lead_level" };
+    default:
+      return { years: 2, level: "mid_level" };
+  }
+}
+
 function RegisterPageContent() {
   const searchParams = useSearchParams();
   const roleParam = searchParams.get("role");
@@ -34,6 +56,7 @@ function RegisterPageContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState(initialRole);
   const [candidateTargetRole, setCandidateTargetRole] = useState("Instructional Designer");
+  const [candidateExperienceYears, setCandidateExperienceYears] = useState("2");
   const [employerDesignation, setEmployerDesignation] = useState("hiring_manager");
   const [companyName, setCompanyName] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -44,11 +67,9 @@ function RegisterPageContent() {
 
   const supabase = createClient();
   const candidateBucket = getBucketForTargetRole(candidateTargetRole);
+  const candidateExperience = getExperienceMetadata(candidateExperienceYears);
   const name = `${firstName} ${lastName}`.trim();
-  const emailRedirectTo =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/login`
-      : undefined;
+  const emailRedirectTo = `${CANONICAL_AUTH_REDIRECT_BASE.replace(/\/$/, "")}/login`;
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +92,8 @@ function RegisterPageContent() {
           role: selectedRole,
           candidate_target_role: selectedRole === "candidate_onhold" ? candidateTargetRole : null,
           candidate_designation: selectedRole === "candidate_onhold" ? candidateBucket : null,
-          experience_level: null,
+          experience_level: selectedRole === "candidate_onhold" ? candidateExperience.level : null,
+          experience_years: selectedRole === "candidate_onhold" ? candidateExperience.years : null,
           employer_designation: selectedRole === "employer_free" ? employerDesignation : null,
           company_name: selectedRole === "employer_free" ? companyName : null,
         },
@@ -260,22 +282,41 @@ function RegisterPageContent() {
                   </div>
 
                   {selectedRole === "candidate_onhold" ? (
-                    <div>
-                      <label htmlFor="candidate-target-role" className="mb-2 block text-[12px] font-semibold uppercase tracking-[0.08em] text-[#5d6673]">
-                        Target Role
-                      </label>
-                      <select
-                        id="candidate-target-role"
-                        className="h-[54px] w-full rounded-[10px] border border-[#d6dccd] bg-white px-4 text-[15px] text-[#202733] outline-none transition-all focus:border-[#1c781d] focus:shadow-[0_0_0_4px_rgba(34,120,29,0.12)]"
-                        value={candidateTargetRole}
-                        onChange={(e) => setCandidateTargetRole(e.target.value)}
-                      >
-                        {TARGET_ROLE_OPTIONS.map((roleOption) => (
-                          <option key={roleOption} value={roleOption}>
-                            {roleOption}
-                          </option>
-                        ))}
-                      </select>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label htmlFor="candidate-target-role" className="mb-2 block text-[12px] font-semibold uppercase tracking-[0.08em] text-[#5d6673]">
+                          Target Role
+                        </label>
+                        <select
+                          id="candidate-target-role"
+                          className="h-[54px] w-full rounded-[10px] border border-[#d6dccd] bg-white px-4 text-[15px] text-[#202733] outline-none transition-all focus:border-[#1c781d] focus:shadow-[0_0_0_4px_rgba(34,120,29,0.12)]"
+                          value={candidateTargetRole}
+                          onChange={(e) => setCandidateTargetRole(e.target.value)}
+                        >
+                          {TARGET_ROLE_OPTIONS.map((roleOption) => (
+                            <option key={roleOption} value={roleOption}>
+                              {roleOption}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label htmlFor="candidate-experience" className="mb-2 block text-[12px] font-semibold uppercase tracking-[0.08em] text-[#5d6673]">
+                          Experience
+                        </label>
+                        <select
+                          id="candidate-experience"
+                          className="h-[54px] w-full rounded-[10px] border border-[#d6dccd] bg-white px-4 text-[15px] text-[#202733] outline-none transition-all focus:border-[#1c781d] focus:shadow-[0_0_0_4px_rgba(34,120,29,0.12)]"
+                          value={candidateExperienceYears}
+                          onChange={(e) => setCandidateExperienceYears(e.target.value)}
+                        >
+                          <option value="0.5">0-1 years</option>
+                          <option value="2">1-3 years</option>
+                          <option value="4">3-5 years</option>
+                          <option value="7">5-8 years</option>
+                          <option value="10">8+ years</option>
+                        </select>
+                      </div>
                     </div>
                   ) : (
                     <div className="grid gap-3 sm:grid-cols-2">

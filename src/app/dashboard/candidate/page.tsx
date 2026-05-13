@@ -3,10 +3,12 @@ import { redirect } from "next/navigation";
 import {
   ArrowRight,
   Briefcase,
+  BriefcaseBusiness,
   CheckCircle,
   ChevronRight,
   FileText,
   Lock,
+  MapPin,
   PlayCircle,
   Sparkles,
   Star,
@@ -23,11 +25,84 @@ import CertificateUpload from "./certificate-upload";
 type CandidateDashboardProfile = {
   name?: string | null;
   role?: string | null;
+  candidate_target_role?: string | null;
+  experience_years?: number | null;
   membership_status?: string | null;
   membership_plan?: string | null;
   membership_expires_at?: string | null;
   [key: string]: unknown;
 };
+
+function getMarketplaceRoleSuggestions(profile: CandidateDashboardProfile, canViewJobBoard: boolean) {
+  if (!canViewJobBoard) {
+    return [
+      {
+        title: "Unlock L&D role matches",
+        subtitle: "Complete validation to activate curated marketplace suggestions",
+        icon: Lock,
+        accent: "bg-[#eef4ea] text-[#7c8778]",
+      },
+      {
+        title: "Prepare your next move",
+        subtitle: "ATS guidance and role-fit visibility will open after assessment",
+        icon: Sparkles,
+        accent: "bg-[#eef4ea] text-[#7c8778]",
+      },
+    ];
+  }
+
+  const years = typeof profile.experience_years === "number" ? profile.experience_years : 0;
+  const target = (profile.candidate_target_role || "").toLowerCase();
+
+  if (years >= 8 || target.includes("manager") || target.includes("strategist") || target.includes("head")) {
+    return [
+      {
+        title: "Learning Program Manager",
+        subtitle: "Guild Leadership Network • Strategic L&D growth",
+        icon: BriefcaseBusiness,
+        accent: "bg-[#eaf8e3] text-[#138d1a]",
+      },
+      {
+        title: "Capability Lead",
+        subtitle: "Enterprise Learning Studio • Cross-functional",
+        icon: Sparkles,
+        accent: "bg-[#edf1ff] text-[#5b6fd6]",
+      },
+    ];
+  }
+
+  if (years >= 3 || target.includes("designer") || target.includes("developer") || target.includes("curriculum")) {
+    return [
+      {
+        title: "Learning Experience Designer",
+        subtitle: "Guild Talent Network • Remote",
+        icon: Sparkles,
+        accent: "bg-[#eaf8e3] text-[#138d1a]",
+      },
+      {
+        title: "Instructional Designer",
+        subtitle: "Capability Studio • Hybrid",
+        icon: BriefcaseBusiness,
+        accent: "bg-[#edf1ff] text-[#5b6fd6]",
+      },
+    ];
+  }
+
+  return [
+    {
+      title: "Learning Coordinator",
+      subtitle: "Guild Starter Roles • Early-career pathway",
+      icon: MapPin,
+      accent: "bg-[#fff2e8] text-[#d97706]",
+    },
+    {
+      title: "Instructional Design Associate",
+      subtitle: "Capability Studio • Entry-level L&D track",
+      icon: BriefcaseBusiness,
+      accent: "bg-[#eaf8e3] text-[#138d1a]",
+    },
+  ];
+}
 
 export default async function CandidateDashboard() {
   const supabase = await createClient();
@@ -40,7 +115,7 @@ export default async function CandidateDashboard() {
   let profile = await loadProfile<CandidateDashboardProfile>(
       supabase,
       user.id,
-      "id, name, role, membership_status, membership_plan, membership_expires_at"
+      "id, name, role, candidate_target_role, experience_years, membership_status, membership_plan, membership_expires_at"
     );
 
   if (!profile) {
@@ -49,7 +124,7 @@ export default async function CandidateDashboard() {
       profile = await loadProfile<CandidateDashboardProfile>(
         supabase,
         user.id,
-        "id, name, role, membership_status, membership_plan, membership_expires_at"
+        "id, name, role, candidate_target_role, experience_years, membership_status, membership_plan, membership_expires_at"
       );
     }
   }
@@ -102,6 +177,7 @@ export default async function CandidateDashboard() {
   const examStarted = Boolean(candidate?.exam_status && candidate.exam_status !== "not_started");
   const examCompleted = candidate?.exam_status === "completed";
   const hasScorecard = examCompleted || typeof candidate?.latest_score === "number";
+  const marketSuggestions = getMarketplaceRoleSuggestions(profile, canViewJobBoard);
 
   const journey = [
     {

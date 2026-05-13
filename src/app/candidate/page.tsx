@@ -101,7 +101,7 @@ export default async function CandidateLandingPage() {
 
   const isSignedInCandidate = baseRole === "candidate";
   const primaryHref = isSignedInCandidate ? "/dashboard/candidate" : "/register?role=candidate";
-  const secondaryHref = isSignedInCandidate ? "/dashboard/candidate/exam" : "/membership";
+  const secondaryHref = isSignedInCandidate ? "/dashboard/candidate/exam" : "/register?role=candidate&intent=skill-validation";
 
   return (
     <div className="marketing-page">
@@ -139,7 +139,7 @@ export default async function CandidateLandingPage() {
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                   <Link href={secondaryHref} className="marketing-secondary rounded-full px-6">
-                    {isSignedInCandidate ? "Continue assessment" : "Explore premium support"}
+                    {isSignedInCandidate ? "Skill validation" : "Start skill validation"}
                   </Link>
                 </div>
               </div>

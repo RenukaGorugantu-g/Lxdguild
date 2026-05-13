@@ -526,18 +526,18 @@ function buildContent({
 }
 
 function renderEmailHtml(content: TemplateContent) {
-  const heroTitleTone = "#0f172a";
-  const heroBodyTone = "#475569";
-  const heroKickerText = "#15991f";
-  const heroKickerBg = "#eef8ea";
-  const heroKickerBorder = "#cfe7c5";
-  const heroNoteBg = "#ffffff";
-  const heroNoteBorder = content.theme.border;
-  const heroSurfaceStart = "#f8fbf5";
-  const heroSurfaceEnd = "#eef7e8";
+  const heroTitleTone = "#f8fafc";
+  const heroBodyTone = "#dbe7f3";
+  const heroKickerText = "#f8fafc";
+  const heroKickerBg = "#18462d";
+  const heroKickerBorder = "#2f7b47";
+  const heroNoteBg = "#1f2937";
+  const heroNoteBorder = "#31475f";
+  const heroSurfaceStart = "#0f172a";
+  const heroSurfaceEnd = "#10301e";
 
-  const ctaBg = "#ffffff";
-  const ctaTextColor = "#15991f";
+  const ctaBg = "linear-gradient(180deg,#33d61f 0%,#25bb1c 100%)";
+  const ctaTextColor = "#ffffff";
 
   const leadCardHtml = content.summary
     ? `<table class="email-card" role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:22px;border-collapse:separate;border-spacing:0;background:#f8f3ec;border:1px solid ${content.theme.border};border-radius:24px;box-shadow:0 12px 26px rgba(15,23,42,0.05);">
@@ -663,7 +663,7 @@ function renderEmailHtml(content: TemplateContent) {
     : "";
 
   const socialLinksHtml = EMAIL_SOCIAL_LINKS.map(
-    (link) => `<a href="${escapeHtml(link.href)}" style="display:inline-block;margin-right:8px;margin-bottom:8px;padding:10px;width:18px;height:18px;border-radius:999px;background:#ffffff;border:1px solid #dce7d5;text-decoration:none;" aria-label="${escapeHtml(link.name)}"><img src="${escapeHtml(link.icon)}" alt="${escapeHtml(link.name)}" width="18" height="18" style="display:block;width:18px;height:18px;border:0;" /></a>`
+    (link) => `<a class="social-pill" href="${escapeHtml(link.href)}" style="display:inline-block;margin-right:8px;margin-bottom:8px;padding:10px;width:18px;height:18px;border-radius:999px;background:#15991f;border:1px solid #15991f;text-decoration:none;box-shadow:0 10px 22px rgba(21,153,31,0.16);" aria-label="${escapeHtml(link.name)}"><img src="${escapeHtml(link.icon)}" alt="${escapeHtml(link.name)}" width="18" height="18" style="display:block;width:18px;height:18px;border:0;" /></a>`
   ).join("");
 
   const footerLinksHtml = [
@@ -729,13 +729,13 @@ function renderEmailHtml(content: TemplateContent) {
         }
 
         .hero-title {
-          font-size: 40px !important;
-          line-height: 1.05 !important;
+          font-size: 34px !important;
+          line-height: 1.12 !important;
         }
 
         .hero-copy {
-          font-size: 16px !important;
-          line-height: 1.65 !important;
+          font-size: 15px !important;
+          line-height: 1.7 !important;
         }
 
         .cta-button {
@@ -825,6 +825,41 @@ function renderEmailHtml(content: TemplateContent) {
         border-color: ${heroNoteBorder} !important;
       }
 
+      [data-ogsc] .shell,
+      [data-ogsb] .shell,
+      [data-ogsc] .content-shell,
+      [data-ogsb] .content-shell,
+      [data-ogsc] .footer-shell,
+      [data-ogsb] .footer-shell,
+      [data-ogsc] .logo-pill,
+      [data-ogsb] .logo-pill {
+        background: #ffffff !important;
+        background-image: none !important;
+        border-color: #dbe7d3 !important;
+      }
+
+      [data-ogsc] .hero-pad,
+      [data-ogsb] .hero-pad {
+        background-color: ${heroSurfaceStart} !important;
+        background-image: radial-gradient(circle at top right, rgba(21,153,31,0.16) 0%, rgba(21,153,31,0) 34%), linear-gradient(135deg, ${heroSurfaceStart} 0%, ${heroSurfaceEnd} 100%) !important;
+      }
+
+      [data-ogsc] .social-pill,
+      [data-ogsb] .social-pill {
+        background: #15991f !important;
+        border-color: #15991f !important;
+      }
+
+      [data-ogsc] .footer-copy,
+      [data-ogsb] .footer-copy,
+      [data-ogsc] .footer-link,
+      [data-ogsb] .footer-link,
+      [data-ogsc] .eyebrow-label,
+      [data-ogsb] .eyebrow-label {
+        color: #0f172a !important;
+        -webkit-text-fill-color: #0f172a !important;
+      }
+
       [data-ogsc] .content-title,
       [data-ogsb] .content-title {
         color: #13202d !important;
@@ -850,7 +885,7 @@ function renderEmailHtml(content: TemplateContent) {
       }
     </style>
   </head>
-    <body style="margin:0;padding:0;background:#f4efe8;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+    <body style="margin:0;padding:0;background:#f4efe8;font-family:'Segoe UI',Helvetica,Arial,sans-serif;color:#0f172a;">
     <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;">
       ${escapeHtml(content.preheader)}
     </span>
@@ -868,7 +903,7 @@ function renderEmailHtml(content: TemplateContent) {
                 <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                   <tr>
                     <td align="center" style="padding-bottom:18px;">
-                      <a href="${escapeHtml(getSiteUrl())}" style="display:inline-block;padding:12px 18px;border-radius:18px;background:#ffffff;text-decoration:none;border:1px solid #e4ddd3;box-shadow:0 10px 24px rgba(8,18,37,0.06);">
+                      <a class="logo-pill" href="${escapeHtml(getSiteUrl())}" style="display:inline-block;padding:12px 18px;border-radius:18px;background:#ffffff;text-decoration:none;border:1px solid #e4ddd3;box-shadow:0 10px 24px rgba(8,18,37,0.06);">
                         <img src="${BRAND_LOGO_URL}" alt="LXD Guild" width="190" style="display:block;height:auto;border:0;max-width:190px;" />
                       </a>
                     </td>
@@ -882,15 +917,19 @@ function renderEmailHtml(content: TemplateContent) {
                   </tr>
                   <tr>
                     <td align="center" style="padding-bottom:10px;">
-                      <div class="hero-title" style="font-family:Georgia,'Times New Roman',serif;font-size:54px;line-height:1.02;color:${heroTitleTone} !important;font-style:italic;-webkit-text-fill-color:${heroTitleTone};">
-                        ${escapeHtml(content.heading)}
+                      <div class="hero-title" style="font-family:'Trebuchet MS','Segoe UI',Arial,sans-serif;font-size:44px;line-height:1.08;color:${heroTitleTone} !important;font-weight:800;letter-spacing:-0.02em;-webkit-text-fill-color:${heroTitleTone};text-shadow:0 1px 0 rgba(4,12,18,0.28),0 0 1px rgba(248,250,252,0.6);">
+                        <span style="color:${heroTitleTone} !important;-webkit-text-fill-color:${heroTitleTone};">
+                          ${escapeHtml(content.heading)}
+                        </span>
                       </div>
                     </td>
                   </tr>
                   <tr>
                     <td align="center">
-                      <div class="hero-copy" style="max-width:520px;margin:0 auto;font-size:18px;line-height:1.75;color:${heroBodyTone} !important;-webkit-text-fill-color:${heroBodyTone};">
-                        ${escapeHtml(content.intro)}
+                      <div class="hero-copy" style="max-width:520px;margin:0 auto;font-size:18px;line-height:1.75;color:${heroBodyTone} !important;-webkit-text-fill-color:${heroBodyTone};text-shadow:0 1px 0 rgba(4,12,18,0.18);">
+                        <span style="color:${heroBodyTone} !important;-webkit-text-fill-color:${heroBodyTone};">
+                          ${escapeHtml(content.intro)}
+                        </span>
                       </div>
                     </td>
                   </tr>
@@ -933,7 +972,7 @@ function renderEmailHtml(content: TemplateContent) {
                             <a href="${escapeHtml(getSiteUrl())}" style="display:inline-block;padding:10px 14px;border-radius:14px;background:rgba(248,244,241,0.92);text-decoration:none;">
                               <img src="${BRAND_LOGO_URL}" alt="LXD Guild" width="150" style="display:block;height:auto;border:0;max-width:150px;" />
                             </a>
-                            <div style="margin-top:12px;font-size:12px;line-height:1.8;color:#5b6b78;max-width:390px;">
+                              <div class="footer-copy" style="margin-top:12px;font-size:13px;line-height:1.8;color:#5b6b78;max-width:390px;">
                               ${escapeHtml(content.footer)}
                             </div>
                             <div style="margin-top:16px;">
@@ -941,7 +980,7 @@ function renderEmailHtml(content: TemplateContent) {
                             </div>
                           </td>
                           <td class="footer-stack-right" align="right" style="vertical-align:top;">
-                            <div style="font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#15991f;">Explore</div>
+                            <div class="eyebrow-label" style="font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#15991f;">Explore</div>
                             <div style="margin-top:10px;max-width:220px;">
                               ${footerLinksHtml}
                             </div>

@@ -1,13 +1,18 @@
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import {
   ArrowRight,
   Bot,
+  BriefcaseBusiness,
   Check,
   CircuitBoard,
   Crown,
+  MapPin,
   Sparkles,
+  ShieldCheck,
+  Users,
 } from "lucide-react";
 
 const platformCards = [
@@ -63,12 +68,66 @@ const journeySteps = [
   },
 ] as const;
 
+type HeroJobPreview = {
+  id: string;
+  title: string;
+  company: string | null;
+  location: string | null;
+  description?: string | null;
+  work_mode?: string | null;
+  employment_type?: string | null;
+};
+
+function isLdMarketplaceJob(job: HeroJobPreview) {
+  const haystack = `${job.title || ""} ${job.company || ""} ${job.description || ""}`.toLowerCase();
+  const includeMatch =
+    /(learning|instructional|l&d|training|curriculum|elearning|e-learning|facilitation|designer|developer|capability|learning experience|course creator|content designer|learning consultant)/.test(
+      haystack
+    );
+  const excludeMatch =
+    /(registered nurse|nursing|clinical educator|physician|therapist|medical|hospital|healthcare assistant|bedside)/.test(
+      haystack
+    );
+
+  return includeMatch && !excludeMatch;
+}
+
+function dedupeJobs(jobs: HeroJobPreview[]) {
+  const seen = new Set<string>();
+
+  return jobs.filter((job) => {
+    const key = `${job.title}|${job.company}`.trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export default async function LandingPage() {
   const supabase = await createClient();
+  const adminSupabase = createAdminClient();
+  const jobsReader = adminSupabase ?? supabase;
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const primaryHref = user ? "/dashboard" : "/register";
+  const primaryHref = user ? "/dashboard/candidate" : "/register?role=candidate";
+  const secondaryHref = user ? "/dashboard/employer" : "/employer";
+  const jobsCtaHref = user ? "/dashboard/jobs" : "/register?role=candidate&intent=job-board";
+
+  const jobPreviewQuery = await jobsReader
+    .from("jobs")
+    .select("id, title, company, location, description, work_mode, employment_type, is_active")
+    .eq("is_active", true)
+    .order("external_posted_at", { ascending: false, nullsFirst: false })
+    .order("imported_at", { ascending: false })
+    .limit(24);
+
+  const jobPreviewPool = ((jobPreviewQuery.data || []) as Array<HeroJobPreview & { is_active?: boolean | null }>).filter(
+    (job) => job.is_active !== false
+  );
+
+  const ldJobs = dedupeJobs(jobPreviewPool.filter(isLdMarketplaceJob));
+  const liveJobs = ldJobs.slice(0, 3);
 
   return (
     <div className="marketing-page">
@@ -77,29 +136,43 @@ export default async function LandingPage() {
           <div className="marketing-container">
             <div className="grid items-center gap-8 lg:grid-cols-[1.06fr_0.94fr]">
               <div className="space-y-6">
-                <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#6e7c68]">
-                  Built for the future workforce
+                <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[#d9e6d2] bg-[#eef6ff] px-4 py-2 text-[11px] font-semibold text-[#2f62b8] shadow-[0_10px_24px_rgba(47,98,184,0.08)]">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Verified L&amp;D talent, premium resources, and live hiring momentum in one place
                 </div>
                 <div className="space-y-5">
                   <h1 className="marketing-title max-w-3xl text-[3.2rem] leading-[0.95] sm:text-[4.25rem]">
-                    The first AI-powered{" "}
-                    <span className="mr-2 inline-block italic text-[#169a20] sm:mr-3">ecosystem</span>
-                    for L&amp;D professionals.
+                    India&apos;s verified marketplace for L&amp;D professionals.
                   </h1>
                   <p className="marketing-copy max-w-2xl text-base leading-8">
-                    Hiring, career growth, assessments, learning intelligence, and opportunity discovery all connected
-                    in one deliberate platform. We bridge the gap between human potential and organizational excellence.
+                    Get your instructional design and learning skills validated, get discovered by hiring teams, and
+                    access premium L&amp;D resources all in one place.
                   </p>
                 </div>
 
                 <div className="flex flex-col gap-4 sm:flex-row">
                   <Link href={primaryHref} className="marketing-primary rounded-full px-6">
-                    Join the Guild
+                    I&apos;m an L&amp;D professional
                     <ArrowRight className="h-4 w-4" />
                   </Link>
-                  <Link href="/contact" className="marketing-secondary rounded-full px-6">
-                    Contact Us
+                  <Link href={secondaryHref} className="marketing-secondary rounded-full px-6">
+                    I&apos;m hiring L&amp;D talent
                   </Link>
+                </div>
+
+                <div className="grid gap-3 border-t border-[#dfe7d9] pt-5 text-sm text-[#2c3d29] sm:grid-cols-3">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-[#179720]" />
+                    <span>Skill-validated profiles</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4 text-[#179720]" />
+                    <span>500+ founding L&amp;D members</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-[#179720]" />
+                    <span>Backed by Maple Learning Solutions</span>
+                  </div>
                 </div>
               </div>
 
@@ -165,6 +238,75 @@ export default async function LandingPage() {
                 </div>
               </div>
             </div>
+
+            {liveJobs.length > 0 ? (
+              <div className="mt-8 rounded-[2rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#f6f3ea_0%,#f3f1e7_100%)] p-5 shadow-[0_20px_50px_rgba(87,108,67,0.06)]">
+                <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.22em] text-[#7a7d70]">
+                  Live jobs from verified employers
+                </div>
+                <div className="grid gap-4 lg:grid-cols-3">
+                  {liveJobs.map((job) => {
+                    const href = user ? `/dashboard/jobs/${job.id}` : "/register?role=candidate&intent=job-board";
+                    const modeLabel =
+                      job.work_mode === "remote"
+                        ? "Remote"
+                        : job.work_mode === "hybrid"
+                          ? "Hybrid"
+                          : job.employment_type === "contract"
+                            ? "Contract"
+                            : "Verified role";
+
+                    return (
+                      <Link
+                        key={job.id}
+                        href={href}
+                        className="group relative overflow-hidden rounded-[1.4rem] border border-[#dbddd3] bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.05)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(15,23,42,0.08)]"
+                      >
+                        <div className={`${user ? "" : "blur-[2px] opacity-85"} transition duration-200`}>
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-xl font-semibold leading-7 text-[#111827]">{job.title}</p>
+                              <div className="mt-2 flex items-center gap-2 text-sm text-[#4f5b4b]">
+                                <BriefcaseBusiness className="h-4 w-4 text-[#179720]" />
+                                <span>{job.company || "Verified employer"}</span>
+                              </div>
+                              <div className="mt-1 flex items-center gap-2 text-sm text-[#4f5b4b]">
+                                <MapPin className="h-4 w-4 text-[#179720]" />
+                                <span>{job.location || "India"}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-5 inline-flex rounded-full bg-[#eef6ea] px-3 py-1 text-xs font-semibold text-[#486246]">
+                            {modeLabel}
+                          </div>
+                        </div>
+
+                        {!user ? (
+                          <div className="absolute inset-0 flex items-center justify-center bg-[linear-gradient(180deg,rgba(244,239,232,0.14),rgba(244,239,232,0.82))] p-4">
+                            <div className="rounded-[1.2rem] border border-[#d7e4d1] bg-white/96 px-5 py-4 text-center shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+                              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#179720]">
+                                Locked preview
+                              </div>
+                              <div className="mt-2 text-sm font-semibold text-[#111827]">Join free to unlock this job</div>
+                            </div>
+                          </div>
+                        ) : null}
+                      </Link>
+                    );
+                  })}
+                </div>
+                {!user ? (
+                  <div className="mt-5 flex flex-col gap-3 border-t border-[#e3e6db] pt-4 text-center lg:flex-row lg:items-center lg:justify-between lg:text-left">
+                    <p className="text-sm text-[#4f5b4b]">
+                      Browse vetted L&amp;D roles, unlock the full job board, and start applying after registration.
+                    </p>
+                    <Link href={jobsCtaHref} className="marketing-secondary rounded-full px-5">
+                      View full job board
+                    </Link>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </section>
 

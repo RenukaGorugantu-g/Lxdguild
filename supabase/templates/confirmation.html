@@ -11,25 +11,80 @@
         color-scheme: light only;
         supported-color-schemes: light;
       }
+
+      [data-ogsc] .email-shell,
+      [data-ogsb] .email-shell,
+      [data-ogsc] .content-shell,
+      [data-ogsb] .content-shell,
+      [data-ogsc] .logo-pill,
+      [data-ogsb] .logo-pill {
+        background: #ffffff !important;
+        background-image: none !important;
+        border-color: #e3ddd3 !important;
+      }
+
+      [data-ogsc] .hero-shell,
+      [data-ogsb] .hero-shell {
+        background-color: #0f172a !important;
+        background-image: radial-gradient(circle at top right, rgba(21,153,31,0.16) 0%, rgba(21,153,31,0) 34%), linear-gradient(135deg, #0f172a 0%, #10301e 100%) !important;
+      }
+
+      [data-ogsc] .hero-title,
+      [data-ogsb] .hero-title {
+        color: #f8fafc !important;
+        -webkit-text-fill-color: #f8fafc !important;
+      }
+
+      [data-ogsc] .hero-copy,
+      [data-ogsb] .hero-copy,
+      [data-ogsc] .hero-note,
+      [data-ogsb] .hero-note {
+        color: #dbe7f3 !important;
+        -webkit-text-fill-color: #dbe7f3 !important;
+      }
+
+      [data-ogsc] .hero-note,
+      [data-ogsb] .hero-note {
+        background: #1f2937 !important;
+        border-color: #31475f !important;
+      }
+
+      [data-ogsc] .hero-kicker,
+      [data-ogsb] .hero-kicker {
+        color: #f8fafc !important;
+        -webkit-text-fill-color: #f8fafc !important;
+        background: #18462d !important;
+        border-color: #2f7b47 !important;
+      }
+
+      [data-ogsc] .content-title,
+      [data-ogsb] .content-title,
+      [data-ogsc] .content-copy,
+      [data-ogsb] .content-copy,
+      [data-ogsc] .content-link,
+      [data-ogsb] .content-link {
+        color: #334155 !important;
+        -webkit-text-fill-color: #334155 !important;
+      }
     </style>
   </head>
   <body style="margin:0;padding:0;background:#f4efe8;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;background:#f4efe8;">
       <tr>
         <td align="center" style="padding:18px 12px;">
-          <table role="presentation" width="640" cellpadding="0" cellspacing="0" style="width:100%;max-width:640px;border-collapse:separate;border-spacing:0;background:#ffffff;border:1px solid #e7dfd5;border-radius:28px;overflow:hidden;box-shadow:0 18px 42px rgba(15,23,42,0.06);">
+          <table class="email-shell" role="presentation" width="640" cellpadding="0" cellspacing="0" style="width:100%;max-width:640px;border-collapse:separate;border-spacing:0;background:#ffffff;border:1px solid #e7dfd5;border-radius:28px;overflow:hidden;box-shadow:0 18px 42px rgba(15,23,42,0.06);">
             <tr>
               <td align="center" style="padding:24px 24px 12px;">
-                <a href="https://lxdmarketplace.lxdguild.com/" style="display:inline-block;text-decoration:none;">
+                <a class="logo-pill" href="https://lxdmarketplace.lxdguild.com/" style="display:inline-block;text-decoration:none;background:#ffffff;border:1px solid #e3ddd3;border-radius:18px;padding:10px 14px;">
                   <img src="https://lxdguild.com/img/z-1.webp" alt="LXD Guild" width="190" style="display:block;height:auto;border:0;max-width:190px;" />
                 </a>
               </td>
             </tr>
             <tr>
-              <td style="padding:0 24px 24px;text-align:center;">
-                <div style="font-size:11px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:#6b7280;">Confirm your account</div>
-                <h1 style="margin:14px 0 0;font-family:Georgia,'Times New Roman',serif;font-size:40px;line-height:1.05;font-style:italic;color:#0f172a;">Activate your email</h1>
-                <p style="margin:16px auto 0;max-width:520px;font-size:17px;line-height:1.75;color:#475569;">
+              <td class="hero-shell" style="background:#0f172a;background-image:radial-gradient(circle at top right, rgba(21,153,31,0.16) 0%, rgba(21,153,31,0) 34%),linear-gradient(135deg,#0f172a 0%,#10301e 100%);padding:0 24px 24px;text-align:center;">
+                <div class="hero-kicker" style="display:inline-block;margin-top:8px;padding:8px 14px;background:#18462d;border:1px solid #2f7b47;color:#f8fafc;font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;border-radius:8px;">Confirm your account</div>
+                <h1 class="hero-title" style="margin:18px 0 0;font-family:'Trebuchet MS','Segoe UI',Arial,sans-serif;font-size:42px;line-height:1.05;font-weight:800;color:#f8fafc;letter-spacing:-0.02em;text-shadow:0 1px 0 rgba(4,12,18,0.3);">Activate your email</h1>
+                <p class="hero-copy" style="margin:16px auto 0;max-width:520px;font-size:17px;line-height:1.75;color:#dbe7f3;text-shadow:0 1px 0 rgba(4,12,18,0.18);">
                   Confirm your email address first so your LXD Guild account can open correctly and your dashboard becomes available.
                 </p>
                 <div style="margin-top:20px;">
@@ -37,19 +92,19 @@
                     Confirm email
                   </a>
                 </div>
-                <div style="margin-top:18px;padding:14px 16px;border:1px solid #d7e3ea;background:#f8fbf7;border-radius:16px;font-size:13px;line-height:1.8;color:#475569;text-align:left;">
+                <div class="hero-note" style="margin-top:18px;padding:14px 16px;border:1px solid #31475f;background:#1f2937;border-radius:16px;font-size:13px;line-height:1.8;color:#dbe7f3;text-align:left;">
                   If the button does not work, copy and paste this link into your browser:<br />
-                  <a href="{{ .ConfirmationURL }}" style="color:#15991f;text-decoration:none;word-break:break-all;">{{ .ConfirmationURL }}</a>
+                  <a href="{{ .ConfirmationURL }}" style="color:#8ff085;text-decoration:none;word-break:break-all;">{{ .ConfirmationURL }}</a>
                 </div>
               </td>
             </tr>
             <tr>
               <td style="padding:0 18px 24px;">
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:separate;border-spacing:0;background:#f9f7f2;border:1px solid #ece3d7;border-radius:22px;">
+                <table class="content-shell" role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:separate;border-spacing:0;background:#f9f7f2;border:1px solid #ece3d7;border-radius:22px;">
                   <tr>
                     <td style="padding:20px 20px 18px;">
                       <div style="font-size:12px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:#15991f;">What happens next</div>
-                      <ul style="margin:14px 0 0;padding-left:18px;color:#334155;font-size:14px;line-height:1.9;">
+                      <ul class="content-copy" style="margin:14px 0 0;padding-left:18px;color:#334155;font-size:14px;line-height:1.9;">
                         <li>Confirm your email address.</li>
                         <li>Sign in to https://lxdmarketplace.lxdguild.com/.</li>
                         <li>Complete your profile and continue your LXD Guild journey.</li>

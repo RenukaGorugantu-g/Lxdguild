@@ -49,7 +49,6 @@ const footerLinks = {
     { label: "Membership Benefits", href: "/membership" },
     { label: "Resources", href: "/dashboard/resources" },
     { label: "Membership", href: "/dashboard/membership" },
-    { label: "Skill Validation Exam", href: "/dashboard/candidate/exam" },
   ],
   Company: [
     { label: "Community", href: "https://lxdguild.com", external: true },
@@ -91,7 +90,7 @@ export default function Footer() {
         <div className="grid grid-cols-2 gap-10 md:grid-cols-5">
           <div className="col-span-2 space-y-6">
             <Link href="/" className="group flex w-fit items-center" aria-label="LXD Guild home">
-              <img src={BRAND_LOGO_URL} alt="LXD Guild" className="h-14 w-auto" />
+              <img src={BRAND_LOGO_URL} alt="LXD Guild" className="h-11 w-auto" />
             </Link>
 
             <p className="max-w-xs text-sm leading-relaxed text-[#cde3e1]/72">

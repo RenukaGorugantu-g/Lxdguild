@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { deriveRoleKeyword, scoreSimilarJob } from "@/lib/job-preferences";
@@ -387,34 +388,40 @@ export default async function JobDetailPage({
   searchParams: Promise<{ category?: string; view?: string; remote?: string; schedule?: string; page?: string; q?: string }>;
 }) {
   const supabase = await createClient();
+  const adminSupabaseClient = createAdminClient();
+  const jobsReader = adminSupabaseClient ?? supabase;
   const { id } = await params;
   const { category, view, remote, schedule, page, q } = await searchParams;
   
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const isGuestViewer = !user;
 
-  let profile = await loadProfile<ViewerProfile>(
-    supabase,
-    user.id,
-    "id, role, name, headline, email, skills"
-  );
+  let profile: ViewerProfile | null = null;
 
-  if (!profile) {
-    const ensuredProfile = await ensureUserProfile(user);
-    if (ensuredProfile) {
-      profile = await loadProfile<ViewerProfile>(
-        supabase,
-        user.id,
-        "id, role, name, headline, email, skills"
-      );
+  if (user) {
+    profile = await loadProfile<ViewerProfile>(
+      supabase,
+      user.id,
+      "id, role, name, headline, email, skills"
+    );
+
+    if (!profile) {
+      const ensuredProfile = await ensureUserProfile(user);
+      if (ensuredProfile) {
+        profile = await loadProfile<ViewerProfile>(
+          supabase,
+          user.id,
+          "id, role, name, headline, email, skills"
+        );
+      }
+    }
+
+    if (!profile) {
+      redirect("/dashboard");
     }
   }
 
-  if (!profile) {
-    redirect("/dashboard");
-  }
-
-  const jobQuery = await supabase
+  const jobQuery = await jobsReader
     .from("jobs")
     .select("id, title, description, company, location, apply_url, user_id, external_posted_at, imported_at, created_at, expires_at, is_active, deletion_request_status, deleted_at")
     .eq("id", id)
@@ -422,7 +429,7 @@ export default async function JobDetailPage({
   let job = jobQuery.data as JobDetailRecord | null;
 
   if (jobQuery.error?.code === "42703") {
-    const fallbackJobQuery = await supabase
+    const fallbackJobQuery = await jobsReader
       .from("jobs")
       .select("id, title, description, company, location, apply_url, user_id, created_at")
       .eq("id", id)
@@ -443,13 +450,19 @@ export default async function JobDetailPage({
 
   if (!job) notFound();
 
-  const isJobOwner = user.id === job.user_id;
-  const {
-    canApplyToJobs,
-    isFreeAccessCandidate,
-    freeApplicationsRemaining,
-    lockReason,
-  } = await getJobBoardAccessForUser(supabase, user.id, profile);
+  const isJobOwner = Boolean(user?.id) && user?.id === job.user_id;
+  let canApplyToJobs = false;
+  let isFreeAccessCandidate = false;
+  let freeApplicationsRemaining = 0;
+  let lockReason = "Sign in to apply and unlock the full job board.";
+
+  if (user && profile) {
+    const access = await getJobBoardAccessForUser(supabase, user.id, profile);
+    canApplyToJobs = access.canApplyToJobs;
+    isFreeAccessCandidate = access.isFreeAccessCandidate;
+    freeApplicationsRemaining = access.freeApplicationsRemaining;
+    lockReason = access.lockReason || lockReason;
+  }
 
   if (job.deleted_at && profile?.role !== "admin" && !isJobOwner) {
     notFound();
@@ -459,22 +472,26 @@ export default async function JobDetailPage({
   const isCandidateViewer = profile?.role?.startsWith("candidate");
   const employerPlan = getEmployerPlan(profile?.role);
   const isPaidEmployer = employerPlan === "pro" || employerPlan === "premium";
-  const canApplyToJob = isCandidateViewer && !isJobOwner && canApplyToJobs;
+  const canApplyToJob = !isGuestViewer && isCandidateViewer && !isJobOwner && canApplyToJobs;
   const roleKeyword = deriveRoleKeyword(job.title);
 
-  const { data: resumes } = await supabase
-    .from("resumes")
-    .select("id, file_url, file_name")
-    .eq("user_id", user.id);
+  const resumes = user
+    ? (await supabase
+        .from("resumes")
+        .select("id, file_url, file_name")
+        .eq("user_id", user.id)).data
+    : [];
 
-  const { data: application } = await supabase
-    .from("job_applications")
-    .select("id")
-    .eq("job_id", id)
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const application = user
+    ? (await supabase
+        .from("job_applications")
+        .select("id")
+        .eq("job_id", id)
+        .eq("user_id", user.id)
+        .maybeSingle()).data
+    : null;
 
-  const savedCompanyQuery = !isJobOwner && job.company
+  const savedCompanyQuery = user && !isJobOwner && job.company
     ? await supabase
         .from("saved_companies")
         .select("id")
@@ -484,7 +501,7 @@ export default async function JobDetailPage({
     : { data: null, error: null };
   const savedCompany = savedCompanyQuery.error?.code === "42P01" ? null : savedCompanyQuery.data;
 
-  const followedRoleQuery = !isJobOwner
+  const followedRoleQuery = user && !isJobOwner
     ? await supabase
         .from("followed_job_roles")
         .select("id")
@@ -677,7 +694,22 @@ export default async function JobDetailPage({
                 </div>
               </div>
 
-              {isCandidateViewer ? (
+              {isGuestViewer ? (
+                <div className="w-full rounded-2xl border border-[#dbe6d6] bg-[#f8fcf5] p-4 sm:min-w-[240px] sm:w-auto">
+                  <p className="text-sm font-semibold text-[#11203b]">Guest preview</p>
+                  <p className="mt-1 text-xs leading-6 text-[#5b6757]">
+                    You can review the role details now. Sign in to upload a resume, unlock ATS guidance, and apply.
+                  </p>
+                  <div className="mt-4 flex flex-col gap-2">
+                    <Link href="/register?role=candidate" className="marketing-primary justify-center text-sm">
+                      Sign in to apply
+                    </Link>
+                    <Link href="/candidate" className="marketing-secondary justify-center text-sm">
+                      Explore candidate flow
+                    </Link>
+                  </div>
+                </div>
+              ) : isCandidateViewer && profile ? (
                 <div className="flex w-full flex-col gap-3 sm:min-w-[200px] sm:w-auto">
                   <ApplyButtonWithModal
                     job={job}
@@ -765,11 +797,13 @@ export default async function JobDetailPage({
                            ? "You are browsing with admin access."
                            : isMvpCandidate
                              ? "Your MVP status gives you priority access to this role."
-                            : isFreeAccessCandidate
-                              ? freeApplicationsRemaining > 0
-                                ? `You have ${freeApplicationsRemaining} free application${freeApplicationsRemaining === 1 ? "" : "s"} left before verification is required.`
-                                : "Your free job access is complete. Verify your profile to keep applying."
-                              : "Browse now and complete the assessment to unlock applications for this role."}
+                      : isFreeAccessCandidate
+                        ? freeApplicationsRemaining > 0
+                          ? `You have ${freeApplicationsRemaining} free application${freeApplicationsRemaining === 1 ? "" : "s"} left before verification is required.`
+                          : "Your free job access is complete. Verify your profile to keep applying."
+                              : isGuestViewer
+                                ? "Preview is open. Sign in to apply, track your status, and unlock ATS-backed application support."
+                                : "Browse now and complete the assessment to unlock applications for this role."}
                      </p>
                   </div>
                </div>
