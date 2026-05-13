@@ -178,6 +178,7 @@ export default async function CandidateDashboard() {
   const examCompleted = candidate?.exam_status === "completed";
   const hasScorecard = examCompleted || typeof candidate?.latest_score === "number";
   const marketSuggestions = getMarketplaceRoleSuggestions(profile, canViewJobBoard);
+  const firstName = (profile.name || user.email?.split("@")[0] || "there").trim().split(/\s+/)[0] || "there";
 
   const journey = [
     {
@@ -208,19 +209,37 @@ export default async function CandidateDashboard() {
 
   const examTitle =
     isVerified
-      ? "Validation Complete"
+      ? "You’re Verified"
       : hasFailedExam
-        ? "Learning Path Required"
+        ? "You’re Closer Than You Think"
         : examCompleted
-          ? "Assessment Reviewed"
-          : "Skill Validation Exam";
+          ? "Your Validation Result Is Ready"
+          : "Your Next Best Step";
 
   const examCopy =
     isVerified
-      ? `You scored ${candidate?.latest_score ?? 0}%. Your profile is now visible for stronger-fit opportunities.`
+      ? `You scored ${candidate?.latest_score ?? 0}%, and your profile is now visible for stronger-fit L&D opportunities across the Guild.`
       : hasFailedExam
-        ? `You scored ${candidate?.latest_score ?? 0}%. Submit a course completion certificate to unlock your reattempt.`
-        : "Our assessment measures your practical L&D readiness and unlocks recommendations, resources, and marketplace access.";
+        ? `You scored ${candidate?.latest_score ?? 0}%. That’s enough signal for us to show you exactly what to improve next. Complete the recommended course path and submit your certificate to unlock a reattempt.`
+        : "Take the skill validation assessment to unlock ATS insights, stronger employer visibility, and clearer role-fit guidance. It’s the fastest way to turn your profile into real momentum.";
+
+  const candidateExamTitle =
+    isVerified
+      ? `You did it, ${firstName}!`
+      : hasFailedExam
+        ? `Hey ${firstName}, you're so close!`
+        : examCompleted
+          ? `You're almost there, ${firstName}.`
+          : "Your next best step";
+
+  const candidateExamCopy =
+    isVerified
+      ? `You scored ${candidate?.latest_score ?? 0}%, and your profile is now visible for stronger-fit L&D opportunities across the Guild.`
+      : hasFailedExam
+        ? "You're just one step away from getting verified. Take the skill test today and unlock the full Guild experience - it's worth it."
+        : examCompleted
+          ? "Your result is ready. Review your scorecard, follow the suggested learning path, and come back stronger for the next step."
+          : "Take the skill validation assessment to unlock ATS insights, stronger employer visibility, and clearer role-fit guidance. It's the fastest way to turn your profile into real momentum.";
 
   return (
     <div className="marketing-page min-h-screen">
@@ -230,24 +249,24 @@ export default async function CandidateDashboard() {
             <div className="space-y-6">
               <h1 className="marketing-title max-w-3xl text-5xl sm:text-6xl">Welcome back, {profile.name}.</h1>
               <p className="marketing-copy max-w-2xl text-base leading-8">
-                Your career trajectory is in motion. You&apos;re currently in the{" "}
+                Your profile is live and you&apos;re officially on your way. Right now you&apos;re in the{" "}
                 <span className="font-semibold text-[#138d1a]">
                   {isVerified ? "Verified" : examStarted ? "Validation" : "Registration"}
                 </span>{" "}
-                phase. Complete the right next step to unlock stronger-fit roles, premium resources, and cleaner visibility.
+                phase. Every step you complete improves how you appear to employers and brings the right opportunities closer.
               </p>
               {!isVerified ? (
                 <div className="max-w-2xl rounded-[1.5rem] border border-[#d8e6d3] bg-white px-4 py-4 shadow-[0_16px_34px_rgba(94,119,74,0.08)] sm:px-5">
                   <div className="flex flex-col gap-4 sm:gap-3">
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#15911b]">
-                        Assessment unlock
+                        First milestone
                       </p>
                       <p className="mt-2 text-base font-semibold text-[#111827] sm:text-lg">
                         You have only 15 free job applications.
                       </p>
                       <p className="mt-1 text-sm leading-6 text-[#5f6d5b] sm:text-[15px]">
-                        Pass the skill assessment to unlock ATS insights, stronger role-fit visibility, and the full Guild experience.
+                        Make each one count - or take the skill assessment to unlock more applications, ATS insights, and better employer visibility.
                       </p>
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row">
@@ -272,7 +291,7 @@ export default async function CandidateDashboard() {
             <div className="space-y-4 border-t border-[#dde7d8] pt-4">
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="border-b border-[#dde7d8] pb-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Latest Score</p>
+                  <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Profile momentum</p>
                   <p className="mt-3 text-4xl font-bold text-[#17a21c]">{candidate?.latest_score ? `${candidate.latest_score}%` : "--"}</p>
                   <div className="mt-3 h-1.5 rounded-full bg-[#e2ecd8]">
                     <div
@@ -281,11 +300,11 @@ export default async function CandidateDashboard() {
                     />
                   </div>
                   {!candidate?.latest_score && (
-                    <p className="mt-3 text-xs text-[#7a8577]">Your score will appear here after your first completed assessment.</p>
+                    <p className="mt-3 text-xs text-[#7a8577]">Your score and guidance will appear here after your first completed assessment.</p>
                   )}
                 </div>
                 <div className="border-b border-[#dde7d8] pb-4">
-                  <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Applications</p>
+                  <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Job access</p>
                   <p className="mt-3 text-4xl font-bold text-[#111827]">{recentApplications?.length ?? 0}</p>
                   <p className="mt-4 text-xs text-[#1da326]">
                     {canApplyToJobs
@@ -297,7 +316,7 @@ export default async function CandidateDashboard() {
                 </div>
               </div>
               <div className="pt-1">
-                <p className="text-sm font-semibold text-[#111827]">Candidate Progress</p>
+                <p className="text-sm font-semibold text-[#111827]">Your next milestones</p>
                 <div className="mt-5 rounded-[1.5rem] border border-[#dde7d8] bg-white px-4 py-4">
                   <div className="flex items-center justify-between gap-2">
                     {journey.map((step, index) => {
@@ -321,6 +340,11 @@ export default async function CandidateDashboard() {
                       </div>
                     ))}
                   </div>
+                  {!isVerified ? (
+                    <div className="mt-5 rounded-[1.2rem] bg-[#f7fbf3] px-4 py-3 text-sm leading-6 text-[#52614f]">
+                      Every step you complete improves how you appear to employers. Your next milestone: take the skill assessment. It usually takes about 20 minutes.
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -338,15 +362,15 @@ export default async function CandidateDashboard() {
                 <div>
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="rounded-full bg-[#eaf8e3] px-4 py-1 text-xs font-bold uppercase tracking-[0.16em] text-[#138d1a]">
-                      Priority Task
+                      Recommended next move
                     </span>
                     <span className="text-sm font-medium text-[#7a8577]">
                       {candidate?.pass_status === "fail" ? "Course proof required" : "45 mins estimated"}
                     </span>
                   </div>
 
-                  <h3 className="mt-5 text-4xl font-bold text-[#111827]">{examTitle}</h3>
-                  <p className="mt-4 max-w-2xl text-base leading-8 text-[#5b6757]">{examCopy}</p>
+                  <h3 className="mt-5 text-4xl font-bold text-[#111827]">{candidateExamTitle}</h3>
+                  <p className="mt-4 max-w-2xl text-base leading-8 text-[#5b6757]">{candidateExamCopy}</p>
 
                   <div className="mt-8 flex flex-col gap-4">
                     {!isVerified && hasFailedExam ? (

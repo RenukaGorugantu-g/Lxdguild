@@ -157,26 +157,26 @@ export default async function EmployerLandingPage() {
 
         <section className="marketing-section pb-16">
           <div className="marketing-container grid gap-8 lg:grid-cols-[0.92fr_1.08fr]">
-            <article className="rounded-[2rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbf1_100%)] p-6 shadow-[0_20px_50px_rgba(87,108,67,0.08)]">
+            <article className="rounded-[2rem] border border-[#f1d8b4] bg-[linear-gradient(180deg,#fffaf3_0%,#fffdf8_100%)] p-6 shadow-[0_20px_50px_rgba(87,108,67,0.08)]">
               <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">ATS candidate evaluation</p>
-              <div className="mt-5 rounded-[1.5rem] border border-[#e2ebde] bg-white p-5 shadow-[0_10px_24px_rgba(87,108,67,0.05)]">
+              <div className="mt-5 rounded-[1.5rem] border border-[#e7dfd1] bg-white p-5 shadow-[0_10px_24px_rgba(87,108,67,0.05)]">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="rounded-[1.2rem] bg-[#f4f8ef] p-4">
+                  <div className="rounded-[1.2rem] border border-[#e4eadf] bg-[linear-gradient(180deg,#f5f8ef_0%,#eef4e7_100%)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
                     <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#7b8775]">Lead instructional designer</p>
                     <p className="mt-2 text-sm font-medium text-[#111827]">Aarav Mehta</p>
                   </div>
-                  <div className="rounded-[1.2rem] bg-[#f4f8ef] p-4">
+                  <div className="rounded-[1.2rem] border border-[#e4eadf] bg-[linear-gradient(180deg,#f5f8ef_0%,#eef4e7_100%)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
                     <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#7b8775]">Match score</p>
                     <p className="mt-2 text-sm font-medium text-[#16921d]">92% match</p>
                   </div>
                 </div>
 
                 <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                  <div className="rounded-[1.2rem] border border-[#e2ebde] p-4">
+                  <div className="rounded-[1.2rem] border border-[#ead9c2] bg-[linear-gradient(180deg,#fffdfa_0%,#fff7ee_100%)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
                     <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#7b8775]">Competencies</p>
                     <p className="mt-2 text-sm font-medium text-[#111827]">9 / 10 core skills</p>
                   </div>
-                  <div className="rounded-[1.2rem] border border-[#e2ebde] p-4">
+                  <div className="rounded-[1.2rem] border border-[#ead9c2] bg-[linear-gradient(180deg,#fffdfa_0%,#fff7ee_100%)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
                     <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#7b8775]">Seniority</p>
                     <p className="mt-2 text-sm font-medium text-[#111827]">8+ years senior level</p>
                   </div>
@@ -272,8 +272,8 @@ export default async function EmployerLandingPage() {
                 key={card.title}
                 className={`overflow-hidden rounded-[2rem] border p-7 shadow-[0_20px_50px_rgba(87,108,67,0.08)] ${
                   index === 0
-                    ? "border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f6faef_100%)]"
-                    : "border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f6faef_100%)]"
+                    ? "border-[#dfe8d8] bg-[linear-gradient(180deg,#ffffff_0%,#f6faef_100%)]"
+                    : "border-[#f1d8b4] bg-[linear-gradient(180deg,#fffaf3_0%,#fffdf8_100%)]"
                 }`}
               >
                 <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">{card.eyebrow}</p>
@@ -313,51 +313,6 @@ export default async function EmployerLandingPage() {
           </div>
         </section>
 
-        <section className="marketing-section pb-18">
-          <div className="marketing-container overflow-hidden rounded-[2.3rem] bg-[linear-gradient(135deg,#dff7d8_0%,#eef8e7_100%)] px-8 py-10 shadow-[0_24px_60px_rgba(87,108,67,0.12)]">
-            <div className="grid items-center gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-              <div className="text-[#07131f]">
-                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#4f7a4f]">Integrated process</p>
-                <h2 className="mt-3 text-5xl font-semibold leading-[0.95]">Move faster from discovery to hiring</h2>
-                <p className="mt-4 max-w-xl text-sm leading-7 text-[#40563f]">
-                  Integrated video conferencing, collaborative technical assessments, and digital contract signing all
-                  within one streamlined employer flow.
-                </p>
-                <div className="mt-6 grid gap-4 sm:grid-cols-2 text-sm text-[#3c523a]">
-                  <div>
-                    <p className="font-semibold text-[#111827]">3x faster</p>
-                    <p className="mt-1">Reduce time-to-hire compared to traditional agencies.</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold text-[#111827]">Direct access</p>
-                    <p className="mt-1">No intermediaries. Direct communication with your experts.</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="relative min-h-[320px] overflow-hidden rounded-[1.8rem] border border-[#0f2028] bg-[#11171c] p-3 shadow-[0_24px_60px_rgba(15,23,42,0.14)] lg:min-h-[360px]">
-                <div className="relative h-full overflow-hidden rounded-[1.35rem]">
-                  <Image
-                    src="/landing-employer-human.png"
-                    alt="Collaborative hiring and interview review"
-                    fill
-                    sizes="(max-width: 1024px) 100vw, 520px"
-                    className="object-cover object-[center_35%]"
-                  />
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,17,24,0.08),rgba(8,17,24,0.48))]" />
-                  <div className="absolute left-4 top-4 rounded-[1.1rem] border border-white/12 bg-[rgba(8,17,24,0.68)] px-4 py-3 text-white backdrop-blur-md">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9be6a1]">Hiring workflow</p>
-                    <p className="mt-2 text-sm font-semibold">Interview, evaluate, and move candidates faster</p>
-                  </div>
-                  <div className="absolute inset-x-4 bottom-4 rounded-[1.15rem] bg-[#38d62a] px-4 py-3 text-[#092012] shadow-[0_14px_28px_rgba(56,214,42,0.24)]">
-                    <p className="text-[11px] font-semibold">Direct employer flow</p>
-                    <p className="mt-1 text-sm font-medium">Shortlist, schedule, and close hiring in one place</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
 
         <section className="marketing-section pb-20">
           <div className="marketing-container text-center">

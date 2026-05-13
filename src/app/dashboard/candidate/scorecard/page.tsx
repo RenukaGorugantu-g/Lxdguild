@@ -3,11 +3,7 @@ import { redirect } from "next/navigation";
 import { Award, BookOpen, ChevronRight, AlertTriangle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import AssessmentBadgeShare from "./AssessmentBadgeShare";
-import {
-  COURSE_PROFICIENCY_THRESHOLD,
-  getCourseRecommendations,
-  PASS_THRESHOLD,
-} from "@/lib/assessment";
+import { getCourseRecommendations, PASS_THRESHOLD } from "@/lib/assessment";
 import { getSiteUrl } from "@/lib/site-url";
 
 export default async function ScorecardPage() {
@@ -47,6 +43,8 @@ export default async function ScorecardPage() {
   const isPass = attempt.pass_fail === "pass";
   const designationBucket = attempt.designation_bucket || "Intermediate";
   const numericScore = Number(attempt.score || 0);
+  const distanceToPass = Math.max(PASS_THRESHOLD - numericScore, 0);
+  const progressToPass = Math.max(Math.min((numericScore / PASS_THRESHOLD) * 100, 100), 0);
   const recommendationPlan = getCourseRecommendations(designationBucket, numericScore);
   const courseCodes = recommendationPlan.courses.map((course) => course.code);
   const [profileResponse, courseRowsResponse] = await Promise.all([
@@ -65,6 +63,7 @@ export default async function ScorecardPage() {
   const profile = profileResponse.data;
   const courseRows = courseRowsResponse.data;
   const candidateName = profile?.name || user.email?.split("@")[0] || "LXD Guild Candidate";
+  const candidateFirstName = candidateName.trim().split(/\s+/)[0] || "there";
   const targetRole = profile?.candidate_target_role || "Learning & Development Professional";
   const shareUrl = `${getSiteUrl()}/candidate`;
 
@@ -87,18 +86,27 @@ export default async function ScorecardPage() {
 
   return (
     <div className="min-h-screen bg-zinc-50 px-6 pb-16 pt-28">
-      <div className="mx-auto max-w-4xl space-y-6">
+      <div className="mx-auto max-w-5xl space-y-6">
         
         {/* Header/Score Summary */}
         <div className={`rounded-3xl border p-7 ${isPass ? 'border-green-200 bg-green-50' : 'border-orange-200 bg-orange-50'}`}>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
-               <div className={`rounded-2xl p-4 ${isPass ? 'bg-green-100' : 'bg-orange-100'}`}>
+              <div className={`rounded-2xl p-4 ${isPass ? 'bg-green-100' : 'bg-orange-100'}`}>
                   {isPass ? <CheckCircle2 className="w-8 h-8 text-green-600" /> : <AlertTriangle className="w-8 h-8 text-orange-600" />}
                </div>
               <div>
-                  <h1 className="text-2xl font-bold">{isPass ? "Validation Successful" : "Validation Incomplete"}</h1>
-                  <p className="text-zinc-600">Score: <span className="font-bold text-lg">{attempt.score}%</span></p>
+                  <h1 className="text-2xl font-bold">
+                    {isPass ? `You did it, ${candidateFirstName}!` : `Hey ${candidateFirstName}, you're so close!`}
+                  </h1>
+                  <p className="mt-1 max-w-2xl text-sm leading-7 text-zinc-600 sm:text-base">
+                    {isPass
+                      ? "Your skills are now validated, and your profile is ready for stronger-fit opportunities across the Guild."
+                      : "You're just one step away from getting verified. Take the skill test today and unlock the full Guild experience - it's worth it."}
+                  </p>
+                  <p className="mt-3 text-zinc-600">
+                    Current score: <span className="font-semibold text-lg">{attempt.score}%</span>
+                  </p>
                   <p className="text-xs uppercase tracking-[0.16em] text-zinc-500 mt-1">Pass threshold: {PASS_THRESHOLD}%</p>
                </div>
             </div>
@@ -106,9 +114,31 @@ export default async function ScorecardPage() {
                Back to Dashboard
             </Link>
           </div>
+          <div className="mt-6 rounded-2xl border border-white/70 bg-white/70 p-4">
+            <div className="flex items-center justify-between gap-4 text-sm">
+              <span className="font-medium text-zinc-700">Progress toward validation</span>
+              <span className={`font-semibold ${isPass ? "text-green-700" : "text-orange-700"}`}>
+                {isPass ? "Threshold cleared" : `${distanceToPass}% to go`}
+              </span>
+            </div>
+            <div className="relative mt-4 h-3 overflow-hidden rounded-full bg-zinc-200">
+              <div
+                className="h-full rounded-full bg-[linear-gradient(90deg,#ef4444_0%,#f59e0b_45%,#22c55e_100%)]"
+                style={{ width: `${progressToPass}%` }}
+              />
+              <div
+                className="absolute top-[-3px] h-5 w-1 rounded-full bg-[#091737]"
+                style={{ left: `calc(${Math.min(progressToPass, 100)}% - 2px)` }}
+              />
+            </div>
+            <div className="mt-3 flex items-center justify-between text-[11px] uppercase tracking-[0.16em] text-zinc-500">
+              <span>Current score</span>
+              <span>Pass threshold {PASS_THRESHOLD}%</span>
+            </div>
+          </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-[0.72fr_1.28fr]">
           
           {/* Skill Breakdown */}
           <div className="rounded-2xl border bg-white p-5 shadow-sm">
@@ -126,7 +156,7 @@ export default async function ScorecardPage() {
                     </div>
                     <div className="h-2 rounded-full bg-zinc-100 overflow-hidden">
                       <div 
-                        className={`h-full transition-all duration-1000 ${percent >= 70 ? 'bg-green-500' : 'bg-orange-500'}`} 
+                        className="h-full bg-[linear-gradient(90deg,#ef4444_0%,#f59e0b_45%,#22c55e_100%)] transition-all duration-1000" 
                         style={{ width: `${percent}%` }}
                       ></div>
                     </div>
@@ -139,33 +169,27 @@ export default async function ScorecardPage() {
           </div>
 
           {/* Learning Path */}
-          <div className="rounded-2xl border bg-white p-5 shadow-sm">
+          <div className="rounded-2xl border border-[#d8e6d3] bg-[linear-gradient(180deg,#ffffff_0%,#fbfdf8_100%)] p-6 shadow-sm">
             <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-brand-600" /> Recommended Learning Path
             </h3>
             {recommendedCourses.length > 0 ? (
               <div className="space-y-4">
-                <div className="rounded-2xl border border-zinc-100 bg-zinc-50 p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-brand-600">
-                    {recommendationPlan.setLabel}
-                  </p>
+                <div className="rounded-2xl border border-[#d8e6d3] bg-[linear-gradient(180deg,#f7fbf3_0%,#eef7e8_100%)] p-5 shadow-[0_10px_24px_rgba(87,108,67,0.05)]">
                   <p className="mt-2 text-lg font-semibold text-zinc-950">
                     {recommendationPlan.tier === "proficient" ? "Proficient" : "Needs Development"} tier
                   </p>
                   <p className="mt-2 text-sm text-zinc-600">
-                    Based on your {numericScore}% score, these course suggestions are tailored to your current designation and assessment set.
+                    These suggested courses are your fastest path to closing the gap and moving closer to validation.
                   </p>
                   <p className="mt-3 text-sm leading-6 text-zinc-600">{recommendationPlan.rationale}</p>
-                  <p className="mt-3 text-xs uppercase tracking-[0.16em] text-zinc-500">
-                    Course tier threshold: {COURSE_PROFICIENCY_THRESHOLD}%+
-                  </p>
                 </div>
 
                 <div className="space-y-3">
                   {recommendedCourses.map((course) => (
-                    <div key={course.code} className="rounded-2xl border border-zinc-100 bg-white p-4">
+                    <div key={course.code} className="rounded-2xl border border-[#d8e6d3] bg-white p-5 shadow-[0_8px_20px_rgba(87,108,67,0.05)]">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div className="space-y-2">
+                        <div className="max-w-2xl space-y-2">
                           <div className="flex items-center gap-2">
                             <span className="rounded-full bg-[#091737] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] !text-white">
                               {course.code}
