@@ -779,7 +779,7 @@ export default function ProfileForm({
       </div>
 
       <div className="space-y-6">
-        <div className="rounded-[1.9rem] border border-[#dde7d8] bg-[#fbfdf8] p-8 shadow-[0_16px_40px_rgba(87,108,67,0.06)] space-y-6">
+        <div className="space-y-5 rounded-[1.6rem] border border-[#dde7d8] bg-[#fbfdf8] p-4 shadow-[0_16px_40px_rgba(87,108,67,0.06)] sm:space-y-6 sm:rounded-[1.9rem] sm:p-8">
           <div className="flex items-center gap-3 border-b border-[#e4ebdf] pb-4">
             <User className="w-5 h-5 text-[#138d1a]" />
             <h2 className="font-bold text-lg">Professional Basics</h2>
@@ -896,19 +896,21 @@ export default function ProfileForm({
             </div>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="space-y-3 lg:col-span-2">
+          <div className="min-w-0 overflow-hidden grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+            <div className="min-w-0 space-y-3 lg:col-span-2">
               {resumes.map((resume) => (
-                <div key={resume.id} className="space-y-4 rounded-2xl border border-[#e4ebdf] bg-white p-4">
-                  <div className="group flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 overflow-hidden">
+                <div key={resume.id} className="min-w-0 overflow-hidden space-y-3 rounded-2xl border border-[#e4ebdf] bg-white p-3.5 sm:space-y-4 sm:p-4">
+                  <div className="group flex min-w-0 flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 flex-1 items-start gap-3 overflow-hidden">
                       <FileText className="h-4 w-4 shrink-0 text-[#138d1a]" />
-                      <div className="overflow-hidden">
-                        <p className="truncate text-sm font-medium">{resume.file_name || "Resume"}</p>
+                      <div className="min-w-0 flex-1 overflow-hidden">
+                        <p className="max-w-full break-all text-sm font-medium leading-5 text-[#111827] sm:truncate">
+                          {resume.file_name || "Resume"}
+                        </p>
                         <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-400">Uploaded resume</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+                    <div className="flex items-center gap-1 self-end opacity-100 transition-opacity sm:self-auto sm:opacity-0 sm:group-hover:opacity-100">
                       <a
                         href={`/api/resumes/${resume.id}/download`}
                         target="_blank"
@@ -926,7 +928,7 @@ export default function ProfileForm({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
+                  <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
                     {[
                       {
                         key: "skills" as const,
@@ -999,7 +1001,7 @@ export default function ProfileForm({
                         type="button"
                         onClick={action.onClick}
                         disabled={action.disabled}
-                        className={`flex min-w-0 items-center gap-2 rounded-full border px-3 py-2.5 text-left text-xs font-semibold transition sm:min-w-0 sm:px-4 sm:text-sm ${
+                        className={`flex w-full min-w-0 items-center gap-2 rounded-[1.1rem] border px-3 py-3 text-left text-sm font-semibold transition sm:rounded-full sm:px-4 sm:py-2.5 ${
                           action.active
                             ? "border-[#8fd97e] bg-[#eef9e9] text-[#138d1a] shadow-[0_10px_20px_rgba(87,108,67,0.08)]"
                             : "border-[#dbe4d5] bg-white text-[#425243] hover:bg-[#f7fbf4]"
@@ -1008,7 +1010,7 @@ export default function ProfileForm({
                         <span className={`flex h-8 w-8 items-center justify-center rounded-full ${action.active ? "bg-[#138d1a] text-white" : "bg-[#eef7e9] text-[#138d1a]"}`}>
                           {action.icon}
                         </span>
-                        <span className="leading-4">
+                        <span className="min-w-0 flex-1 leading-5">
                           {action.key === "skills"
                             ? "Suggest skills"
                             : action.key === "optimize"

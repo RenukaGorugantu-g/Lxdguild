@@ -93,7 +93,7 @@ export default async function EmployerDashboard() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="premium-badge">Employer workflow</div>
-            <h1 className="mt-4 text-3xl font-bold text-white">Employer Hub</h1>
+            <h1 className="mt-4 text-3xl font-bold text-[#7cf56c]">Employer Hub</h1>
             <p className="premium-copy mt-2">
               {showEmployerUpgrade
                 ? `There are ${mvpCount ?? 0} verified MVP candidates available. Upgrade to Premium to unlock full access.`
@@ -136,8 +136,8 @@ export default async function EmployerDashboard() {
             </div>
           ) : (
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-              <div className="flex items-center gap-2 px-4 py-2 bg-brand-50 text-brand-700 rounded-full text-sm font-medium border border-brand-200">
-                 <Star className="w-4 h-4" /> Premium Plan Active
+              <div className="flex items-center gap-2 rounded-full border border-[#8be37e] bg-[linear-gradient(135deg,#1f8e24,#33c428)] px-4 py-2 text-sm font-medium text-white shadow-[0_12px_24px_rgba(34,197,94,0.22)]">
+                 <Star className="w-4 h-4 text-white" /> Premium Plan Active
               </div>
               <Link href="/dashboard/employer/post-job" className="px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700">
                 Post a Job
