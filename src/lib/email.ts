@@ -7,7 +7,12 @@ export type EmailPayload = {
 
 export async function sendEmail({ to, subject, html, text }: EmailPayload) {
   const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.RESEND_FROM_EMAIL?.trim();
+  const rawFrom = process.env.RESEND_FROM_EMAIL?.trim();
+  const from = rawFrom
+    ? rawFrom.includes("<")
+      ? rawFrom
+      : `LXDGUILD <${rawFrom}>`
+    : null;
 
   if (!apiKey || !from) {
     console.warn("sendEmail skipped because RESEND_API_KEY or RESEND_FROM_EMAIL is not configured.", {

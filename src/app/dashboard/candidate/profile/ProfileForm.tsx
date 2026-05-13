@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { User, Briefcase, MapPin, AlignLeft, Award, FileText, Upload, Save, Loader2, Link as LinkIcon, Trash2, Sparkles, Wand2, Compass, Mail, CheckCircle2, X } from "lucide-react";
+import { User, Briefcase, MapPin, AlignLeft, Award, FileText, Upload, Save, Loader2, Link as LinkIcon, Trash2, Sparkles, Wand2, Compass, Mail, CheckCircle2, X, AlertTriangle, CheckCircle } from "lucide-react";
 import SkillAutocomplete from "@/components/SkillAutocomplete";
 import { useRouter } from "next/navigation";
 
@@ -112,6 +112,12 @@ type CoverLetterState = {
 } | null;
 
 type ResumeReportPanel = "skills" | "optimize" | "career" | "cover" | null;
+type FeedbackTone = "error" | "success" | "info";
+type FeedbackModalState = {
+  title: string;
+  message: string;
+  tone: FeedbackTone;
+} | null;
 
 const RESUME_SUGGESTIONS_STORAGE_KEY = "lxdguild_resume_skill_suggestions";
 const RESUME_OPTIMIZER_STORAGE_KEY = "lxdguild_resume_optimizer";
@@ -274,9 +280,14 @@ export default function ProfileForm({
   const [careerPathPredictions, setCareerPathPredictions] = useState<CareerPathPredictionState>(null);
   const [coverLetterDraft, setCoverLetterDraft] = useState<CoverLetterState>(null);
   const [activeRoadmapIndex, setActiveRoadmapIndex] = useState<number | null>(null);
+  const [feedbackModal, setFeedbackModal] = useState<FeedbackModalState>(null);
   const reportPanelRef = useRef<HTMLDivElement | null>(null);
   const supabase = createClient();
   const router = useRouter();
+
+  const showFeedback = (title: string, message: string, tone: FeedbackTone = "info") => {
+    setFeedbackModal({ title, message, tone });
+  };
 
   const clearResumeArtifacts = (options?: { preserveResumeId?: string }) => {
     const preserveResumeId = options?.preserveResumeId;
@@ -476,7 +487,7 @@ export default function ProfileForm({
       });
       setActiveResumeReport("skills");
     } catch (error: unknown) {
-      alert("Error generating resume skill suggestions: " + getErrorMessage(error));
+      showFeedback("Could not analyze this file", getErrorMessage(error), "error");
     } finally {
       setIsAnalyzingResume(false);
     }
@@ -542,7 +553,7 @@ export default function ProfileForm({
       setResumeOptimizerTab("suggestions");
       setActiveResumeReport("optimize");
     } catch (error: unknown) {
-      alert("Error optimizing resume: " + getErrorMessage(error));
+      showFeedback("Could not optimize this resume", getErrorMessage(error), "error");
     } finally {
       setIsOptimizingResume(false);
     }
@@ -569,7 +580,7 @@ export default function ProfileForm({
       });
       setActiveResumeReport("career");
     } catch (error: unknown) {
-      alert("Error predicting career paths: " + getErrorMessage(error));
+      showFeedback("Could not predict career paths", getErrorMessage(error), "error");
     } finally {
       setIsPredictingCareerPaths(false);
     }
@@ -600,7 +611,7 @@ export default function ProfileForm({
       });
       setActiveResumeReport("cover");
     } catch (error: unknown) {
-      alert("Error generating cover letter: " + getErrorMessage(error));
+      showFeedback("Could not generate cover letter", getErrorMessage(error), "error");
     } finally {
       setIsGeneratingCoverLetter(false);
     }
@@ -628,7 +639,7 @@ export default function ProfileForm({
 
   const handleSave = async () => {
     if (!profile.id) {
-      alert("Profile is still loading. Please refresh and try again.");
+      showFeedback("Profile still loading", "Please refresh the page and try again in a moment.", "info");
       return;
     }
 
@@ -670,10 +681,10 @@ export default function ProfileForm({
         throw fullUpdate.error;
       }
 
-      alert("Profile updated successfully!");
+      showFeedback("Profile updated", "Your profile details were saved successfully.", "success");
       router.refresh();
     } catch (err: unknown) {
-      alert("Error updating profile: " + getErrorMessage(err));
+      showFeedback("Could not update profile", getErrorMessage(err), "error");
     } finally {
       setIsSaving(false);
     }
@@ -684,7 +695,7 @@ export default function ProfileForm({
     const file = e.target.files[0];
 
     if (!isSupportedResumeFile(file)) {
-      alert("Please upload a PDF or DOCX resume file.");
+      showFeedback("Unsupported file", "Please upload a PDF or DOCX resume file.", "info");
       e.target.value = "";
       return;
     }
@@ -719,9 +730,9 @@ export default function ProfileForm({
       if (dbError) throw new Error(dbError.message || "Resume record could not be created.");
       setResumes((current) => [...current, resumeData]);
       await fetchResumeSkillSuggestions(resumeData.id);
-      alert("Resume uploaded successfully!");
+      showFeedback("Resume uploaded", "Your resume was uploaded and analyzed successfully.", "success");
     } catch (err: unknown) {
-      alert("Error uploading resume: " + getErrorMessage(err));
+      showFeedback("Could not upload resume", getErrorMessage(err), "error");
     } finally {
       setIsUploading(false);
       e.target.value = "";
@@ -744,7 +755,7 @@ export default function ProfileForm({
       setResumes(nextResumes);
       clearResumeArtifacts({ preserveResumeId });
     } catch (err: unknown) {
-      alert("Error deleting resume: " + getErrorMessage(err));
+      showFeedback("Could not delete resume", getErrorMessage(err), "error");
     }
   };
 
@@ -897,7 +908,7 @@ export default function ProfileForm({
                         <p className="text-[11px] uppercase tracking-[0.18em] text-zinc-400">Uploaded resume</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    <div className="flex items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                       <a
                         href={`/api/resumes/${resume.id}/download`}
                         target="_blank"
@@ -2500,7 +2511,7 @@ export default function ProfileForm({
                                 aria-label={`Open roadmap details for ${path.title}`}
                                 aria-expanded={isActive}
                                 onClick={() => setActiveRoadmapIndex((current) => (current === index ? null : index))}
-                                className={`absolute z-20 flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 border-white text-sm font-bold text-white shadow-[0_16px_30px_rgba(19,141,26,0.22)] transition duration-200 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-[#b9efaa] sm:h-12 sm:w-12 ${
+                                className={`absolute ${isActive ? "z-30" : "z-20"} flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-4 border-white text-sm font-bold text-white shadow-[0_16px_30px_rgba(19,141,26,0.22)] transition duration-200 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-[#b9efaa] sm:h-12 sm:w-12 ${
                                   isActive
                                     ? "bg-[linear-gradient(135deg,#0f172a,#138d1a)]"
                                     : "bg-[linear-gradient(135deg,#34cd2f,#138d1a)]"
@@ -2521,11 +2532,22 @@ export default function ProfileForm({
 
                               {isActive ? (
                                 <div
-                                  className="absolute z-20 hidden max-w-[240px] rounded-[1.35rem] border border-[#e2ebde] bg-white/96 p-4 shadow-[0_14px_34px_rgba(87,108,67,0.12)] backdrop-blur-sm md:block"
+                                  className="absolute z-40 hidden w-[320px] max-w-[320px] rounded-[1.35rem] border border-[#e2ebde] bg-white/96 p-4 shadow-[0_14px_34px_rgba(87,108,67,0.12)] backdrop-blur-sm md:block"
                                   style={{
-                                    left: index % 2 === 0 ? `calc(${point.left} + 1.5rem)` : undefined,
-                                    right: index % 2 === 1 ? `calc(100% - ${point.left} + 1.2rem)` : undefined,
-                                    top: `calc(${point.top} - ${index % 2 === 0 ? "3.4rem" : "1rem"})`,
+                                    left:
+                                      index === careerPathPredictions.paths.length - 1
+                                        ? undefined
+                                        : `calc(${point.left} + 2.8rem)`,
+                                    right:
+                                      index === careerPathPredictions.paths.length - 1
+                                        ? `calc(100% - ${point.left} + 2.8rem)`
+                                        : undefined,
+                                    top:
+                                      index === 0
+                                        ? `calc(${point.top} - 5.5rem)`
+                                        : index === careerPathPredictions.paths.length - 1
+                                          ? `calc(${point.top} - 10.5rem)`
+                                          : `calc(${point.top} - 7.5rem)`,
                                   }}
                                 >
                                   <div className="flex items-start justify-between gap-3">
@@ -2616,6 +2638,54 @@ export default function ProfileForm({
           </div>
         </div>
       </div>
+
+      {feedbackModal && (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-[#09111f]/45 px-4 backdrop-blur-[2px]">
+          <div className="w-full max-w-md rounded-[2rem] border border-[#dbe6d7] bg-white p-6 shadow-[0_24px_70px_rgba(15,23,42,0.18)] sm:p-7">
+            <div className="flex items-start gap-4">
+              <div
+                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
+                  feedbackModal.tone === "error"
+                    ? "bg-[#fff1ef] text-[#d64545]"
+                    : feedbackModal.tone === "success"
+                      ? "bg-[#eaf8e3] text-[#138d1a]"
+                      : "bg-[#eef4ff] text-[#4569d6]"
+                }`}
+              >
+                {feedbackModal.tone === "error" ? (
+                  <AlertTriangle className="h-5 w-5" />
+                ) : feedbackModal.tone === "success" ? (
+                  <CheckCircle className="h-5 w-5" />
+                ) : (
+                  <Sparkles className="h-5 w-5" />
+                )}
+              </div>
+
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d7d68]">Resume workspace</p>
+                <h3 className="mt-2 text-xl font-bold text-[#111827]">{feedbackModal.title}</h3>
+                <p className="mt-3 text-sm leading-7 text-[#5f6876]">{feedbackModal.message}</p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setFeedbackModal(null)}
+                className={`inline-flex min-w-[132px] items-center justify-center rounded-full px-5 py-3 text-sm font-bold text-white shadow-[0_14px_28px_rgba(15,23,42,0.12)] transition hover:scale-[1.01] ${
+                  feedbackModal.tone === "error"
+                    ? "bg-[#111827] hover:bg-[#1f2937]"
+                    : feedbackModal.tone === "success"
+                      ? "bg-[linear-gradient(135deg,#118118,#2aa82b)] hover:brightness-105"
+                      : "bg-[#4569d6] hover:bg-[#3556bb]"
+                }`}
+              >
+                Okay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

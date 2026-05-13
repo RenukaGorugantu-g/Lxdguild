@@ -302,20 +302,21 @@ export default function MembershipCheckout({
       </section>
 
       {showCheckoutPopup && !isActive && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[rgba(8,16,22,0.58)] p-4 pt-20 sm:items-start sm:pt-24">
-          <div className="w-full max-w-xl rounded-[2rem] border border-[#dbe6d6] bg-white p-5 shadow-[0_28px_80px_rgba(7,19,31,0.28)] sm:p-6">
+        <div className="fixed inset-0 z-[120] flex items-end justify-center bg-[rgba(8,16,22,0.62)] p-0 sm:p-4 sm:pt-24">
+          <div className="w-full rounded-t-[2rem] border border-[#dbe6d6] bg-white px-5 pb-5 pt-4 shadow-[0_-18px_48px_rgba(7,19,31,0.2)] sm:max-w-xl sm:rounded-[2rem] sm:border sm:p-6 sm:shadow-[0_28px_80px_rgba(7,19,31,0.28)]">
+            <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-[#dbe6d6] sm:hidden" />
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d7d68]">Membership checkout</p>
-                <h3 className="mt-2 text-2xl font-bold text-[#111827]">Apply coupon before payment</h3>
-                <p className="mt-2 text-sm leading-6 text-[#5b6757]">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6d7d68]">Membership checkout</p>
+                <h3 className="mt-2 text-[1.7rem] font-bold leading-tight text-[#111827] sm:text-2xl">Apply coupon before payment</h3>
+                <p className="mt-2 max-w-md text-sm leading-6 text-[#5b6757]">
                   Add an early-user coupon here if you have one, then continue to Razorpay checkout.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={closeCheckoutPopup}
-                className="rounded-full border border-[#dbe6d6] px-3 py-1.5 text-sm font-semibold text-[#5b6757] transition hover:border-[#23b61f] hover:text-[#15803d]"
+                className="hidden rounded-full border border-[#dbe6d6] px-3 py-1.5 text-sm font-semibold text-[#5b6757] transition hover:border-[#23b61f] hover:text-[#15803d] sm:block"
               >
                 Close
               </button>
@@ -337,7 +338,7 @@ export default function MembershipCheckout({
                   type="button"
                   onClick={handleApplyCoupon}
                   disabled={couponLoading || loading}
-                  className="rounded-2xl border border-[#beddaf] bg-white px-5 py-3 text-sm font-semibold text-[#111827] transition hover:border-[#23b61f] hover:text-[#15803d] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-2xl border border-[#beddaf] bg-white px-5 py-3 text-sm font-semibold text-[#111827] transition hover:border-[#23b61f] hover:text-[#15803d] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                 >
                   {couponLoading ? "Applying..." : "Apply"}
                 </button>
@@ -397,7 +398,7 @@ export default function MembershipCheckout({
                 type="button"
                 onClick={closeCheckoutPopup}
                 disabled={loading}
-                className="marketing-secondary w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+                className="marketing-secondary w-full justify-center border-[#dbe6d6] text-[#5b6757] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Not now
               </button>

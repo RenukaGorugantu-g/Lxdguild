@@ -28,6 +28,18 @@ export default async function ExamPage() {
 
   if (!user) redirect("/login");
 
+  const candidateResult = await supabase
+    .from("candidates")
+    .select("exam_status, pass_status, reattempt_allowed")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const candidate = candidateResult.data;
+
+  if (candidate?.exam_status === "completed" && !candidate?.reattempt_allowed) {
+    redirect("/dashboard/candidate/scorecard");
+  }
+
   const profileResult = await supabase
     .from("profiles")
     .select("designation_level, candidate_target_role, candidate_designation, role")

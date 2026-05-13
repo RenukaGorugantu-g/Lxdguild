@@ -1,4 +1,5 @@
 import type { ParsedResume } from "../../ats-module/types";
+import { validateResumeDocument } from "@/lib/resume-validation";
 
 type ResumeReadinessInput = {
   parsedResume: ParsedResume;
@@ -44,6 +45,42 @@ export function computeResumeReadiness({
   existingProfileSkills,
   recommendedSkills,
 }: ResumeReadinessInput): ResumeReadinessResult {
+  const validation = validateResumeDocument(parsedResume);
+  if (!validation.isLikelyResume) {
+    return {
+      score: 0,
+      strengths: [],
+      focusAreas: [validation.message],
+      breakdown: [
+        {
+          label: "Skill coverage",
+          score: 0,
+          detail: "Resume skill signals could not be validated.",
+        },
+        {
+          label: "Role clarity",
+          score: 0,
+          detail: "Role title could not be confidently detected from the uploaded file.",
+        },
+        {
+          label: "Experience signal",
+          score: 0,
+          detail: "Experience signal is unavailable because the document does not read like a resume.",
+        },
+        {
+          label: "Keyword depth",
+          score: 0,
+          detail: "Keyword extraction is disabled for invalid or unreadable resume files.",
+        },
+        {
+          label: "ATS structure",
+          score: 0,
+          detail: "Section and formatting checks require a real resume document.",
+        },
+      ],
+    };
+  }
+
   const resumeSkills = normalize(parsedResume.skills);
   const profileSkills = normalize(existingProfileSkills || []);
   const skillUniverse = unique([...resumeSkills, ...profileSkills]);

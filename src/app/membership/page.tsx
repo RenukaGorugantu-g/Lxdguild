@@ -88,7 +88,7 @@ export default async function PublicMembershipPage() {
                 <div className="relative mx-auto max-w-xl overflow-hidden rounded-[2rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbf1_100%)] p-4 shadow-[0_24px_60px_rgba(87,108,67,0.08)]">
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(52,205,47,0.08),transparent_26%)]" />
                   <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_right,rgba(95,213,255,0.06),transparent_24%)]" />
-                  <div className="relative min-h-[430px] overflow-hidden rounded-[1.65rem] border border-[#112019] bg-[#11171c] shadow-[0_18px_44px_rgba(15,23,42,0.14)]">
+                  <div className="relative min-h-[460px] overflow-hidden rounded-[1.65rem] border border-[#112019] bg-[#11171c] shadow-[0_18px_44px_rgba(15,23,42,0.14)] sm:min-h-[430px]">
                     <Image
                       src="/landing-membership-human.png"
                       alt="Membership experience with premium learning support"
@@ -98,24 +98,24 @@ export default async function PublicMembershipPage() {
                       priority
                     />
                     <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(8,17,24,0.08),rgba(8,17,24,0.55))]" />
-                    <div className="absolute left-4 top-4 rounded-[1.1rem] border border-white/14 bg-[rgba(10,20,29,0.72)] px-4 py-3 text-white backdrop-blur-md">
+                    <div className="absolute left-4 right-4 top-4 rounded-[1.1rem] border border-white/14 bg-[rgba(10,20,29,0.78)] px-4 py-3 text-white sm:right-auto sm:max-w-[220px]">
                       <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9be6a1]">Premium layer</p>
                       <p className="mt-2 text-sm font-semibold">AI tools + curated resources</p>
                     </div>
-                    <div className="absolute right-4 top-6 rounded-[1.1rem] border border-white/10 bg-white/90 px-4 py-3 shadow-[0_12px_26px_rgba(15,23,42,0.12)]">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#7a8674]">Guild support</p>
-                      <p className="mt-2 text-2xl font-semibold text-[#111827]">1 ecosystem</p>
+                    <div className="absolute left-4 right-4 top-24 rounded-[1.1rem] border border-white/10 bg-[rgba(10,20,29,0.84)] px-4 py-3 text-white shadow-[0_12px_26px_rgba(15,23,42,0.18)] sm:left-auto sm:right-4 sm:top-6 sm:max-w-[210px] sm:bg-white/94 sm:text-[#111827] sm:shadow-[0_12px_26px_rgba(15,23,42,0.12)]">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9be6a1] sm:text-[#7a8674]">Guild support</p>
+                      <p className="mt-2 text-xl font-semibold text-white sm:text-2xl sm:text-[#111827]">1 ecosystem</p>
                     </div>
-                    <div className="absolute inset-x-4 bottom-4 grid gap-3 sm:grid-cols-3">
-                      <div className="rounded-[1.1rem] border border-white/10 bg-[rgba(10,20,29,0.72)] px-4 py-3 text-white backdrop-blur-md">
+                    <div className="absolute inset-x-4 bottom-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                      <div className="rounded-[1.1rem] border border-white/10 bg-[rgba(10,20,29,0.84)] px-4 py-3 text-white sm:bg-[rgba(10,20,29,0.72)]">
                         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9be6a1]">Resources</p>
                         <p className="mt-2 text-lg font-semibold">180+</p>
                       </div>
-                      <div className="rounded-[1.1rem] border border-white/10 bg-[rgba(10,20,29,0.72)] px-4 py-3 text-white backdrop-blur-md">
+                      <div className="rounded-[1.1rem] border border-white/10 bg-[rgba(10,20,29,0.84)] px-4 py-3 text-white sm:bg-[rgba(10,20,29,0.72)]">
                         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9be6a1]">Visibility</p>
                         <p className="mt-2 text-lg font-semibold">Enhanced</p>
                       </div>
-                      <div className="rounded-[1.1rem] border border-white/10 bg-[rgba(10,20,29,0.72)] px-4 py-3 text-white backdrop-blur-md">
+                      <div className="rounded-[1.1rem] border border-white/10 bg-[rgba(10,20,29,0.84)] px-4 py-3 text-white sm:bg-[rgba(10,20,29,0.72)]">
                         <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#9be6a1]">Support</p>
                         <p className="mt-2 text-lg font-semibold">Member hub</p>
                       </div>

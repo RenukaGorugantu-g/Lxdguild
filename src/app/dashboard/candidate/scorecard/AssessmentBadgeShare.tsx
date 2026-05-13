@@ -102,14 +102,14 @@ export default function AssessmentBadgeShare({
   const xHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareCopy)}`;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-      <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,#0c1f44_0%,#091737_100%)] p-5 shadow-[0_28px_60px_rgba(9,23,55,0.24)] sm:p-6">
+    <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr] [color-scheme:light]">
+      <div className="rounded-[2rem] border border-[#dbe4d4] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbf3_100%)] p-5 text-[#091737] shadow-[0_20px_44px_rgba(87,108,67,0.12)] sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#95e68f]">Share your milestone</p>
-            <h2 className="mt-3 text-3xl text-white">Assessment badge</h2>
+            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#1e9a26]">Share your milestone</p>
+            <h2 className="mt-3 text-3xl text-[#091737]">Assessment badge</h2>
           </div>
-          <div className="rounded-full border border-white/18 bg-white/10 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white">
+          <div className="rounded-full border border-[#dbe4d4] bg-white px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#334155] shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
             {badgeTone.status}
           </div>
         </div>
@@ -161,7 +161,7 @@ export default function AssessmentBadgeShare({
           <button
             type="button"
             onClick={copyShareText}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/14 bg-white/6 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#dbe4d4] bg-white px-5 py-3 text-sm font-semibold text-[#091737] transition hover:bg-[#f6faf2] sm:w-auto"
           >
             <Copy className="h-4 w-4" />
             Copy share text
@@ -169,14 +169,14 @@ export default function AssessmentBadgeShare({
           <button
             type="button"
             onClick={nativeShare}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/14 bg-white/6 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10 sm:w-auto"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-[#dbe4d4] bg-white px-5 py-3 text-sm font-semibold text-[#091737] transition hover:bg-[#f6faf2] sm:w-auto"
           >
             <Share2 className="h-4 w-4" />
             Share
           </button>
         </div>
 
-        {feedback ? <p className="mt-4 text-sm font-medium text-[#a8f0a2]">{feedback}</p> : null}
+        {feedback ? <p className="mt-4 text-sm font-medium text-[#138d1a]">{feedback}</p> : null}
       </div>
 
       <div className="rounded-[2rem] border border-[#dbe4d4] bg-[#f8f4ed] p-5 text-[#091737] shadow-[0_24px_54px_rgba(9,23,55,0.08)] sm:p-6">

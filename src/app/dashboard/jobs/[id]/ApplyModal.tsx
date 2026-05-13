@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   X,
   CheckCircle,
@@ -19,6 +19,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { normalizeExternalApplyUrl } from "@/lib/job-apply";
+import { createClient } from "@/utils/supabase/client";
 
 type ApplyJob = {
   id: string;
@@ -83,7 +84,9 @@ export default function ApplyModal({
 }) {
   const initialApplyUrl = normalizeExternalApplyUrl(job.apply_url);
   const isInternalApply = !initialApplyUrl;
+  const supabase = createClient();
   const [step, setStep] = useState(alreadyApplied ? 3 : 1);
+  const [resumeOptions, setResumeOptions] = useState(resumes);
   const [selectedResumeId, setSelectedResumeId] = useState(resumes[0]?.id || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [launchedApplyUrl, setLaunchedApplyUrl] = useState<string | null>(initialApplyUrl);
@@ -95,6 +98,40 @@ export default function ApplyModal({
   const [followingRole, setFollowingRole] = useState(false);
   const router = useRouter();
   const externalApplyUrl = normalizeExternalApplyUrl(launchedApplyUrl) || initialApplyUrl;
+
+  useEffect(() => {
+    setResumeOptions(resumes);
+  }, [resumes]);
+
+  useEffect(() => {
+    const refreshResumes = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("resumes")
+        .select("id, file_url, file_name")
+        .eq("user_id", user.id)
+        .order("id", { ascending: false });
+
+      if (!error && data) {
+        setResumeOptions(data);
+      }
+    };
+
+    void refreshResumes();
+  }, [supabase]);
+
+  useEffect(() => {
+    if (!resumeOptions.some((resume) => resume.id === selectedResumeId)) {
+      setSelectedResumeId(resumeOptions[0]?.id || "");
+    }
+  }, [resumeOptions, selectedResumeId]);
 
   const openEmployerPage = (url?: string | null, target?: Window | null) => {
     if (!url) return;
@@ -137,7 +174,7 @@ export default function ApplyModal({
     setIsSubmitting(true);
 
     try {
-      const selectedResume = resumes.find((resume) => resume.id === selectedResumeId);
+      const selectedResume = resumeOptions.find((resume) => resume.id === selectedResumeId);
       const resumeUrl = selectedResume?.file_url || null;
 
       const response = await fetch("/api/notifications/job-application", {
@@ -239,7 +276,7 @@ export default function ApplyModal({
                   </span>
                   <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-3 py-1">
                     <FileText className="h-3.5 w-3.5" />
-                    {resumes.length} resume{resumes.length === 1 ? "" : "s"} ready
+                    {resumeOptions.length} resume{resumeOptions.length === 1 ? "" : "s"} ready
                   </span>
                 </div>
                 {!isInternalApply && (
@@ -314,8 +351,8 @@ export default function ApplyModal({
                 </h3>
 
                 <div className="mt-5 space-y-3">
-                  {resumes.length > 0 ? (
-                    resumes.map((resume) => (
+                  {resumeOptions.length > 0 ? (
+                    resumeOptions.map((resume) => (
                       <button
                         key={resume.id}
                         onClick={() => setSelectedResumeId(resume.id)}
@@ -495,7 +532,7 @@ export default function ApplyModal({
                         </p>
                         {atsResult.summary ? <p className="apply-success-copy mt-2 text-sm leading-6" style={{ color: "#334155", WebkitTextFillColor: "#334155" }}>{atsResult.summary}</p> : null}
                       </div>
-                      {atsResult.autoDecision ? (
+                      {isInternalApply && atsResult.autoDecision ? (
                         <span className="rounded-full bg-white px-4 py-2 text-sm font-semibold capitalize text-blue-800" style={{ colorScheme: "light", forcedColorAdjust: "none", backgroundColor: "#ffffff", color: "#1e40af", WebkitTextFillColor: "#1e40af" }}>
                           {atsResult.autoDecision.replace(/_/g, " ")}
                         </span>

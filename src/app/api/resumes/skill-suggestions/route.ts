@@ -5,6 +5,7 @@ import { parseResumeFile } from "../../../../../ats-module";
 import { getResumeSkillSuggestions } from "@/lib/resume-skill-suggestions";
 import { getAcademyCourseRecommendations } from "@/lib/skill-gap-course-recommendations";
 import { computeResumeReadiness } from "@/lib/resume-readiness";
+import { validateResumeDocument } from "@/lib/resume-validation";
 
 function isMissingColumnError(message?: string | null) {
   const normalized = message || "";
@@ -92,6 +93,27 @@ export async function POST(req: Request) {
       mimeType: resumeFile.mimeType || undefined,
       buffer: resumeFile.buffer,
     });
+    const validation = validateResumeDocument(parsedResume);
+
+    if (!validation.isLikelyResume) {
+      const readiness = computeResumeReadiness({
+        parsedResume,
+        existingProfileSkills: profileQuery.data?.skills || [],
+        recommendedSkills: [],
+      });
+
+      return NextResponse.json({
+        success: true,
+        detectedSkills: [],
+        recommendedSkills: [],
+        suggestionReasons: [validation.message],
+        resumeReadinessScore: 0,
+        strengthSignals: [],
+        focusAreas: readiness.focusAreas,
+        scoreBreakdown: readiness.breakdown,
+        academyCourseRecommendations: [],
+      });
+    }
 
     const suggestions = getResumeSkillSuggestions({
       parsedResume,

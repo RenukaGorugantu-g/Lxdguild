@@ -1,16 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BookOpen,
   ChevronRight,
   Crown,
   Download,
   Filter,
+  Loader2,
   Lock,
   Search,
   ShieldCheck,
   Sparkles,
+  X,
 } from "lucide-react";
 
 type ResourceItem = {
@@ -29,6 +31,10 @@ type ResourcesCatalogProps = {
 export default function ResourcesCatalog({ resources, hasMembership }: ResourcesCatalogProps) {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [query, setQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isFiltering, setIsFiltering] = useState(false);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const itemsPerPage = 8;
 
   const categories = useMemo(() => {
     const counts = new Map<string, number>();
@@ -50,14 +56,29 @@ export default function ResourcesCatalog({ resources, hasMembership }: Resources
     });
   }, [query, resources, selectedCategories]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+    setIsFiltering(true);
+    const timeoutId = window.setTimeout(() => setIsFiltering(false), 220);
+    return () => window.clearTimeout(timeoutId);
+  }, [query, selectedCategories]);
+
   const toggleCategory = (category: string) => {
     setSelectedCategories((current) =>
       current.includes(category) ? current.filter((item) => item !== category) : [...current, category]
     );
   };
 
+  const clearFilters = () => {
+    setSelectedCategories([]);
+    setQuery("");
+  };
+
   const freeResources = resources.filter((resource) => !resource.premiumOnly).length;
   const premiumResources = resources.filter((resource) => resource.premiumOnly).length;
+  const totalPages = Math.max(1, Math.ceil(filteredResources.length / itemsPerPage));
+  const paginatedResources = filteredResources.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const activeFilterCount = selectedCategories.length + (query.trim() ? 1 : 0);
 
   return (
     <div className="space-y-12">
@@ -256,8 +277,67 @@ export default function ResourcesCatalog({ resources, hasMembership }: Resources
         </div>
       </section>
 
-      <div id="resource-library" className="grid gap-8 lg:grid-cols-[300px_minmax(0,1fr)]">
-        <aside className="marketing-grid-card h-fit p-5 lg:sticky lg:top-28">
+      <div id="resource-library" className="space-y-5">
+        <div className="flex items-center justify-between gap-3 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setIsMobileFiltersOpen(true)}
+            className="inline-flex items-center gap-2 rounded-2xl border border-[#dbe6d7] bg-white px-4 py-3 text-sm font-semibold text-[#111827] shadow-[0_10px_24px_rgba(87,108,67,0.08)]"
+          >
+            <Filter className="h-4 w-4 text-[#23b61f]" />
+            Filters
+            {activeFilterCount > 0 ? (
+              <span className="rounded-full bg-[#eaf8e3] px-2 py-0.5 text-xs font-bold text-[#138d1a]">
+                {activeFilterCount}
+              </span>
+            ) : null}
+          </button>
+
+          {isFiltering ? (
+            <span className="inline-flex items-center gap-2 text-sm font-medium text-[#5b6757]">
+              <Loader2 className="h-4 w-4 animate-spin text-[#23b61f]" />
+              Updating
+            </span>
+          ) : (
+            <span className="text-sm text-[#6d7d68]">{filteredResources.length} results</span>
+          )}
+        </div>
+
+        {selectedCategories.length > 0 || query.trim() ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {selectedCategories.map((category) => (
+              <button
+                key={category}
+                type="button"
+                onClick={() => toggleCategory(category)}
+                className="inline-flex items-center gap-2 rounded-full border border-[#cae6bf] bg-[#eef8e7] px-3 py-1.5 text-xs font-semibold text-[#138d1a]"
+              >
+                {category}
+                <X className="h-3.5 w-3.5" />
+              </button>
+            ))}
+            {query.trim() ? (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="inline-flex items-center gap-2 rounded-full border border-[#dbe6d7] bg-white px-3 py-1.5 text-xs font-semibold text-[#111827]"
+              >
+                Search: {query.trim()}
+                <X className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs font-semibold text-[#6d7d68] hover:text-[#111827]"
+            >
+              Clear all
+            </button>
+          </div>
+        ) : null}
+
+      <div className="grid gap-8 lg:grid-cols-[300px_minmax(0,1fr)]">
+        <aside className="marketing-grid-card hidden h-fit p-5 lg:sticky lg:top-28 lg:block">
           <div className="flex items-center gap-2 text-sm font-semibold text-[#111827]">
             <Filter className="h-4 w-4 text-[#23b61f]" />
             Filter by category
@@ -284,7 +364,7 @@ export default function ResourcesCatalog({ resources, hasMembership }: Resources
                   onClick={() => toggleCategory(category)}
                   className={`flex w-full items-center justify-between rounded-2xl border px-3 py-3 text-left text-sm transition-colors ${
                     active
-                      ? "border-[#dbe9d2] bg-[#f0f8ea] text-[#111827]"
+                      ? "border-[#c9e7bc] bg-[#eef8e7] text-[#111827] shadow-[0_8px_20px_rgba(87,108,67,0.08)]"
                       : "border-[#e3e8de] bg-white text-[#5b6757] hover:bg-[#f7f9f4]"
                   }`}
                 >
@@ -297,7 +377,22 @@ export default function ResourcesCatalog({ resources, hasMembership }: Resources
         </aside>
 
         <section className="space-y-4">
-          {filteredResources.map((resource) => {
+          <div className="hidden items-center justify-between lg:flex">
+            <div>
+              <p className="text-sm font-semibold text-[#111827]">Filtered resources</p>
+              <p className="mt-1 text-sm text-[#6d7d68]">
+                {filteredResources.length} result{filteredResources.length === 1 ? "" : "s"} across {totalPages} page{totalPages === 1 ? "" : "s"}
+              </p>
+            </div>
+            {isFiltering ? (
+              <span className="inline-flex items-center gap-2 text-sm font-medium text-[#5b6757]">
+                <Loader2 className="h-4 w-4 animate-spin text-[#23b61f]" />
+                Updating results
+              </span>
+            ) : null}
+          </div>
+
+          {paginatedResources.map((resource) => {
             const locked = resource.premiumOnly && !hasMembership;
             return (
               <article key={resource.id} className="marketing-grid-card p-6">
@@ -337,7 +432,110 @@ export default function ResourcesCatalog({ resources, hasMembership }: Resources
               No resources matched your current filters.
             </div>
           )}
+
+          {filteredResources.length > itemsPerPage && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[1.7rem] border border-[#dde7d8] bg-white px-4 py-4 shadow-[0_12px_28px_rgba(87,108,67,0.06)]">
+              <p className="text-sm text-[#6d7d68]">
+                Page {currentPage} of {totalPages}
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  disabled={currentPage === 1}
+                  className="rounded-xl border border-[#dbe6d7] bg-white px-3 py-2 text-sm font-semibold text-[#111827] transition hover:bg-[#f7f9f4] disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+                  disabled={currentPage === totalPages}
+                  className="rounded-xl border border-[#dbe6d7] bg-white px-3 py-2 text-sm font-semibold text-[#111827] transition hover:bg-[#f7f9f4] disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </section>
+      </div>
+
+      {isMobileFiltersOpen && (
+        <div className="fixed inset-0 z-[90] bg-[#09111f]/45 backdrop-blur-[2px] lg:hidden">
+          <div className="absolute inset-x-4 top-24 bottom-4 overflow-hidden rounded-[2rem] border border-[#dbe6d7] bg-[#fbfdf8] shadow-[0_24px_70px_rgba(15,23,42,0.18)]">
+            <div className="flex items-center justify-between border-b border-[#e4ebdf] px-5 py-4">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#6d7d68]">Resource filters</p>
+                <h3 className="mt-1 text-lg font-bold text-[#111827]">Narrow the library</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMobileFiltersOpen(false)}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#dfe8d8] bg-white text-[#475467]"
+                aria-label="Close filters"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="flex h-full flex-col overflow-hidden">
+              <div className="space-y-5 overflow-y-auto px-5 py-5 pb-28">
+                <div className="rounded-2xl border border-[#dde6d7] bg-white px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <Search className="h-4 w-4 text-[#96a193]" />
+                    <input
+                      value={query}
+                      onChange={(event) => setQuery(event.target.value)}
+                      placeholder="Search resources"
+                      className="w-full bg-transparent text-sm text-[#111827] outline-none placeholder:text-[#96a193]"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  {categories.map(([category, count]) => {
+                    const active = selectedCategories.includes(category);
+                    return (
+                      <button
+                        key={category}
+                        onClick={() => toggleCategory(category)}
+                        className={`flex w-full items-center justify-between rounded-2xl border px-3 py-3 text-left text-sm transition-colors ${
+                          active
+                            ? "border-[#c9e7bc] bg-[#eef8e7] text-[#111827] shadow-[0_8px_20px_rgba(87,108,67,0.08)]"
+                            : "border-[#e3e8de] bg-white text-[#5b6757]"
+                        }`}
+                      >
+                        <span>{category}</span>
+                        <span className="rounded-full bg-[#f2f5ef] px-2 py-0.5 text-xs font-semibold text-[#72806f]">{count}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="absolute inset-x-0 bottom-0 border-t border-[#e4ebdf] bg-[#fbfdf8] px-5 py-4">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="flex-1 rounded-2xl border border-[#dbe6d7] bg-white px-4 py-3 text-sm font-semibold text-[#111827]"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileFiltersOpen(false)}
+                    className="flex-1 rounded-2xl bg-[#23b61f] px-4 py-3 text-sm font-semibold text-white"
+                  >
+                    View Results
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );

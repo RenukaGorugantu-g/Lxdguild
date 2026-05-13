@@ -6,6 +6,7 @@ import { getResumeSkillSuggestions } from "@/lib/resume-skill-suggestions";
 import { getAcademyCourseRecommendations } from "@/lib/skill-gap-course-recommendations";
 import { optimizeResumeContent } from "@/lib/resume-optimizer";
 import { computeResumeReadiness, projectOptimizedReadinessScore } from "@/lib/resume-readiness";
+import { validateResumeDocument } from "@/lib/resume-validation";
 
 function isMissingColumnError(message?: string | null) {
   const normalized = message || "";
@@ -144,6 +145,11 @@ export async function POST(req: Request) {
       mimeType: resumeFile.mimeType || undefined,
       buffer: resumeFile.buffer,
     });
+    const validation = validateResumeDocument(parsedResume);
+
+    if (!validation.isLikelyResume) {
+      return NextResponse.json({ error: validation.message }, { status: 422 });
+    }
 
     const suggestions = getResumeSkillSuggestions({
       parsedResume,

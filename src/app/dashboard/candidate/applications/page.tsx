@@ -53,6 +53,10 @@ function formatInterviewDate(value?: string | null) {
   return parsed.toLocaleString();
 }
 
+function getDisplayApplicationStatus(status: string, isExternal: boolean) {
+  return isExternal ? "applied" : status;
+}
+
 export default async function CandidateApplicationsPage({
   searchParams,
 }: {
@@ -74,10 +78,6 @@ export default async function CandidateApplicationsPage({
     .eq("user_id", user.id)
     .order("created_at", { ascending: false });
 
-  if (statusFilter !== "all") {
-    query = query.eq("status", statusFilter);
-  }
-
   const applicationsQuery = await query;
   let applications: ApplicationRow[] | null = (applicationsQuery.data as ApplicationRow[] | null) ?? null;
   const interviewSchedulesByApplicationId = new Map<string, InterviewScheduleSummary>();
@@ -89,13 +89,16 @@ export default async function CandidateApplicationsPage({
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
-    if (statusFilter !== "all") {
-      fallbackQuery = fallbackQuery.eq("status", statusFilter);
-    }
-
     const fallbackApplications = await fallbackQuery;
     applications = (fallbackApplications.data || []) as ApplicationRow[];
   }
+
+  const visibleApplications = (applications || []).filter((application) => {
+    const job = Array.isArray(application.jobs) ? application.jobs[0] : application.jobs;
+    const isExternal = Boolean(normalizeExternalApplyUrl(job?.apply_url));
+    const displayStatus = getDisplayApplicationStatus(application.status, isExternal);
+    return statusFilter === "all" ? true : displayStatus === statusFilter;
+  });
 
   const applicationIds = (applications || []).map((application) => application.id);
   if (applicationIds.length > 0) {
@@ -161,11 +164,13 @@ export default async function CandidateApplicationsPage({
         </div>
 
         <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6">
-          {applications && applications.length > 0 ? (
+          {visibleApplications.length > 0 ? (
             <ul className="space-y-4">
-              {applications.map((application: ApplicationRow) => {
+              {visibleApplications.map((application: ApplicationRow) => {
                 const job = Array.isArray(application.jobs) ? application.jobs[0] : application.jobs;
                 const externalApplyUrl = normalizeExternalApplyUrl(job?.apply_url);
+                const isExternal = Boolean(externalApplyUrl);
+                const displayStatus = getDisplayApplicationStatus(application.status, isExternal);
                 const isJobDeactivated = job?.is_active === false;
                 const atsScore = toNumericScore(application.ats_score);
                 const interviewSchedule = interviewSchedulesByApplicationId.get(application.id) || null;
@@ -190,11 +195,11 @@ export default async function CandidateApplicationsPage({
                           </p>
                         )}
                       </div>
-                      <span className={`text-xs uppercase tracking-wider px-3 py-1 rounded-full border ${getStatusPillClasses(application.status)}`}>
-                        {formatStatusLabel(application.status)}
+                      <span className={`text-xs uppercase tracking-wider px-3 py-1 rounded-full border ${getStatusPillClasses(displayStatus)}`}>
+                        {formatStatusLabel(displayStatus)}
                       </span>
                     </div>
-                    {(atsScore !== null || application.ats_summary || application.ats_auto_decision) && (
+                    {(atsScore !== null || application.ats_summary || (!isExternal && application.ats_auto_decision)) && (
                       <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3">
                         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                           <div>
@@ -204,7 +209,7 @@ export default async function CandidateApplicationsPage({
                             </p>
                             {application.ats_summary && <p className="mt-1 text-sm text-zinc-600">{application.ats_summary}</p>}
                           </div>
-                          {application.ats_auto_decision && (
+                          {!isExternal && application.ats_auto_decision && (
                             <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold capitalize text-blue-800">
                               {application.ats_auto_decision.replace(/_/g, " ")}
                             </span>

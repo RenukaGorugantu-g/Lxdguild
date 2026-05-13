@@ -4,7 +4,7 @@ import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { loadProfile } from "@/lib/load-profile";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, Briefcase, FileText } from "lucide-react";
+import { ArrowRight, Award, Briefcase, FileText } from "lucide-react";
 import ProfileForm from "./ProfileForm";
 
 type CandidateProfileRecord = {
@@ -78,7 +78,14 @@ export default async function CandidateProfilePage() {
     .select("*", { count: "exact", head: true })
     .eq("user_id", user.id);
 
+  const { data: candidate } = await supabase
+    .from("candidates")
+    .select("exam_status, latest_score")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
   const access = await getJobBoardAccessForUser(supabase, user.id);
+  const hasScorecard = candidate?.exam_status === "completed" || typeof candidate?.latest_score === "number";
 
   return (
     <div className="marketing-page min-h-screen">
@@ -116,7 +123,9 @@ export default async function CandidateProfilePage() {
               </div>
               <div className="border-b border-[#dde7d8] pb-4">
                 <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">Next Move</p>
-                <p className="mt-3 text-xl font-bold text-[#111827]">Keep your resume and skills current.</p>
+                <p className="mt-3 text-xl font-bold text-[#111827]">
+                  {hasScorecard ? "Review your scorecard and keep your profile current." : "Keep your resume and skills current."}
+                </p>
                 <p className="mt-3 text-sm text-[#647061]">That gives employers a cleaner snapshot before they review your application.</p>
               </div>
             </div>
@@ -125,7 +134,33 @@ export default async function CandidateProfilePage() {
           <section className="space-y-6">
             <ProfileForm initialProfile={resolvedProfile} initialResumes={resumes || []} />
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className={`grid gap-4 ${hasScorecard ? "md:grid-cols-3" : "md:grid-cols-2"}`}>
+              {hasScorecard ? (
+                <Link
+                  href="/dashboard/candidate/scorecard"
+                  className="group rounded-[1.8rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbf1_100%)] px-6 py-6 shadow-[0_16px_40px_rgba(87,108,67,0.08)] transition hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(87,108,67,0.12)]"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eaf8e3] text-[#138d1a]">
+                        <Award className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-[#111827]">View Scorecard</h3>
+                        <p className="mt-2 text-sm leading-7 text-[#7f8a7b]">
+                          {typeof candidate?.latest_score === "number"
+                            ? `Your latest score is ${candidate.latest_score}%. Open the full assessment breakdown.`
+                            : "Open your assessment breakdown and recommended next steps."}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[#dbe6d6] bg-white text-[#8f9a8b] transition group-hover:border-[#b8dfb1] group-hover:text-[#138d1a]">
+                      <ArrowRight className="h-4 w-4" />
+                    </div>
+                  </div>
+                </Link>
+              ) : null}
+
               <Link
                 href="/dashboard/jobs"
                 className="group rounded-[1.8rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbf1_100%)] px-6 py-6 shadow-[0_16px_40px_rgba(87,108,67,0.08)] transition hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(87,108,67,0.12)]"

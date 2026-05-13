@@ -4,6 +4,15 @@ import { downloadResumeBuffer } from "@/lib/resume-analysis";
 
 export const runtime = "nodejs";
 
+function isMissingColumnError(message?: string | null) {
+  const normalized = message || "";
+  return (
+    normalized.includes("Could not find") ||
+    normalized.includes("does not exist") ||
+    normalized.includes("schema cache")
+  );
+}
+
 export async function GET(
   _req: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -25,11 +34,33 @@ export async function GET(
       .eq("id", user.id)
       .single();
 
-    const { data: resume } = await supabase
+    const fullResumeQuery = await supabase
       .from("resumes")
       .select("id, user_id, file_url, file_path, file_name, mime_type")
       .eq("id", id)
-      .single();
+      .maybeSingle();
+
+    let resume = fullResumeQuery.data;
+
+    if (
+      fullResumeQuery.error &&
+      (fullResumeQuery.error.code === "42703" || isMissingColumnError(fullResumeQuery.error.message))
+    ) {
+      const fallbackResumeQuery = await supabase
+        .from("resumes")
+        .select("id, user_id, file_url")
+        .eq("id", id)
+        .maybeSingle();
+
+      resume = fallbackResumeQuery.data
+        ? {
+            ...fallbackResumeQuery.data,
+            file_path: null,
+            file_name: null,
+            mime_type: null,
+          }
+        : null;
+    }
 
     if (!resume) {
       return NextResponse.json({ error: "Resume not found." }, { status: 404 });

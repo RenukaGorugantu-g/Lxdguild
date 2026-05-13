@@ -66,6 +66,112 @@ function stripHtml(value: string | null | undefined) {
   return (value || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function splitIntoReadableParagraphs(text: string) {
+  const sentences = text
+    .replace(/\s+/g, " ")
+    .split(/(?<=[.!?])\s+(?=[A-Z])/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+
+  if (sentences.length <= 2) {
+    return [text.trim()];
+  }
+
+  const paragraphs: string[] = [];
+  for (let index = 0; index < sentences.length; index += 2) {
+    paragraphs.push(sentences.slice(index, index + 2).join(" "));
+  }
+
+  return paragraphs;
+}
+
+function formatJobDescriptionHtml(value: string | null | undefined) {
+  const raw = (value || "").trim();
+  if (!raw) {
+    return "<p>No job description provided yet.</p>";
+  }
+
+  const withoutScripts = raw
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "");
+
+  const hasHtmlBlocks = /<(p|ul|ol|li|br|h1|h2|h3|h4|h5|h6|div)\b/i.test(withoutScripts);
+  if (hasHtmlBlocks) {
+    return withoutScripts;
+  }
+
+  const normalized = withoutScripts
+    .replace(/^job description[:\s-]*/i, "")
+    .replace(/\r/g, "")
+    .replace(/•/g, "\n• ")
+    .replace(
+      /\b(Description Summary|Overview|Responsibilities|Key Responsibilities|Requirements|Qualifications|Minimum Qualifications|Preferred Qualifications|Nice to Have|Skills Required|Benefits|About the Role|What You'll Do|Who You Are|What We're Looking For|Compensation|Location)\s*:/gi,
+      "\n\n$1:"
+    )
+    .replace(/\s+\n/g, "\n")
+    .trim();
+
+  const sections = normalized
+    .split(/\n{2,}/)
+    .map((section) => section.trim())
+    .filter(Boolean);
+
+  const renderedSections = sections.map((section) => {
+    const lines = section
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (lines.length === 0) {
+      return "";
+    }
+
+    const bulletLines = lines.filter((line) => /^[-*•]\s+/.test(line));
+    if (bulletLines.length === lines.length) {
+      return `<ul>${bulletLines
+        .map((line) => `<li>${escapeHtml(line.replace(/^[-*•]\s+/, ""))}</li>`)
+        .join("")}</ul>`;
+    }
+
+    const headingMatch = lines[0].match(
+      /^(Description Summary|Overview|Responsibilities|Key Responsibilities|Requirements|Qualifications|Minimum Qualifications|Preferred Qualifications|Nice to Have|Skills Required|Benefits|About the Role|What You'll Do|Who You Are|What We're Looking For|Compensation|Location)\s*:\s*(.*)$/i
+    );
+
+    if (headingMatch) {
+      const heading = headingMatch[1];
+      const firstLineBody = headingMatch[2]?.trim();
+      const remainingLines = lines.slice(1);
+      const contentLines = [firstLineBody, ...remainingLines].filter(Boolean) as string[];
+      const contentBullets = contentLines.filter((line) => /^[-*•]\s+/.test(line));
+
+      if (contentBullets.length === contentLines.length && contentBullets.length > 0) {
+        return `<section><h4>${escapeHtml(heading)}</h4><ul>${contentBullets
+          .map((line) => `<li>${escapeHtml(line.replace(/^[-*•]\s+/, ""))}</li>`)
+          .join("")}</ul></section>`;
+      }
+
+      return `<section><h4>${escapeHtml(heading)}</h4>${splitIntoReadableParagraphs(contentLines.join(" "))
+        .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
+        .join("")}</section>`;
+    }
+
+    return splitIntoReadableParagraphs(lines.join(" "))
+      .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
+      .join("");
+  });
+
+  return renderedSections.join("");
+}
+
 function extractMinimumYearsOfExperience(description: string) {
   const normalized = description.toLowerCase();
   const patterns = [
@@ -608,8 +714,8 @@ export default async function JobDetailPage({
                   <section>
                     <h3 className="text-xl font-bold mb-4">Job Description</h3>
                     <div 
-                      className="space-y-4 leading-relaxed text-zinc-600"
-                      dangerouslySetInnerHTML={{ __html: job.description || "" }}
+                      className="space-y-4 text-[1.02rem] leading-8 text-zinc-700 [&_h4]:mt-6 [&_h4]:text-base [&_h4]:font-bold [&_h4]:uppercase [&_h4]:tracking-[0.08em] [&_h4]:text-[#11203b] [&_p]:mb-4 [&_ul]:mb-5 [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-6 [&_li]:pl-1"
+                      dangerouslySetInnerHTML={{ __html: formatJobDescriptionHtml(job.description) }}
                     />
                   </section>
                </div>

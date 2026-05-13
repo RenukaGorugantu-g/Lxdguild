@@ -18,7 +18,6 @@ import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { getMembershipState } from "@/lib/membership";
 import { isVerifiedCandidateRole } from "@/lib/profile-role";
 import { loadProfile } from "@/lib/load-profile";
-import { maybeSendPostVerificationWelcome } from "@/lib/post-verification-welcome";
 import CertificateUpload from "./certificate-upload";
 
 type CandidateDashboardProfile = {
@@ -39,10 +38,10 @@ export default async function CandidateDashboard() {
   if (!user) redirect("/login");
 
   let profile = await loadProfile<CandidateDashboardProfile>(
-    supabase,
-    user.id,
-    "id, name, role, membership_status, membership_plan, membership_expires_at"
-  );
+      supabase,
+      user.id,
+      "id, name, role, membership_status, membership_plan, membership_expires_at"
+    );
 
   if (!profile) {
     const ensuredProfile = await ensureUserProfile(user);
@@ -56,8 +55,6 @@ export default async function CandidateDashboard() {
   }
 
   if (!profile) return <div>Loading profile...</div>;
-
-  await maybeSendPostVerificationWelcome(supabase, user, profile);
 
   const [
     candidateResult,
@@ -104,6 +101,7 @@ export default async function CandidateDashboard() {
 
   const examStarted = Boolean(candidate?.exam_status && candidate.exam_status !== "not_started");
   const examCompleted = candidate?.exam_status === "completed";
+  const hasScorecard = examCompleted || typeof candidate?.latest_score === "number";
 
   const journey = [
     {
@@ -308,7 +306,7 @@ export default async function CandidateDashboard() {
                           <CertificateUpload userId={user.id} />
                         </div>
                       )
-                    ) : isVerified ? (
+                    ) : isVerified || hasScorecard ? (
                       <Link href="/dashboard/candidate/scorecard" className="marketing-primary">
                         View Scorecard
                         <ArrowRight className="h-4 w-4" />

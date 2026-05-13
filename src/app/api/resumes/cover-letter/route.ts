@@ -4,6 +4,7 @@ import { downloadResumeBuffer } from "@/lib/resume-analysis";
 import { parseResumeFile } from "../../../../../ats-module";
 import { getResumeSkillSuggestions } from "@/lib/resume-skill-suggestions";
 import { generateCoverLetter } from "@/lib/cover-letter-generator";
+import { validateResumeDocument } from "@/lib/resume-validation";
 
 function isMissingColumnError(message?: string | null) {
   const normalized = message || "";
@@ -86,6 +87,11 @@ export async function POST(req: Request) {
       mimeType: resumeFile.mimeType || undefined,
       buffer: resumeFile.buffer,
     });
+    const validation = validateResumeDocument(parsedResume);
+
+    if (!validation.isLikelyResume) {
+      return NextResponse.json({ error: validation.message }, { status: 422 });
+    }
 
     const suggestions = getResumeSkillSuggestions({
       parsedResume,

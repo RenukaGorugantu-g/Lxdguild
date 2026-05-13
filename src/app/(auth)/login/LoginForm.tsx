@@ -75,6 +75,12 @@ export default function LoginForm() {
       return;
     }
 
+    void fetch("/api/auth/post-login-welcome", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      keepalive: true,
+    }).catch(() => null);
+
     const destination = await getDashboardHref();
     router.replace(destination);
     router.refresh();

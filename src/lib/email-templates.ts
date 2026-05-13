@@ -526,40 +526,18 @@ function buildContent({
 }
 
 function renderEmailHtml(content: TemplateContent) {
-  const isUrgentHero = content.layoutVariant === "urgent";
-  const heroTitleTone = "#f8fafc";
-  const heroBodyTone = "#dbe7f3";
-  const heroKickerText = "#f8fafc";
-  const heroKickerBg =
-    content.layoutVariant === "support"
-      ? "#134e4a"
-      : isUrgentHero
-        ? "#18324b"
-        : "#18462d";
-  const heroKickerBorder =
-    content.layoutVariant === "support"
-      ? "#1d7f76"
-      : isUrgentHero
-        ? "#2d4e73"
-        : "#2f7b47";
-  const heroNoteBg = "#1f2937";
-  const heroNoteBorder = "#31475f";
-  const heroSurfaceStart = "#0f172a";
-  const heroSurfaceEnd =
-    content.layoutVariant === "support"
-      ? "#15384d"
-      : isUrgentHero
-        ? "#19324b"
-        : "#10301e";
+  const heroTitleTone = "#0f172a";
+  const heroBodyTone = "#475569";
+  const heroKickerText = "#15991f";
+  const heroKickerBg = "#eef8ea";
+  const heroKickerBorder = "#cfe7c5";
+  const heroNoteBg = "#ffffff";
+  const heroNoteBorder = content.theme.border;
+  const heroSurfaceStart = "#f8fbf5";
+  const heroSurfaceEnd = "#eef7e8";
 
-  const ctaBg =
-    content.layoutVariant === "urgent"
-      ? "#b7791f"
-      : content.layoutVariant === "support"
-        ? "#0f766e"
-        : content.theme.accent;
-
-  const ctaTextColor = "#ffffff";
+  const ctaBg = "#ffffff";
+  const ctaTextColor = "#15991f";
 
   const leadCardHtml = content.summary
     ? `<table class="email-card" role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:22px;border-collapse:separate;border-spacing:0;background:#f8f3ec;border:1px solid ${content.theme.border};border-radius:24px;box-shadow:0 12px 26px rgba(15,23,42,0.05);">
@@ -685,7 +663,7 @@ function renderEmailHtml(content: TemplateContent) {
     : "";
 
   const socialLinksHtml = EMAIL_SOCIAL_LINKS.map(
-    (link) => `<a href="${escapeHtml(link.href)}" style="display:inline-block;margin-right:8px;margin-bottom:8px;padding:10px;width:18px;height:18px;border-radius:999px;background:rgba(248,244,241,0.08);border:1px solid rgba(248,244,241,0.16);text-decoration:none;" aria-label="${escapeHtml(link.name)}"><img src="${escapeHtml(link.icon)}" alt="${escapeHtml(link.name)}" width="18" height="18" style="display:block;width:18px;height:18px;border:0;" /></a>`
+    (link) => `<a href="${escapeHtml(link.href)}" style="display:inline-block;margin-right:8px;margin-bottom:8px;padding:10px;width:18px;height:18px;border-radius:999px;background:#ffffff;border:1px solid #dce7d5;text-decoration:none;" aria-label="${escapeHtml(link.name)}"><img src="${escapeHtml(link.icon)}" alt="${escapeHtml(link.name)}" width="18" height="18" style="display:block;width:18px;height:18px;border:0;" /></a>`
   ).join("");
 
   const footerLinksHtml = [
@@ -695,7 +673,7 @@ function renderEmailHtml(content: TemplateContent) {
   ]
     .map(
       (link) =>
-        `<a href="${escapeHtml(link.href)}" style="display:inline-block;margin-right:16px;margin-bottom:8px;color:#f8fafc;font-size:13px;font-weight:700;text-decoration:none;">${escapeHtml(link.label)}</a>`
+        `<a href="${escapeHtml(link.href)}" style="display:inline-block;margin-right:16px;margin-bottom:8px;color:#0f172a;font-size:13px;font-weight:700;text-decoration:none;">${escapeHtml(link.label)}</a>`
     )
     .join("");
 
@@ -709,7 +687,7 @@ function renderEmailHtml(content: TemplateContent) {
 
   const ctaHtml = content.cta
     ? `<div style="margin:24px 0 0;">
-        <a class="cta-button" href="${escapeHtml(content.cta.href)}" style="display:inline-block;padding:16px 28px;border-radius:999px;background:${ctaBg};color:${ctaTextColor} !important;text-decoration:none;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;box-shadow:0 14px 28px rgba(15,23,42,0.14);min-width:260px;text-align:center;-webkit-text-fill-color:${ctaTextColor};">
+        <a class="cta-button" href="${escapeHtml(content.cta.href)}" style="display:inline-block;padding:16px 28px;border-radius:999px;background:${ctaBg};color:${ctaTextColor} !important;text-decoration:none;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;box-shadow:0 14px 28px rgba(15,23,42,0.08);min-width:260px;text-align:center;-webkit-text-fill-color:${ctaTextColor};border:1px solid ${content.theme.accent};">
           ${escapeHtml(content.cta.label)}
         </a>
       </div>`
@@ -806,8 +784,10 @@ function renderEmailHtml(content: TemplateContent) {
 
       [data-ogsc] .cta-button,
       [data-ogsb] .cta-button {
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
+        color: ${ctaTextColor} !important;
+        -webkit-text-fill-color: ${ctaTextColor} !important;
+        background: ${ctaBg} !important;
+        border-color: ${content.theme.accent} !important;
       }
 
       [data-ogsc] .status-pill,
@@ -870,25 +850,25 @@ function renderEmailHtml(content: TemplateContent) {
       }
     </style>
   </head>
-    <body style="margin:0;padding:0;background:#eee5db;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
+    <body style="margin:0;padding:0;background:#f4efe8;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
     <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;">
       ${escapeHtml(content.preheader)}
     </span>
-    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background:#eee5db;border-collapse:collapse;">
+    <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="background:#f4efe8;border-collapse:collapse;">
       <tr>
         <td class="outer-pad" align="center" style="padding:26px 12px;">
-          <table class="shell" role="presentation" width="700" border="0" cellpadding="0" cellspacing="0" style="width:100%;max-width:700px;border-collapse:separate;border-spacing:0;background:#f6efe6;border:1px solid #dbcfc4;border-radius:30px;overflow:hidden;box-shadow:0 22px 50px rgba(15,23,42,0.08);">
+          <table class="shell" role="presentation" width="700" border="0" cellpadding="0" cellspacing="0" style="width:100%;max-width:700px;border-collapse:separate;border-spacing:0;background:#ffffff;border:1px solid #e2dbd1;border-radius:30px;overflow:hidden;box-shadow:0 22px 50px rgba(15,23,42,0.08);">
             <tr>
               <td align="center" style="padding:16px 20px 10px;font-size:10px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:#6b7280;">
                 LXD Guild Notification
               </td>
             </tr>
             <tr>
-              <td class="hero-pad" style="background-color:${heroSurfaceStart};background-image:radial-gradient(circle at top right, rgba(15,118,110,0.08) 0%, rgba(15,118,110,0) 34%),linear-gradient(135deg,${heroSurfaceStart} 0%,${heroSurfaceEnd} 100%);padding:28px 34px 54px;border-top:1px solid #f4ede4;border-bottom:1px solid #d9e5df;">
+              <td class="hero-pad" style="background-color:${heroSurfaceStart};background-image:radial-gradient(circle at top right, rgba(21,153,31,0.08) 0%, rgba(21,153,31,0) 34%),linear-gradient(135deg,${heroSurfaceStart} 0%,${heroSurfaceEnd} 100%);padding:28px 34px 54px;border-top:1px solid #f4ede4;border-bottom:1px solid #d9e5df;">
                 <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                   <tr>
                     <td align="center" style="padding-bottom:18px;">
-                      <a href="${escapeHtml(getSiteUrl())}" style="display:inline-block;padding:12px 18px;border-radius:18px;background:rgba(248,244,241,0.95);text-decoration:none;box-shadow:0 10px 24px rgba(8,18,37,0.18);">
+                      <a href="${escapeHtml(getSiteUrl())}" style="display:inline-block;padding:12px 18px;border-radius:18px;background:#ffffff;text-decoration:none;border:1px solid #e4ddd3;box-shadow:0 10px 24px rgba(8,18,37,0.06);">
                         <img src="${BRAND_LOGO_URL}" alt="LXD Guild" width="190" style="display:block;height:auto;border:0;max-width:190px;" />
                       </a>
                     </td>
@@ -920,11 +900,11 @@ function renderEmailHtml(content: TemplateContent) {
               </td>
             </tr>
             <tr>
-              <td class="body-pad" style="background:#f6efe6;padding:0 0 22px;">
+              <td class="body-pad" style="background:#ffffff;padding:0 0 22px;">
                 <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                   <tr>
                     <td style="padding:0 18px;">
-                      <table class="content-shell" role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-top:-20px;border-collapse:separate;border-spacing:0;background:#f9f4ed;border:1px solid #ddd2c7;border-radius:26px;box-shadow:0 20px 46px rgba(15,23,42,0.08);">
+                      <table class="content-shell" role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="margin-top:-20px;border-collapse:separate;border-spacing:0;background:#fbf8f3;border:1px solid #e2dbd1;border-radius:26px;box-shadow:0 20px 46px rgba(15,23,42,0.06);">
                         <tr>
                           <td class="content-pad" style="padding:28px 26px 16px;">
                             ${statusHtml}
@@ -943,8 +923,8 @@ function renderEmailHtml(content: TemplateContent) {
               </td>
             </tr>
             <tr>
-              <td style="background:#f6efe6;padding:0 18px 18px;">
-                <table class="footer-shell" role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#0d1823;border:1px solid #1f3344;border-radius:22px;box-shadow:0 14px 30px rgba(15,23,42,0.12);">
+              <td style="background:#ffffff;padding:0 18px 18px;">
+                <table class="footer-shell" role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;background:#f8fbf5;border:1px solid #dce7d5;border-radius:22px;box-shadow:0 14px 30px rgba(15,23,42,0.06);">
                   <tr>
                     <td style="padding:22px 24px;">
                       <table role="presentation" width="100%" border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
@@ -953,7 +933,7 @@ function renderEmailHtml(content: TemplateContent) {
                             <a href="${escapeHtml(getSiteUrl())}" style="display:inline-block;padding:10px 14px;border-radius:14px;background:rgba(248,244,241,0.92);text-decoration:none;">
                               <img src="${BRAND_LOGO_URL}" alt="LXD Guild" width="150" style="display:block;height:auto;border:0;max-width:150px;" />
                             </a>
-                            <div style="margin-top:12px;font-size:12px;line-height:1.8;color:#d4dde3;max-width:390px;">
+                            <div style="margin-top:12px;font-size:12px;line-height:1.8;color:#5b6b78;max-width:390px;">
                               ${escapeHtml(content.footer)}
                             </div>
                             <div style="margin-top:16px;">
@@ -961,7 +941,7 @@ function renderEmailHtml(content: TemplateContent) {
                             </div>
                           </td>
                           <td class="footer-stack-right" align="right" style="vertical-align:top;">
-                            <div style="font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#f5f0c5;">Explore</div>
+                            <div style="font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:#15991f;">Explore</div>
                             <div style="margin-top:10px;max-width:220px;">
                               ${footerLinksHtml}
                             </div>
@@ -1081,51 +1061,51 @@ function getPrimaryCta(type: string, data: Record<string, string>, audience: Not
 function getTheme(audience: NotificationAudience, type: string): EmailTheme {
   if (audience === "admin") {
     return {
-      eyebrow: "LXD Guild Admin Alert",
-      accent: "#0f766e",
-      accentSoft: "#ccfbf1",
-      panel: "#f0fdfa",
-      headerStart: "#081225",
-      headerEnd: "#0f766e",
-      border: "#cfe8e4",
+      eyebrow: "LXDGUILD Admin Alert",
+      accent: "#1f5fbf",
+      accentSoft: "#dbeafe",
+      panel: "#f4f8ff",
+      headerStart: "#f8fbf5",
+      headerEnd: "#eef7e8",
+      border: "#d8e5f6",
       textMuted: "#5b6b78",
     };
   }
 
   if (type === "exam_result" || type === "certificate_reviewed") {
     return {
-      eyebrow: "LXD Guild Candidate Update",
-      accent: "#0f766e",
-      accentSoft: "#ccfbf1",
-      panel: "#f0fdfa",
-      headerStart: "#0b1b34",
-      headerEnd: "#0f766e",
-      border: "#cfe8e4",
+      eyebrow: "LXDGUILD Candidate Update",
+      accent: "#15991f",
+      accentSoft: "#e7f7df",
+      panel: "#f7fbf4",
+      headerStart: "#f8fbf5",
+      headerEnd: "#eef7e8",
+      border: "#dbe7d3",
       textMuted: "#5b6b78",
     };
   }
 
   if (type === "job_application_received" || type === "job_posted" || type.startsWith("job_delete_")) {
     return {
-      eyebrow: "LXD Guild Employer Update",
-      accent: "#0f766e",
-      accentSoft: "#d1fae5",
-      panel: "#ecfdf5",
-      headerStart: "#081225",
-      headerEnd: "#14845f",
-      border: "#d5eadf",
+      eyebrow: "LXDGUILD Employer Update",
+      accent: "#15991f",
+      accentSoft: "#e7f7df",
+      panel: "#f7fbf4",
+      headerStart: "#f8fbf5",
+      headerEnd: "#eef7e8",
+      border: "#dbe7d3",
       textMuted: "#5b6b78",
     };
   }
 
   return {
-    eyebrow: "LXD Guild",
-    accent: "#0f766e",
-    accentSoft: "#d1fae5",
-    panel: "#f8fafc",
-    headerStart: "#081225",
-    headerEnd: "#14532d",
-    border: "#dbe7eb",
+    eyebrow: "LXDGUILD",
+    accent: "#15991f",
+    accentSoft: "#e7f7df",
+    panel: "#f8fbf5",
+    headerStart: "#f8fbf5",
+    headerEnd: "#eef7e8",
+    border: "#dbe7d3",
     textMuted: "#5b6b78",
   };
 }
