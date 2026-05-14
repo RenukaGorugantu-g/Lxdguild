@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -12,6 +13,12 @@ import {
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { MEMBER_ANNUAL_PRICE_INR } from "@/lib/membership";
+
+export const metadata: Metadata = {
+  title: "Membership | LXD Guild",
+  description:
+    "Unlock premium resources, guided growth tools, and stronger visibility across the LXD Guild marketplace.",
+};
 
 const curatedAssets = [
   "LXD Playbooks",

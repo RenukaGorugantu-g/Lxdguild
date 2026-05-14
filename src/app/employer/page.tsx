@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -13,6 +14,12 @@ import {
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getBaseRole } from "@/lib/profile-role";
+
+export const metadata: Metadata = {
+  title: "Employer Hiring Flow | LXD Guild",
+  description:
+    "Discover verified L&D professionals, review stronger fit signals, and hire through a cleaner employer workflow.",
+};
 
 const ecosystemSteps = [
   {

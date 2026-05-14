@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, BookOpen, BriefcaseBusiness, Sparkles, Target } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getBaseRole } from "@/lib/profile-role";
+
+export const metadata: Metadata = {
+  title: "Candidate Journey | LXD Guild",
+  description:
+    "Build your verified L&D profile, sharpen your resume, validate your skills, and unlock stronger-fit opportunities.",
+};
 
 const journeySteps = [
   {
