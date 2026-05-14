@@ -58,7 +58,7 @@ export async function POST(req: Request) {
   }
 
   const { quote, error: couponError } = couponCode
-    ? await getMembershipCouponQuote(admin, user.id, couponCode)
+    ? await getMembershipCouponQuote(admin, user.id, couponCode, user.email)
     : { quote: null, error: null };
 
   if (couponCode && (couponError || !quote)) {

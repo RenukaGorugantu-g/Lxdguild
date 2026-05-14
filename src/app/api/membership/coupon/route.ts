@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   const couponCode = typeof body?.couponCode === "string" ? normalizeMembershipCouponCode(body.couponCode) : "";
 
-  const { quote, error } = await getMembershipCouponQuote(admin, user.id, couponCode);
+  const { quote, error } = await getMembershipCouponQuote(admin, user.id, couponCode, user.email);
 
   if (error || !quote) {
     return NextResponse.json({ error: error || "Unable to apply coupon." }, { status: 400 });

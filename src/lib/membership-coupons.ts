@@ -26,6 +26,15 @@ export type MembershipCouponQuote = {
   finalAmountInr: number;
 };
 
+const EARLY_ACCESS_ALLOWED_EMAILS = new Set([
+  "vythee@vylearn.com",
+  "nj0309.academician@gmail.com",
+  "meena924@gmail.com",
+  "potti23062002@gmail.com",
+]);
+
+const EARLY_ACCESS_EXPIRY_IST = new Date("2026-05-16T23:59:59+05:30");
+
 function normalizeCode(code: string) {
   return code.trim().toUpperCase();
 }
@@ -48,7 +57,8 @@ function computeDiscountAmount(discountType: "flat" | "percent", discountValue: 
 export async function getMembershipCouponQuote(
   admin: NonNullable<AdminClient>,
   userId: string,
-  couponCode: string
+  couponCode: string,
+  userEmail?: string | null
 ): Promise<{ quote: MembershipCouponQuote | null; error: string | null }> {
   const normalizedCode = normalizeCode(couponCode);
 
@@ -79,6 +89,7 @@ export async function getMembershipCouponQuote(
   const now = new Date();
   const validFrom = parseDate(coupon.valid_from);
   const validUntil = parseDate(coupon.valid_until);
+  const normalizedEmail = userEmail?.trim().toLowerCase() || "";
 
   if (validFrom && validFrom.getTime() > now.getTime()) {
     return { quote: null, error: "This coupon is not active yet." };
@@ -86,6 +97,14 @@ export async function getMembershipCouponQuote(
 
   if (validUntil && validUntil.getTime() < now.getTime()) {
     return { quote: null, error: "This coupon has expired." };
+  }
+
+  if (now.getTime() > EARLY_ACCESS_EXPIRY_IST.getTime()) {
+    return { quote: null, error: "This coupon access window closed on May 16, 2026." };
+  }
+
+  if (!normalizedEmail || !EARLY_ACCESS_ALLOWED_EMAILS.has(normalizedEmail)) {
+    return { quote: null, error: "This coupon is only available for approved early-access email addresses." };
   }
 
   if (coupon.max_redemptions) {
