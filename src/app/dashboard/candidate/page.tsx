@@ -263,10 +263,10 @@ export default async function CandidateDashboard() {
                         First milestone
                       </p>
                       <p className="mt-2 text-base font-semibold text-[#111827] sm:text-lg">
-                        You have only 15 free job applications.
+                        You have 15 free job applications to get started.
                       </p>
                       <p className="mt-1 text-sm leading-6 text-[#5f6d5b] sm:text-[15px]">
-                        Make each one count - or take the skill assessment to unlock more applications, ATS insights, and better employer visibility.
+                        Pass the skill assessment to unlock access to all jobs, ATS insights, and stronger employer visibility across the Guild.
                       </p>
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row">
