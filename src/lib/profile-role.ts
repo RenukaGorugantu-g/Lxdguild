@@ -65,5 +65,5 @@ export function canAccessJobBoardRole(role?: string | null) {
 }
 
 export function canViewJobBoardRole(role?: string | null) {
-  return isAdminRole(role) || isCandidateRole(role);
+  return isAdminRole(role) || isCandidateRole(role) || isEmployerRole(role);
 }

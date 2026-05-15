@@ -3,6 +3,11 @@ import { redirect } from "next/navigation";
 import EmployerProfileForm from "./EmployerProfileForm";
 import { isEmployerRole } from "@/lib/profile-role";
 
+function isMissingColumnError(message?: string | null) {
+  const normalized = message || "";
+  return normalized.includes("Could not find") || normalized.includes("does not exist");
+}
+
 export default async function EmployerProfilePage() {
   const supabase = await createClient();
   const {
@@ -13,11 +18,32 @@ export default async function EmployerProfilePage() {
     redirect("/login");
   }
 
-  const { data: profile } = await supabase
+  const profileQuery = await supabase
     .from("profiles")
-    .select("id, role, name, headline, bio, location, company_name, employer_designation")
+    .select("id, role, name, headline, bio, location, company_name, employer_designation, company_logo_url, company_website, organization_about, hiring_requirements, industry_domain")
     .eq("id", user.id)
     .single();
+
+  let profile = profileQuery.data;
+
+  if (!profile && (profileQuery.error?.code === "42703" || isMissingColumnError(profileQuery.error?.message))) {
+    const fallbackQuery = await supabase
+      .from("profiles")
+      .select("id, role, name, headline, bio, location, company_name, employer_designation")
+      .eq("id", user.id)
+      .single();
+
+    profile = fallbackQuery.data
+      ? {
+          ...fallbackQuery.data,
+          company_logo_url: null,
+          company_website: null,
+          organization_about: null,
+          hiring_requirements: null,
+          industry_domain: null,
+        }
+      : null;
+  }
 
   if (!profile || !isEmployerRole(profile.role)) {
     redirect("/dashboard");
@@ -43,6 +69,11 @@ export default async function EmployerProfilePage() {
             location: profile.location,
             company_name: profile.company_name,
             employer_designation: profile.employer_designation,
+            company_logo_url: profile.company_logo_url,
+            company_website: profile.company_website,
+            organization_about: profile.organization_about,
+            hiring_requirements: profile.hiring_requirements,
+            industry_domain: profile.industry_domain,
           }}
         />
       </div>

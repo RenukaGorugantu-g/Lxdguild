@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { canAccessJobBoardRole, canViewJobBoardRole } from "@/lib/profile-role";
+import { canAccessJobBoardRole, canViewJobBoardRole, isEmployerRole } from "@/lib/profile-role";
 
 export const CANDIDATE_FREE_JOB_APPLICATION_LIMIT = 15;
 
@@ -71,6 +71,8 @@ export async function getJobBoardAccessForUser(
   const canApplyToJobs = hasVerifiedApplyAccess || (isFreeAccessCandidate && freeApplicationsRemaining > 0);
   const lockReason = hasVerifiedApplyAccess
     ? null
+    : isEmployerRole(profile.role)
+      ? "As an employer, you can view roles here but you cannot apply to jobs."
     : isFreeAccessCandidate
       ? freeApplicationsRemaining > 0
         ? `You have ${freeApplicationsRemaining} free application${freeApplicationsRemaining === 1 ? "" : "s"} remaining before full verification is required.`

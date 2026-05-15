@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Building2, FileText, Loader2, MapPin, Save, UserRound } from "lucide-react";
+import { Building2, FileText, Globe, ImageIcon, Loader2, MapPin, Save, UserRound } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 
@@ -13,6 +13,11 @@ type EmployerProfileRecord = {
   location?: string | null;
   company_name?: string | null;
   employer_designation?: string | null;
+  company_logo_url?: string | null;
+  company_website?: string | null;
+  organization_about?: string | null;
+  hiring_requirements?: string | null;
+  industry_domain?: string | null;
 };
 
 const employerDesignationOptions = [
@@ -45,10 +50,41 @@ export default function EmployerProfileForm({ initialProfile }: { initialProfile
         location: profile.location,
         company_name: profile.company_name,
         employer_designation: profile.employer_designation,
+        company_logo_url: profile.company_logo_url,
+        company_website: profile.company_website,
+        organization_about: profile.organization_about,
+        hiring_requirements: profile.hiring_requirements,
+        industry_domain: profile.industry_domain,
       })
       .eq("id", profile.id);
 
     if (updateError) {
+      const isMissingColumn =
+        updateError.code === "42703" ||
+        updateError.message?.includes("Could not find") ||
+        updateError.message?.includes("does not exist");
+
+      if (isMissingColumn) {
+        const { error: fallbackError } = await supabase
+          .from("profiles")
+          .update({
+            name: profile.name,
+            headline: profile.headline,
+            bio: profile.bio,
+            location: profile.location,
+            company_name: profile.company_name,
+            employer_designation: profile.employer_designation,
+          })
+          .eq("id", profile.id);
+
+        if (!fallbackError) {
+          setStatus("Basic employer profile saved. Run the latest profile migration to save logo, website, organization details, hiring requirements, and industry/domain.");
+          setIsSaving(false);
+          router.refresh();
+          return;
+        }
+      }
+
       setError(updateError.message || "Unable to update employer profile.");
       setIsSaving(false);
       return;
@@ -117,10 +153,50 @@ export default function EmployerProfileForm({ initialProfile }: { initialProfile
                 onChange={(value) => setProfile({ ...profile, company_name: value })}
                 placeholder="Maple Learning Solutions"
               />
+              <div className="grid gap-5 md:grid-cols-2">
+                <Field
+                  label="Logo URL"
+                  icon={ImageIcon}
+                  value={profile.company_logo_url || ""}
+                  onChange={(value) => setProfile({ ...profile, company_logo_url: value })}
+                  placeholder="https://yourcompany.com/logo.png"
+                />
+                <Field
+                  label="Website"
+                  icon={Globe}
+                  value={profile.company_website || ""}
+                  onChange={(value) => setProfile({ ...profile, company_website: value })}
+                  placeholder="https://yourcompany.com"
+                />
+              </div>
+              <div className="grid gap-5 md:grid-cols-2">
+                <Field
+                  label="Industry / Domain"
+                  value={profile.industry_domain || ""}
+                  onChange={(value) => setProfile({ ...profile, industry_domain: value })}
+                  placeholder="EdTech / Learning Services"
+                />
+                <Field
+                  label="Hiring Requirements"
+                  value={profile.hiring_requirements || ""}
+                  onChange={(value) => setProfile({ ...profile, hiring_requirements: value })}
+                  placeholder="Instructional design, Storyline, LMS experience"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">About Your Organization</label>
+                <textarea
+                  rows={5}
+                  value={profile.organization_about || ""}
+                  onChange={(e) => setProfile({ ...profile, organization_about: e.target.value })}
+                  className="w-full rounded-3xl border border-[#dbe4d5] bg-white px-4 py-3 text-sm outline-none focus:border-[#8fd97e] focus:ring-2 focus:ring-[#8fd97e]"
+                  placeholder="Share what your organization does, who you serve, and how your team works."
+                />
+              </div>
               <div>
                 <label className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">Company Snapshot</label>
                 <div className="rounded-3xl border border-[#dbe4d5] bg-[#f8fbf4] p-5 text-sm leading-7 text-[#55606f]">
-                  This profile will appear across your employer workflow so candidates see the company name, your designation, location, and a clearer hiring context before they apply.
+                  This profile will appear across your employer workflow so candidates see your company name, logo, website, organization story, hiring expectations, and industry context before they apply.
                 </div>
               </div>
             </div>
@@ -135,11 +211,24 @@ export default function EmployerProfileForm({ initialProfile }: { initialProfile
             <h3 className="text-lg font-bold text-[#111827]">Employer Preview</h3>
           </div>
           <div className="mt-6 rounded-[1.8rem] border border-[#dce7d4] bg-white p-5 shadow-[0_16px_40px_rgba(87,108,67,0.06)]">
+            {profile.company_logo_url ? (
+              <div className="mb-4 inline-flex rounded-2xl border border-[#dbe4d5] bg-[#f8fbf4] px-4 py-3">
+                <img src={profile.company_logo_url} alt={`${profile.company_name || "Company"} logo`} className="h-10 w-auto object-contain" />
+              </div>
+            ) : null}
             <p className="text-lg font-semibold text-[#111827]">{profile.company_name || "Your Company Name"}</p>
             <p className="mt-1 text-sm text-[#138d1a]">{toLabel(profile.employer_designation) || "Hiring Manager"}</p>
             <p className="mt-4 text-sm font-medium text-[#2c3440]">{profile.headline || "Hiring top L&D talent with clarity and intent."}</p>
             <p className="mt-3 text-sm leading-6 text-[#5b6757]">{profile.bio || "Add a short employer story to help candidates understand your team, hiring approach, and brand."}</p>
             <p className="mt-4 text-xs uppercase tracking-[0.14em] text-[#8a9482]">{profile.location || "Location not added yet"}</p>
+            {profile.company_website ? (
+              <a href={profile.company_website} target="_blank" rel="noreferrer" className="mt-4 inline-flex text-sm font-semibold text-[#138d1a]">
+                {profile.company_website}
+              </a>
+            ) : null}
+            {profile.industry_domain ? <p className="mt-4 text-sm text-[#5b6757]"><strong>Industry / Domain:</strong> {profile.industry_domain}</p> : null}
+            {profile.hiring_requirements ? <p className="mt-2 text-sm text-[#5b6757]"><strong>Hiring Requirements:</strong> {profile.hiring_requirements}</p> : null}
+            {profile.organization_about ? <p className="mt-3 text-sm leading-6 text-[#5b6757]">{profile.organization_about}</p> : null}
           </div>
         </div>
 
@@ -175,7 +264,7 @@ function Field({
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
-  icon?: typeof MapPin;
+  icon?: typeof MapPin | typeof ImageIcon | typeof Globe;
 }) {
   return (
     <div>

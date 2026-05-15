@@ -34,6 +34,7 @@ type JobListItem = {
   is_active?: boolean | null;
   source?: string | null;
   job_kind?: string | null;
+  featured_rank?: number | null;
 };
 
 type JobSearchFilters = {
@@ -47,7 +48,85 @@ type JobSearchFilters = {
 type FilterableJobQuery = any;
 
 const JOB_SELECT =
+  "id, title, description, company, location, work_mode, employment_type, expires_at, external_posted_at, imported_at, created_at, is_active, source, job_kind, featured_rank";
+
+const JOB_SELECT_FALLBACK =
   "id, title, description, company, location, work_mode, employment_type, expires_at, external_posted_at, imported_at, created_at, is_active, source, job_kind";
+
+function stripHtmlPreview(value: string | null | undefined) {
+  return decodeHtmlEntities((value || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
+}
+
+function decodeHtmlEntities(value: string) {
+  return value
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">");
+}
+
+function cleanFeaturedTitle(value: string) {
+  return value
+    .replace(/\s*-\s*T&O-?\s*\(S&C GN\)\s*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function formatJobCardHtml(value: string | null | undefined) {
+  const raw = (value || "").trim();
+  if (!raw) return "";
+
+  return raw
+    .replace(/<section>/gi, '<section class="job-card-section">')
+    .replace(/<h4>/gi, '<h4 class="job-card-heading">')
+    .replace(/<p>/gi, '<p class="job-card-copy">')
+    .replace(/<ul>/gi, '<ul class="job-card-list">')
+    .replace(/<li>/gi, '<li class="job-card-list-item">');
+}
+
+function extractOverviewPreview(value: string | null | undefined) {
+  const raw = value || "";
+  const titleMatch = raw.match(/<strong>\s*Job Title:\s*<\/strong>\s*([^<]+)/i);
+  const experienceMatch = raw.match(/<strong>\s*Experience:\s*<\/strong>\s*([^<]+)/i);
+  const locationMatch = raw.match(/<strong>\s*Location:\s*<\/strong>\s*([^<]+)/i);
+  const skillsMatch = raw.match(/<strong>\s*Must have skills:\s*<\/strong>\s*([^<]+)/i);
+
+  const title = cleanFeaturedTitle(stripHtmlPreview(titleMatch?.[1]));
+  const experience = stripHtmlPreview(experienceMatch?.[1]);
+  const location = stripHtmlPreview(locationMatch?.[1]);
+  const skills = stripHtmlPreview(skillsMatch?.[1]);
+
+  const overviewParts = [
+    title || null,
+    experience ? `Experience: ${experience}` : null,
+    skills ? `Skills: ${skills}` : null,
+  ].filter(Boolean);
+
+  const overviewText = overviewParts.join(" | ");
+  if (overviewText) {
+    return overviewText.length > 165 ? `${overviewText.slice(0, 162).trim()}...` : overviewText;
+  }
+
+  const summaryMatch = raw.match(/<h4[^>]*>\s*Job Summary\s*<\/h4>\s*<p[^>]*>([\s\S]*?)<\/p>/i);
+  const summaryText = summaryMatch ? stripHtmlPreview(summaryMatch[1]) : stripHtmlPreview(raw);
+  if (!summaryText) {
+    return "Open the role to read the full description.";
+  }
+
+  return summaryText.length > 165 ? `${summaryText.slice(0, 162).trim()}...` : summaryText;
+}
+
+function dedupeFeaturedJobs(jobs: JobListItem[]) {
+  const seen = new Set<string>();
+
+  return jobs.filter((job) => {
+    const key = `${job.title}|${job.company}|${job.location}`.trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
 
 function buildJobDetailHref(
   jobId: string,
@@ -120,19 +199,27 @@ async function fetchJobsPage(
   jobsReader: any,
   filters: JobSearchFilters,
   currentPage: number,
-  pageSize: number
+  pageSize: number,
+  excludeFeatured = false
 ) {
   const from = (currentPage - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  const primaryQuery = applyJobFilters(
+  let primaryQuery = applyJobFilters(
     jobsReader
       .from("jobs")
       .select(JOB_SELECT, { count: "exact" })
+      .order("featured_rank", { ascending: true, nullsFirst: false })
       .order("external_posted_at", { ascending: false, nullsFirst: false })
       .order("imported_at", { ascending: false }),
     filters
-  ).range(from, to);
+  );
+
+  if (excludeFeatured) {
+    primaryQuery = primaryQuery.is("featured_rank", null);
+  }
+
+  primaryQuery = primaryQuery.range(from, to);
 
   const primaryResult = await primaryQuery;
 
@@ -147,7 +234,7 @@ async function fetchJobsPage(
   const fallbackQuery = applyJobFilters(
     jobsReader
       .from("jobs")
-      .select(JOB_SELECT, { count: "exact" })
+      .select(JOB_SELECT_FALLBACK, { count: "exact" })
       .order("created_at", { ascending: false }),
     filters
   ).range(from, to);
@@ -174,6 +261,7 @@ async function fetchFeaturedFreelanceJobs(
     jobsReader
       .from("jobs")
       .select(JOB_SELECT)
+      .order("featured_rank", { ascending: true, nullsFirst: false })
       .order("external_posted_at", { ascending: false, nullsFirst: false })
       .order("imported_at", { ascending: false }),
     freelanceFilters
@@ -188,13 +276,31 @@ async function fetchFeaturedFreelanceJobs(
   const fallbackQuery = applyJobFilters(
     jobsReader
       .from("jobs")
-      .select(JOB_SELECT)
+      .select(JOB_SELECT_FALLBACK)
       .order("created_at", { ascending: false }),
     freelanceFilters
   ).limit(4);
 
   const fallbackResult = await fallbackQuery;
   return (fallbackResult.data || []).filter((job: JobListItem) => job.is_active !== false);
+}
+
+async function fetchFeaturedJobs(jobsReader: any) {
+  const primaryQuery = await jobsReader
+    .from("jobs")
+    .select(JOB_SELECT)
+    .eq("is_active", true)
+    .not("featured_rank", "is", null)
+    .order("featured_rank", { ascending: true })
+    .order("external_posted_at", { ascending: false, nullsFirst: false })
+    .order("imported_at", { ascending: false })
+    .limit(3);
+
+  if (primaryQuery.error?.code !== "42703") {
+    return dedupeFeaturedJobs((primaryQuery.data || []).filter((job: JobListItem) => job.is_active !== false)).slice(0, 3);
+  }
+
+  return [] as JobListItem[];
 }
 
 export default async function JobsDashboard({
@@ -219,7 +325,7 @@ export default async function JobsDashboard({
   let lockReason = "Sign in to apply and unlock the full job board.";
 
   if (user) {
-    let profileResult = await supabase.from("profiles").select("role").eq("id", user.id).single();
+    const profileResult = await supabase.from("profiles").select("role").eq("id", user.id).single();
     profile = profileResult.data;
 
     if (!profile) {
@@ -257,17 +363,19 @@ export default async function JobsDashboard({
   const requestedPage = Number.isFinite(parsedPage) ? Math.max(1, Math.trunc(parsedPage)) : 1;
   const filters: JobSearchFilters = { category, view, remote, schedule, normalizedQuery };
 
-  let jobsPageResult = await fetchJobsPage(jobsReader, filters, requestedPage, pageSize);
+  const shouldSplitFeaturedJobs = view !== "freelance";
+  let jobsPageResult = await fetchJobsPage(jobsReader, filters, requestedPage, pageSize, shouldSplitFeaturedJobs);
 
   if ((jobsPageResult.count === 0 || jobsPageResult.data.length === 0) && !jobsPageResult.error) {
     await syncJobFeedIfStale();
-    jobsPageResult = await fetchJobsPage(jobsReader, filters, requestedPage, pageSize);
+    jobsPageResult = await fetchJobsPage(jobsReader, filters, requestedPage, pageSize, shouldSplitFeaturedJobs);
   }
 
   let jobsList: JobListItem[] = (jobsPageResult.data as JobListItem[]).filter((job: JobListItem) => matchesRemoteFilter(job, remote));
   jobsList = jobsList.filter((job: JobListItem) => matchesScheduleFilter(job, schedule));
 
   const categories = ["Instructional Designer", "eLearning Developer", "Learning Experience Designer", "L&D Manager", "Curriculum Developer"];
+  const featuredJobs = view === "freelance" ? [] : await fetchFeaturedJobs(jobsReader);
   const freelanceJobs = view === "freelance" ? [] : await fetchFeaturedFreelanceJobs(jobsReader, filters);
   const featuredFreelanceIds = new Set(freelanceJobs.map((job: JobListItem) => job.id));
   const totalJobs = jobsPageResult.count;
@@ -275,7 +383,7 @@ export default async function JobsDashboard({
   const currentPage = Math.min(requestedPage, totalPages);
 
   if (requestedPage !== currentPage && totalJobs > 0) {
-    jobsPageResult = await fetchJobsPage(jobsReader, filters, currentPage, pageSize);
+    jobsPageResult = await fetchJobsPage(jobsReader, filters, currentPage, pageSize, shouldSplitFeaturedJobs);
     jobsList = (jobsPageResult.data as JobListItem[]).filter((job: JobListItem) => matchesRemoteFilter(job, remote));
     jobsList = jobsList.filter((job: JobListItem) => matchesScheduleFilter(job, schedule));
   }
@@ -375,6 +483,34 @@ export default async function JobsDashboard({
             </div>
 
             <div className="flex-1 space-y-4">
+              {view !== "freelance" && featuredJobs.length > 0 && (
+                <div className="marketing-grid-card border-[#d7ead2] bg-[linear-gradient(180deg,#fbfff8_0%,#f3fbef_100%)] p-5">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 text-sm font-semibold text-[#111827]">
+                        <BriefcaseBusiness className="h-4 w-4 text-[#23b61f]" />
+                        Featured Roles
+                      </div>
+                      <p className="mt-1 text-sm text-[#5b6757]">
+                        Priority roles curated for the marketplace. These stay pinned at the top as you add more featured jobs.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-4 grid gap-3">
+                    {(isGuestViewer ? featuredJobs.slice(0, 2) : featuredJobs).map((job: JobListItem) => (
+                      <JobCard
+                        key={job.id}
+                        job={job}
+                        canApplyToJobs={canApplyToJobs}
+                        lockReason={lockReason}
+                        detailHref={buildJobDetailHref(job.id, { category, view, remote, schedule, normalizedQuery, page: currentPage })}
+                        featured
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {view !== "freelance" && freelanceJobs.length > 0 && (
                 <div className="marketing-grid-card p-5">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -519,26 +655,35 @@ function JobCard({
   compact = false,
   lockReason,
   detailHref,
+  featured = false,
 }: {
   job: JobListItem;
   canApplyToJobs: boolean;
   compact?: boolean;
   lockReason?: string | null;
   detailHref: string;
+  featured?: boolean;
 }) {
   const expiryDate = job.expires_at ? new Date(job.expires_at).toLocaleDateString() : null;
   const freshnessDate = new Date(job.external_posted_at || job.imported_at || job.created_at || new Date().toISOString()).toLocaleDateString();
-  const mobilePreview = (job.description || "")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  const descriptionPreview = featured ? extractOverviewPreview(job.description) : stripHtmlPreview(job.description);
+  const formattedDescription = formatJobCardHtml(job.description);
 
   return (
-    <div className={`marketing-grid-card ${compact ? "p-4" : "p-6"} transition-shadow hover:shadow-[0_18px_36px_rgba(15,23,42,0.08)]`}>
+    <div
+      className={`marketing-grid-card ${compact ? "p-4" : "p-6"} transition-shadow hover:shadow-[0_18px_36px_rgba(15,23,42,0.08)] ${
+        featured ? "border-[#cfe6c8] bg-[linear-gradient(180deg,#ffffff_0%,#f7fcf4_100%)]" : ""
+      }`}
+    >
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <h2 className={`${compact ? "text-base" : "text-xl"} font-bold text-[#111827]`}>{job.title}</h2>
+            {featured && (
+              <span className="rounded-full bg-[#e9f8e3] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#179720]">
+                Featured
+              </span>
+            )}
             {job.job_kind === "freelance" && (
               <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-800">
                 Freelance
@@ -570,18 +715,25 @@ function JobCard({
           </div>
           {!compact && (
             <>
-              <p
-                className="mt-2 hidden text-sm leading-relaxed text-[#5b6757] md:block"
-                dangerouslySetInnerHTML={{ __html: job.description || "" }}
-              />
-              <div className="mt-2 md:hidden">
-                <p className="line-clamp-1 text-sm text-[#5b6757]">
-                  {mobilePreview || "Open the role to read the full description."}
-                </p>
-                <Link href={detailHref} className="mt-2 inline-flex text-xs font-semibold text-[#138d1a]">
-                  Read more
-                </Link>
-              </div>
+              <details className="mt-2 group">
+                <summary className="list-none cursor-pointer">
+                  <div className="text-sm leading-relaxed text-[#5b6757] group-open:hidden">
+                    <p className={featured ? "line-clamp-2" : "line-clamp-3"}>
+                      {descriptionPreview}
+                    </p>
+                    <span className="mt-2 inline-flex text-xs font-semibold uppercase tracking-[0.14em] text-[#138d1a]">
+                      Read more
+                    </span>
+                  </div>
+                  <span className="hidden text-xs font-semibold uppercase tracking-[0.14em] text-[#138d1a] group-open:inline-flex">
+                    Show less
+                  </span>
+                </summary>
+                <div
+                  className="mt-3 text-sm leading-relaxed text-[#5b6757] [&_h4]:mt-4 [&_h4]:font-semibold [&_h4]:text-[#111827] [&_p]:mb-3 [&_ul]:mb-4 [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-5"
+                  dangerouslySetInnerHTML={{ __html: formattedDescription }}
+                />
+              </details>
             </>
           )}
         </div>

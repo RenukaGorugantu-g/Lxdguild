@@ -107,7 +107,12 @@ function formatJobDescriptionHtml(value: string | null | undefined) {
 
   const hasHtmlBlocks = /<(p|ul|ol|li|br|h1|h2|h3|h4|h5|h6|div)\b/i.test(withoutScripts);
   if (hasHtmlBlocks) {
-    return withoutScripts;
+    return withoutScripts
+      .replace(/<section>/gi, '<section class="job-detail-section">')
+      .replace(/<h4>/gi, '<h4 class="job-detail-heading">')
+      .replace(/<p>/gi, '<p class="job-detail-copy">')
+      .replace(/<ul>/gi, '<ul class="job-detail-list">')
+      .replace(/<li>/gi, '<li class="job-detail-list-item">');
   }
 
   const normalized = withoutScripts
@@ -333,6 +338,7 @@ type JobDetailRecord = {
   is_active?: boolean | null;
   deletion_request_status?: string | null;
   deleted_at?: string | null;
+  featured_rank?: number | null;
 };
 
 function isMissingColumnError(message?: string | null) {
@@ -423,7 +429,7 @@ export default async function JobDetailPage({
 
   const jobQuery = await jobsReader
     .from("jobs")
-    .select("id, title, description, company, location, apply_url, user_id, external_posted_at, imported_at, created_at, expires_at, is_active, deletion_request_status, deleted_at")
+    .select("id, title, description, company, location, apply_url, user_id, external_posted_at, imported_at, created_at, expires_at, is_active, deletion_request_status, deleted_at, featured_rank")
     .eq("id", id)
     .single();
   let job = jobQuery.data as JobDetailRecord | null;
@@ -670,6 +676,11 @@ export default async function JobDetailPage({
           <div className="p-8 pt-16">
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
               <div className="space-y-4">
+                {job.featured_rank === 1 && (
+                  <div className="inline-flex items-center rounded-full border border-[#d8edd5] bg-[#eef9ea] px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-[#179720]">
+                    Featured role
+                  </div>
+                )}
                 <h1 className="text-4xl font-bold tracking-tight">{job.title}</h1>
                 {isDeactivated && (
                   <div className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-amber-800">
