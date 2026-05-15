@@ -31,6 +31,8 @@ const EARLY_ACCESS_ALLOWED_EMAILS = new Set([
   "nj0309.academician@gmail.com",
   "meena924@gmail.com",
   "potti23062002@gmail.com",
+  "ishitabhutani28@gmail.com",
+  "ch.aalekhya@gmail.com",
 ]);
 
 const EARLY_ACCESS_EXPIRY_IST = new Date("2026-05-16T23:59:59+05:30");
