@@ -17,6 +17,7 @@ export const TARGET_ROLE_TO_BUCKET_MAP = {
 export const TARGET_ROLE_OPTIONS = Object.keys(TARGET_ROLE_TO_BUCKET_MAP) as Array<
   keyof typeof TARGET_ROLE_TO_BUCKET_MAP
 >;
+export const OTHER_TARGET_ROLE_VALUE = "__other__";
 
 export const DESIGNATION_BUCKETS = ["Beginner", "Intermediate", "Senior", "Leader"] as const;
 export const QUESTION_SET_ORDER = ["set1", "set2", "set3", "set4"] as const;
@@ -188,6 +189,15 @@ export const COURSE_RECOMMENDATION_MATRIX: Record<
 export function getBucketForTargetRole(targetRole?: string | null): DesignationBucket {
   const bucket = targetRole ? TARGET_ROLE_TO_BUCKET_MAP[targetRole as TargetRole] : null;
   return bucket || "Intermediate";
+}
+
+export function isMappedTargetRole(targetRole?: string | null) {
+  return Boolean(targetRole && TARGET_ROLE_TO_BUCKET_MAP[targetRole as TargetRole]);
+}
+
+export function getBucketForTargetRoleOrNull(targetRole?: string | null) {
+  const bucket = targetRole ? TARGET_ROLE_TO_BUCKET_MAP[targetRole as TargetRole] : null;
+  return bucket || null;
 }
 
 export function getLegacyDesignationLevel(bucket?: string | null) {

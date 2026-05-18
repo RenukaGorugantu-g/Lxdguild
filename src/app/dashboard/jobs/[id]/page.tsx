@@ -5,7 +5,7 @@ import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { deriveRoleKeyword, scoreSimilarJob } from "@/lib/job-preferences";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { loadProfile } from "@/lib/load-profile";
-import { getEmployerPlan } from "@/lib/profile-role";
+import { getEmployerPlan, isAdminRole } from "@/lib/profile-role";
 import { decideApplicationStatus, downloadResumeBuffer } from "@/lib/resume-analysis";
 import { extractKeywords, extractSkills, parseResumeFile, scoreCandidate } from "../../../../../ats-module";
 import { notFound, redirect } from "next/navigation";
@@ -328,12 +328,14 @@ function buildAtsSummary({
   skillMatch,
   experienceMatch,
   keywordMatch,
+  roleAlignment,
   missingSkills,
 }: {
   score: number;
   skillMatch: number;
   experienceMatch: number;
   keywordMatch: number;
+  roleAlignment: number;
   missingSkills: string[];
 }) {
   const summaryParts = [
@@ -341,6 +343,7 @@ function buildAtsSummary({
     `skill match ${skillMatch}%`,
     `experience match ${experienceMatch}%`,
     `keyword relevance ${keywordMatch}%`,
+    `role alignment ${roleAlignment}%`,
   ];
 
   if (missingSkills.length > 0) {
@@ -584,6 +587,7 @@ export default async function JobDetailPage({
 
   const isJobOwner = Boolean(user?.id) && user?.id === job.user_id;
   let canApplyToJobs = false;
+  let featuredJobsOnly = false;
   let isFreeAccessCandidate = false;
   let freeApplicationsRemaining = 0;
   let lockReason = "Sign in to apply and unlock the full job board.";
@@ -591,6 +595,7 @@ export default async function JobDetailPage({
   if (user && profile) {
     const access = await getJobBoardAccessForUser(supabase, user.id, profile);
     canApplyToJobs = access.canApplyToJobs;
+    featuredJobsOnly = access.featuredJobsOnly;
     isFreeAccessCandidate = access.isFreeAccessCandidate;
     freeApplicationsRemaining = access.freeApplicationsRemaining;
     lockReason = access.lockReason || lockReason;
@@ -603,8 +608,17 @@ export default async function JobDetailPage({
   const isMvpCandidate = profile?.role === "candidate_mvp";
   const isCandidateViewer = profile?.role?.startsWith("candidate");
   const employerPlan = getEmployerPlan(profile?.role);
-  const isPaidEmployer = employerPlan === "pro" || employerPlan === "premium";
-  const canApplyToJob = !isGuestViewer && isCandidateViewer && !isJobOwner && canApplyToJobs;
+  const isPaidEmployer = isAdminRole(profile?.role) || employerPlan === "pro" || employerPlan === "premium";
+  const canApplyToJob =
+    !isGuestViewer &&
+    isCandidateViewer &&
+    !isJobOwner &&
+    canApplyToJobs &&
+    (!featuredJobsOnly || job.featured_rank != null);
+  const applyLockReason =
+    featuredJobsOnly && job.featured_rank == null
+      ? "Only featured jobs are available until your assessment track is assigned."
+      : lockReason;
   const roleKeyword = deriveRoleKeyword(job.title);
 
   const resumes = user
@@ -859,7 +873,7 @@ export default async function JobDetailPage({
                     isCompanySaved={!!savedCompany}
                     isRoleFollowed={!!followedRole}
                     lockReason={
-                      lockReason ||
+                      applyLockReason ||
                       "Write the assessment to unlock job applications."
                     }
                     backToJobsHref={backToJobsHref}

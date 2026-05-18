@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
-import { getBucketForTargetRole, TARGET_ROLE_OPTIONS } from "@/lib/assessment";
+import { getBucketForTargetRoleOrNull, OTHER_TARGET_ROLE_VALUE, TARGET_ROLE_OPTIONS } from "@/lib/assessment";
 import { ArrowRight, BriefcaseBusiness, Check, Eye, EyeOff, SearchCheck } from "lucide-react";
 
 const CANONICAL_AUTH_REDIRECT_BASE =
@@ -56,6 +56,7 @@ function RegisterPageContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [selectedRole, setSelectedRole] = useState(initialRole);
   const [candidateTargetRole, setCandidateTargetRole] = useState("Instructional Designer");
+  const [candidateOtherTargetRole, setCandidateOtherTargetRole] = useState("");
   const [candidateExperienceYears, setCandidateExperienceYears] = useState("2");
   const [employerDesignation, setEmployerDesignation] = useState("hiring_manager");
   const [companyName, setCompanyName] = useState("");
@@ -66,7 +67,15 @@ function RegisterPageContent() {
   const [requiresEmailVerification, setRequiresEmailVerification] = useState(false);
 
   const supabase = createClient();
-  const candidateBucket = getBucketForTargetRole(candidateTargetRole);
+  const normalizedOtherCandidateRole = candidateOtherTargetRole.trim();
+  const isCustomCandidateRole = candidateTargetRole === OTHER_TARGET_ROLE_VALUE;
+  const resolvedCandidateTargetRole =
+    selectedRole === "candidate_onhold"
+      ? isCustomCandidateRole
+        ? normalizedOtherCandidateRole
+        : candidateTargetRole
+      : "";
+  const candidateBucket = getBucketForTargetRoleOrNull(resolvedCandidateTargetRole);
   const candidateExperience = getExperienceMetadata(candidateExperienceYears);
   const name = `${firstName} ${lastName}`.trim();
   const emailRedirectTo = `${CANONICAL_AUTH_REDIRECT_BASE.replace(/\/$/, "")}/login`;
@@ -82,6 +91,12 @@ function RegisterPageContent() {
       return;
     }
 
+    if (selectedRole === "candidate_onhold" && candidateTargetRole === OTHER_TARGET_ROLE_VALUE && !normalizedOtherCandidateRole) {
+      setError("Please enter the role title so we can assign the right assessment after registration.");
+      setLoading(false);
+      return;
+    }
+
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
@@ -90,9 +105,12 @@ function RegisterPageContent() {
         data: {
           name,
           role: selectedRole,
-          candidate_target_role: selectedRole === "candidate_onhold" ? candidateTargetRole : null,
+          candidate_target_role: selectedRole === "candidate_onhold" ? resolvedCandidateTargetRole : null,
           candidate_designation: selectedRole === "candidate_onhold" ? candidateBucket : null,
-          experience_level: selectedRole === "candidate_onhold" ? candidateExperience.level : null,
+          experience_level:
+            selectedRole === "candidate_onhold" && !isCustomCandidateRole
+              ? candidateExperience.level
+              : null,
           experience_years: selectedRole === "candidate_onhold" ? candidateExperience.years : null,
           employer_designation: selectedRole === "employer_free" ? employerDesignation : null,
           company_name: selectedRole === "employer_free" ? companyName : null,
@@ -115,7 +133,7 @@ function RegisterPageContent() {
         email,
         name,
         role: selectedRole,
-        candidateTargetRole: selectedRole === "candidate_onhold" ? candidateTargetRole : null,
+        candidateTargetRole: selectedRole === "candidate_onhold" ? resolvedCandidateTargetRole : null,
         candidateDesignation: selectedRole === "candidate_onhold" ? candidateBucket : null,
         employerDesignation: selectedRole === "employer_free" ? employerDesignation : null,
         companyName: selectedRole === "employer_free" ? companyName : null,
@@ -282,42 +300,59 @@ function RegisterPageContent() {
                   </div>
 
                   {selectedRole === "candidate_onhold" ? (
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div>
-                        <label htmlFor="candidate-target-role" className="mb-2 block text-[12px] font-semibold uppercase tracking-[0.08em] text-[#5d6673]">
-                          Target Role
-                        </label>
-                        <select
-                          id="candidate-target-role"
-                          className="h-[54px] w-full rounded-[10px] border border-[#d6dccd] bg-white px-4 text-[15px] text-[#202733] outline-none transition-all focus:border-[#1c781d] focus:shadow-[0_0_0_4px_rgba(34,120,29,0.12)]"
-                          value={candidateTargetRole}
-                          onChange={(e) => setCandidateTargetRole(e.target.value)}
-                        >
-                          {TARGET_ROLE_OPTIONS.map((roleOption) => (
-                            <option key={roleOption} value={roleOption}>
-                              {roleOption}
-                            </option>
-                          ))}
-                        </select>
+                    <>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <label htmlFor="candidate-target-role" className="mb-2 block text-[12px] font-semibold uppercase tracking-[0.08em] text-[#5d6673]">
+                            Target Role
+                          </label>
+                          <select
+                            id="candidate-target-role"
+                            className="h-[54px] w-full rounded-[10px] border border-[#d6dccd] bg-white px-4 text-[15px] text-[#202733] outline-none transition-all focus:border-[#1c781d] focus:shadow-[0_0_0_4px_rgba(34,120,29,0.12)]"
+                            value={candidateTargetRole}
+                            onChange={(e) => setCandidateTargetRole(e.target.value)}
+                          >
+                            {TARGET_ROLE_OPTIONS.map((roleOption) => (
+                              <option key={roleOption} value={roleOption}>
+                                {roleOption}
+                              </option>
+                            ))}
+                            <option value={OTHER_TARGET_ROLE_VALUE}>Other</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label htmlFor="candidate-experience" className="mb-2 block text-[12px] font-semibold uppercase tracking-[0.08em] text-[#5d6673]">
+                            Experience
+                          </label>
+                          <select
+                            id="candidate-experience"
+                            className="h-[54px] w-full rounded-[10px] border border-[#d6dccd] bg-white px-4 text-[15px] text-[#202733] outline-none transition-all focus:border-[#1c781d] focus:shadow-[0_0_0_4px_rgba(34,120,29,0.12)]"
+                            value={candidateExperienceYears}
+                            onChange={(e) => setCandidateExperienceYears(e.target.value)}
+                          >
+                            <option value="0.5">0-1 years</option>
+                            <option value="2">1-3 years</option>
+                            <option value="4">3-5 years</option>
+                            <option value="7">5-8 years</option>
+                            <option value="10">8+ years</option>
+                          </select>
+                        </div>
                       </div>
-                      <div>
-                        <label htmlFor="candidate-experience" className="mb-2 block text-[12px] font-semibold uppercase tracking-[0.08em] text-[#5d6673]">
-                          Experience
-                        </label>
-                        <select
-                          id="candidate-experience"
-                          className="h-[54px] w-full rounded-[10px] border border-[#d6dccd] bg-white px-4 text-[15px] text-[#202733] outline-none transition-all focus:border-[#1c781d] focus:shadow-[0_0_0_4px_rgba(34,120,29,0.12)]"
-                          value={candidateExperienceYears}
-                          onChange={(e) => setCandidateExperienceYears(e.target.value)}
-                        >
-                          <option value="0.5">0-1 years</option>
-                          <option value="2">1-3 years</option>
-                          <option value="4">3-5 years</option>
-                          <option value="7">5-8 years</option>
-                          <option value="10">8+ years</option>
-                        </select>
-                      </div>
-                    </div>
+                      {candidateTargetRole === OTHER_TARGET_ROLE_VALUE ? (
+                        <div className="mt-3">
+                          <Field
+                            id="candidate-other-target-role"
+                            label="Role Title"
+                            placeholder="e.g. Customer Success Trainer"
+                            value={candidateOtherTargetRole}
+                            onChange={setCandidateOtherTargetRole}
+                          />
+                          <p className="mt-2 text-xs leading-5 text-[#7a8577]">
+                            We&apos;ll create the account now and you can assign the assessment track after registration.
+                          </p>
+                        </div>
+                      ) : null}
+                    </>
                   ) : (
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div>

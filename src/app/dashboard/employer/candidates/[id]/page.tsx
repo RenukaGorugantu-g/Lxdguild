@@ -3,7 +3,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, FileText, Link as LinkIcon, ShieldCheck, User, GraduationCap } from "lucide-react";
-import { isEmployerRole } from "@/lib/profile-role";
+import { isAdminRole, isEmployerRole } from "@/lib/profile-role";
 
 type CandidateResume = {
   id: string;
@@ -55,11 +55,11 @@ export default async function EmployerCandidateDetailPage({ params }: { params: 
     .eq("id", user.id)
     .single();
 
-  if (!profile || !isEmployerRole(profile.role)) {
+  if (!profile || (!isEmployerRole(profile.role) && !isAdminRole(profile.role))) {
     redirect("/dashboard");
   }
 
-  const hasPaid = profile.role === "employer_pro" || profile.role === "employer_premium";
+  const hasPaid = isAdminRole(profile.role) || profile.role === "employer_pro" || profile.role === "employer_premium";
 
   if (!hasPaid) {
     return (
@@ -77,19 +77,25 @@ export default async function EmployerCandidateDetailPage({ params }: { params: 
   }
 
   const candidateReader = adminSupabase || supabase;
-  const accessCheck = adminSupabase
-    ? await adminSupabase
+  const accessCheck = isAdminRole(profile.role)
+    ? await (adminSupabase ?? supabase)
         .from("job_applications")
-        .select("id, jobs!inner(user_id)", { count: "exact" })
+        .select("id", { count: "exact" })
         .eq("user_id", id)
-        .eq("jobs.user_id", user.id)
         .limit(1)
-    : await supabase
-        .from("job_applications")
-        .select("id, jobs!inner(user_id)", { count: "exact" })
-        .eq("user_id", id)
-        .eq("jobs.user_id", user.id)
-        .limit(1);
+    : adminSupabase
+      ? await adminSupabase
+          .from("job_applications")
+          .select("id, jobs!inner(user_id)", { count: "exact" })
+          .eq("user_id", id)
+          .eq("jobs.user_id", user.id)
+          .limit(1)
+      : await supabase
+          .from("job_applications")
+          .select("id, jobs!inner(user_id)", { count: "exact" })
+          .eq("user_id", id)
+          .eq("jobs.user_id", user.id)
+          .limit(1);
 
   if ((accessCheck.count || 0) < 1) {
     notFound();

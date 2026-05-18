@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
+import { isMappedTargetRole } from "@/lib/assessment";
 import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { getMembershipState } from "@/lib/membership";
 import { isVerifiedCandidateRole } from "@/lib/profile-role";
@@ -26,6 +27,8 @@ type CandidateDashboardProfile = {
   name?: string | null;
   role?: string | null;
   candidate_target_role?: string | null;
+  candidate_designation?: string | null;
+  designation_level?: string | null;
   experience_years?: number | null;
   membership_status?: string | null;
   membership_plan?: string | null;
@@ -115,7 +118,7 @@ export default async function CandidateDashboard() {
   let profile = await loadProfile<CandidateDashboardProfile>(
       supabase,
       user.id,
-      "id, name, role, candidate_target_role, experience_years, membership_status, membership_plan, membership_expires_at"
+      "id, name, role, candidate_target_role, candidate_designation, designation_level, experience_years, membership_status, membership_plan, membership_expires_at"
     );
 
   if (!profile) {
@@ -124,7 +127,7 @@ export default async function CandidateDashboard() {
       profile = await loadProfile<CandidateDashboardProfile>(
         supabase,
         user.id,
-        "id, name, role, candidate_target_role, experience_years, membership_status, membership_plan, membership_expires_at"
+        "id, name, role, candidate_target_role, candidate_designation, designation_level, experience_years, membership_status, membership_plan, membership_expires_at"
       );
     }
   }
@@ -165,6 +168,9 @@ export default async function CandidateDashboard() {
   const hasPassedExam = candidate?.pass_status === "pass";
   const hasFailedExam = candidate?.pass_status === "fail";
   const isVerified = isVerifiedCandidateRole(profile.role);
+  const requiresManualAssessmentAssignment =
+    !isMappedTargetRole(profile.candidate_target_role) &&
+    !profile.candidate_designation;
   const membership = getMembershipState(profile);
   const {
     canViewJobBoard,
@@ -210,6 +216,8 @@ export default async function CandidateDashboard() {
   const examTitle =
     isVerified
       ? "You’re Verified"
+      : requiresManualAssessmentAssignment
+        ? "Your registration is complete. Because your target role sits outside the default L&D tracks, an admin will assign the right assessment path before you begin."
       : hasFailedExam
         ? "You’re Closer Than You Think"
         : examCompleted
@@ -219,6 +227,8 @@ export default async function CandidateDashboard() {
   const examCopy =
     isVerified
       ? `You scored ${candidate?.latest_score ?? 0}%, and your profile is now visible for stronger-fit L&D opportunities across the Guild.`
+      : requiresManualAssessmentAssignment
+        ? "Your role needs a custom assessment track. We’ll keep your account ready while an admin assigns the right path for you."
       : hasFailedExam
         ? `You scored ${candidate?.latest_score ?? 0}%. That’s enough signal for us to show you exactly what to improve next. Complete the recommended course path and submit your certificate to unlock a reattempt.`
         : "Take the skill validation assessment to unlock ATS insights, stronger employer visibility, and clearer role-fit guidance. It’s the fastest way to turn your profile into real momentum.";
@@ -260,13 +270,17 @@ export default async function CandidateDashboard() {
                   <div className="flex flex-col gap-4 sm:gap-3">
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#15911b]">
-                        First milestone
+                        {requiresManualAssessmentAssignment ? "Custom track" : "First milestone"}
                       </p>
                       <p className="mt-2 text-base font-semibold text-[#111827] sm:text-lg">
-                        You have 15 free job applications to get started.
+                        {requiresManualAssessmentAssignment
+                          ? "Your assessment track will be assigned after registration."
+                          : "You have 15 free job applications to get started."}
                       </p>
                       <p className="mt-1 text-sm leading-6 text-[#5f6d5b] sm:text-[15px]">
-                        Pass the skill assessment to unlock access to all jobs, ATS insights, and stronger employer visibility across the Guild.
+                        {requiresManualAssessmentAssignment
+                          ? "Some roles on the platform do not map to the default L&D assessments. An admin can review your role and assign the correct assessment path."
+                          : "Pass the skill assessment to unlock access to all jobs, ATS insights, and stronger employer visibility across the Guild."}
                       </p>
                     </div>
                     <div className="flex flex-col gap-2 sm:flex-row">
@@ -274,7 +288,7 @@ export default async function CandidateDashboard() {
                         href="/dashboard/candidate/exam"
                         className="inline-flex items-center justify-center rounded-full bg-[linear-gradient(135deg,#118118,#2aa82b)] px-5 py-2.5 text-sm font-bold text-white shadow-[0_14px_28px_rgba(24,124,29,0.16)] transition-all hover:translate-y-[-1px]"
                       >
-                        Take Skill Assessment
+                        {requiresManualAssessmentAssignment ? "View Assessment Status" : "Take Skill Assessment"}
                       </Link>
                       <Link
                         href="/dashboard/jobs"

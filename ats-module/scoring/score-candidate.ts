@@ -1,5 +1,5 @@
 import { summarizeResumeStrength } from "../parser/extract-signals";
-import { calculateExperienceMatch, calculateKeywordMatch, calculateSkillMatch } from "./matchers";
+import { calculateExperienceMatch, calculateKeywordMatch, calculateRoleAlignment, calculateSkillMatch } from "./matchers";
 import { clampScore } from "../utils/text";
 import type { ScoreBreakdown, ScoreCandidateInput } from "../types";
 
@@ -7,12 +7,26 @@ export function scoreCandidate(input: ScoreCandidateInput): ScoreBreakdown {
   const skillResults = calculateSkillMatch(input.job, input.resume);
   const experienceMatch = calculateExperienceMatch(input.job, input.resume);
   const keywordMatch = calculateKeywordMatch(input.job, input.resume);
+  const roleAlignment = calculateRoleAlignment(input.job, input.resume);
+  const requiredCoverage = input.job.requiredSkills.length
+    ? skillResults.matchedRequired.length / input.job.requiredSkills.length
+    : 1;
 
-  const score = clampScore(
-    0.5 * skillResults.skillMatch +
-      0.3 * experienceMatch +
-      0.2 * keywordMatch
+  let score = clampScore(
+    0.45 * skillResults.skillMatch +
+      0.2 * experienceMatch +
+      0.15 * keywordMatch +
+      0.2 * roleAlignment
   );
+
+  // Hard cap resumes that miss too many of the actual core requirements.
+  if (input.job.requiredSkills.length >= 3 && skillResults.matchedRequired.length === 0) {
+    score = Math.min(score, 35);
+  } else if (requiredCoverage < 0.35) {
+    score = Math.min(score, 55);
+  } else if (roleAlignment < 35) {
+    score = Math.min(score, 60);
+  }
 
   const strengths = [
     ...summarizeResumeStrength(input.resume),
@@ -32,6 +46,7 @@ export function scoreCandidate(input: ScoreCandidateInput): ScoreBreakdown {
     skillMatch: skillResults.skillMatch,
     experienceMatch,
     keywordMatch,
+    roleAlignment,
     missingSkills: skillResults.missingSkills,
     strengths,
   };

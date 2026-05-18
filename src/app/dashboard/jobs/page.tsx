@@ -318,6 +318,7 @@ export default async function JobsDashboard({
   const isGuestViewer = !user;
   let profile: { role?: string | null } | null = null;
   let canApplyToJobs = false;
+  let featuredJobsOnly = false;
   let isFreeAccessCandidate = false;
   let freeApplicationLimit = 0;
   let freeApplicationsUsed = 0;
@@ -350,6 +351,7 @@ export default async function JobsDashboard({
     }
 
     canApplyToJobs = access.canApplyToJobs;
+    featuredJobsOnly = access.featuredJobsOnly;
     isFreeAccessCandidate = access.isFreeAccessCandidate;
     freeApplicationLimit = access.freeApplicationLimit;
     freeApplicationsUsed = access.freeApplicationsUsed;
@@ -459,9 +461,11 @@ export default async function JobsDashboard({
                     {isGuestViewer
                       ? "10 roles are visible before sign-in. Apply access unlocks after login."
                       : canApplyToJobs
-                        ? isFreeAccessCandidate
-                          ? `${freeApplicationsRemaining} of ${freeApplicationLimit} free applications left`
-                          : "Verified candidates can apply"
+                        ? featuredJobsOnly
+                          ? "Only featured jobs are open until your assessment track is assigned"
+                          : isFreeAccessCandidate
+                            ? `${freeApplicationsRemaining} of ${freeApplicationLimit} free applications left`
+                            : "Verified candidates can apply"
                         : lockReason || "Assessment required first"}
                     </p>
                   </div>
@@ -546,7 +550,9 @@ export default async function JobsDashboard({
                 <div className="marketing-grid-card flex flex-col items-start gap-4 p-4 text-sm sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-2 text-emerald-900">
                     <BriefcaseBusiness className="h-4 w-4 text-emerald-700" />
-                    You are on free marketplace access. {freeApplicationsUsed} used, {freeApplicationsRemaining} remaining.
+                    {featuredJobsOnly
+                      ? `You can apply only to featured jobs right now. ${freeApplicationsUsed} used, ${freeApplicationsRemaining} remaining.`
+                      : `You are on free marketplace access. ${freeApplicationsUsed} used, ${freeApplicationsRemaining} remaining.`}
                   </div>
                   <Link href="/dashboard/candidate/profile" className="marketing-secondary px-4 py-2 text-sm">
                     Strengthen Profile

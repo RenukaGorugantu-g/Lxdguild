@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { isMappedTargetRole } from "@/lib/assessment";
 import { canAccessJobBoardRole, canViewJobBoardRole, isEmployerRole } from "@/lib/profile-role";
 
 export const CANDIDATE_FREE_JOB_APPLICATION_LIMIT = 15;
@@ -7,6 +8,8 @@ type JobBoardAccess = {
   canAccessJobBoard: boolean;
   canViewJobBoard: boolean;
   canApplyToJobs: boolean;
+  featuredJobsOnly: boolean;
+  requiresAssessmentAssignment: boolean;
   isFreeAccessCandidate: boolean;
   freeApplicationLimit: number;
   freeApplicationsUsed: number;
@@ -16,6 +19,8 @@ type JobBoardAccess = {
 
 type JobBoardAccessProfile = {
   role?: string | null;
+  candidate_target_role?: string | null;
+  candidate_designation?: string | null;
 };
 
 /**
@@ -43,6 +48,8 @@ export async function getJobBoardAccessForUser(
       canAccessJobBoard: false,
       canViewJobBoard: false,
       canApplyToJobs: false,
+      featuredJobsOnly: false,
+      requiresAssessmentAssignment: false,
       isFreeAccessCandidate: false,
       freeApplicationLimit: CANDIDATE_FREE_JOB_APPLICATION_LIMIT,
       freeApplicationsUsed: 0,
@@ -54,6 +61,11 @@ export async function getJobBoardAccessForUser(
   const canViewJobBoard = canViewJobBoardRole(profile.role)
   const isFreeAccessCandidate = profile.role === "candidate_onhold";
   const hasVerifiedApplyAccess = canAccessJobBoardRole(profile.role);
+  const requiresAssessmentAssignment =
+    isFreeAccessCandidate &&
+    !profile.candidate_designation &&
+    !isMappedTargetRole(profile.candidate_target_role);
+  const featuredJobsOnly = requiresAssessmentAssignment;
 
   let freeApplicationsUsed = 0;
   if (isFreeAccessCandidate) {
@@ -73,6 +85,10 @@ export async function getJobBoardAccessForUser(
     ? null
     : isEmployerRole(profile.role)
       ? "As an employer, you can view roles here but you cannot apply to jobs."
+    : requiresAssessmentAssignment
+      ? freeApplicationsRemaining > 0
+        ? `Only featured jobs are open until your assessment track is assigned. You have ${freeApplicationsRemaining} free application${freeApplicationsRemaining === 1 ? "" : "s"} available for those roles.`
+        : "Your free featured-job access is complete. Wait for assessment assignment or verification to keep applying."
     : isFreeAccessCandidate
       ? freeApplicationsRemaining > 0
         ? `You have ${freeApplicationsRemaining} free application${freeApplicationsRemaining === 1 ? "" : "s"} remaining before full verification is required.`
@@ -83,6 +99,8 @@ export async function getJobBoardAccessForUser(
     canAccessJobBoard: canViewJobBoard,
     canViewJobBoard,
     canApplyToJobs,
+    featuredJobsOnly,
+    requiresAssessmentAssignment,
     isFreeAccessCandidate,
     freeApplicationLimit: CANDIDATE_FREE_JOB_APPLICATION_LIMIT,
     freeApplicationsUsed,

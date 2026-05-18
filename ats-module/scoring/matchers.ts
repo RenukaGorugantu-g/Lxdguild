@@ -46,6 +46,42 @@ export function calculateKeywordMatch(job: JobInput, resume: ParsedResume) {
   return compareKeywordCoverage(mergedKeywords, resume.keywords).percentage;
 }
 
+export function calculateRoleAlignment(job: JobInput, resume: ParsedResume) {
+  const normalizedTitle = normalizeText(job.title || "");
+  const resumeRoles = resume.roles.map((role) => normalizeText(role));
+
+  if (!resumeRoles.length) {
+    return 55;
+  }
+
+  const titleMatch = resumeRoles.some((role) => normalizedTitle.includes(role) || role.includes(normalizedTitle));
+  if (titleMatch) {
+    return 100;
+  }
+
+  const jobIsAIGenerationRole =
+    /prompt|image generation|video generation|ai content|generative ai|motion designer|animator|video editor/.test(normalizedTitle) ||
+    /kling|veo|seedream|runway|eleven labs|google flow/.test(normalizeText(job.description || ""));
+  const resumeIsClassicLndRole = resumeRoles.some((role) =>
+    /instructional designer|learning designer|learning experience designer|curriculum designer|training specialist/.test(role)
+  );
+
+  if (jobIsAIGenerationRole && resumeIsClassicLndRole) {
+    return 20;
+  }
+
+  const sharedTokens = resumeRoles.filter((role) => {
+    const roleTokens = role.split(/\s+/).filter((token) => token.length >= 4);
+    return roleTokens.some((token) => normalizedTitle.includes(token));
+  });
+
+  if (sharedTokens.length > 0) {
+    return 70;
+  }
+
+  return 35;
+}
+
 function collectDescriptionKeywords(description: string) {
   return normalizeText(description)
     .split(/\s+/)

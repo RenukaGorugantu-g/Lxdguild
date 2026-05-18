@@ -131,6 +131,7 @@ function parseAtsSummary(summary: string | null | undefined) {
     { label: "Skill match", regex: /skill match\s+(\d+)%/i },
     { label: "Experience match", regex: /experience match\s+(\d+)%/i },
     { label: "Keyword relevance", regex: /keyword relevance\s+(\d+)%/i },
+    { label: "Role alignment", regex: /role alignment\s+(\d+)%/i },
   ];
 
   const metrics = metricPatterns

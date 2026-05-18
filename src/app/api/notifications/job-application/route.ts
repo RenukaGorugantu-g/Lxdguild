@@ -165,12 +165,14 @@ function buildAtsSummary({
   skillMatch,
   experienceMatch,
   keywordMatch,
+  roleAlignment,
   missingSkills,
 }: {
   score: number;
   skillMatch: number;
   experienceMatch: number;
   keywordMatch: number;
+  roleAlignment: number;
   missingSkills: string[];
 }) {
   const summaryParts = [
@@ -178,6 +180,7 @@ function buildAtsSummary({
     `skill match ${skillMatch}%`,
     `experience match ${experienceMatch}%`,
     `keyword relevance ${keywordMatch}%`,
+    `role alignment ${roleAlignment}%`,
   ]
 
   if (missingSkills.length > 0) {

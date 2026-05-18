@@ -4,6 +4,7 @@ import {
   DEFAULT_TOTAL_QUESTIONS,
   getAssessmentSetKey,
   getLegacyDesignationLevel,
+  isMappedTargetRole,
   resolveAssessmentBucket,
 } from "@/lib/assessment";
 import { redirect } from "next/navigation";
@@ -65,6 +66,24 @@ export default async function ExamPage() {
     return (
       <div className="flex h-screen items-center justify-center bg-zinc-50">
         <p>You have already passed the exam.</p>
+      </div>
+    );
+  }
+
+  const requiresManualAssignment =
+    !isMappedTargetRole(profile?.candidate_target_role) &&
+    !profile?.candidate_designation;
+
+  if (requiresManualAssignment) {
+    return (
+      <div className="min-h-screen bg-zinc-50 px-4 pb-16 pt-28">
+        <div className="mx-auto max-w-2xl rounded-3xl border border-zinc-200 bg-white p-8 text-center shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#138d1a]">Assessment assignment pending</p>
+          <h1 className="mt-4 text-3xl font-bold text-[#111827]">Your assessment track will be assigned shortly.</h1>
+          <p className="mt-4 text-sm leading-7 text-zinc-600">
+            Your selected role sits outside the default L&amp;D assessment tracks. An admin can review your registration and assign the right assessment before you begin.
+          </p>
+        </div>
       </div>
     );
   }
