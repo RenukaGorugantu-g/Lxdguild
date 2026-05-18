@@ -190,7 +190,7 @@ export default function EmployerPostJobPage() {
                 </p>
               </div>
 
-              <div className="mt-4 rounded-xl bg-[#f6f8f2] px-4 py-4 text-sm leading-6 text-[#6f7b76]">
+              <div className="mt-4 whitespace-pre-wrap rounded-xl bg-[#f6f8f2] px-4 py-4 text-sm leading-6 text-[#6f7b76]">
                 {description ||
                   "Your job summary preview will appear here so you can quickly review the listing before publishing."}
               </div>

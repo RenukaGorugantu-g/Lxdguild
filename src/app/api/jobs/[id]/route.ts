@@ -27,6 +27,26 @@ function hasMissingColumn(message: string, column: string) {
   );
 }
 
+async function getNextFeaturedRank(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { data, error } = await supabase
+    .from("jobs")
+    .select("featured_rank")
+    .not("featured_rank", "is", null)
+    .order("featured_rank", { ascending: false })
+    .limit(1);
+
+  if (error) {
+    if (error.code === "42703" || hasMissingColumn(error.message || "", "featured_rank")) {
+      return null;
+    }
+
+    throw error;
+  }
+
+  const highestRank = Array.isArray(data) ? data[0]?.featured_rank : null;
+  return typeof highestRank === "number" ? highestRank + 1 : 1;
+}
+
 function createDeletedJobPayload(job: JobRow, actorUserId: string, requestedAt: string) {
   return {
     original_job_id: job.id,
@@ -191,7 +211,7 @@ export async function PUT(
 
     const { data: job } = await supabase
       .from("jobs")
-      .select("user_id, apply_url")
+      .select("user_id, apply_url, featured_rank")
       .eq("id", id)
       .single();
 
@@ -202,6 +222,8 @@ export async function PUT(
     if (!isAdminRole(profile.role) && job.user_id !== user.id) {
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
+
+    const featuredRank = job.featured_rank ?? await getNextFeaturedRank(supabase);
 
     const fullPayload = {
       title,
@@ -214,6 +236,7 @@ export async function PUT(
       last_seen_at: nowIso,
       external_posted_at: nowIso,
       expires_at: expiresAt,
+      ...(featuredRank !== null ? { featured_rank: featuredRank } : {}),
     };
 
     const { error } = await supabase
@@ -238,6 +261,7 @@ export async function PUT(
             location,
             apply_url: resolvedApplyUrl,
             description,
+            ...(featuredRank !== null ? { featured_rank: featuredRank } : {}),
           })
           .eq("id", id);
 
@@ -262,6 +286,7 @@ export async function PUT(
             location,
             apply_url: legacyApplyUrl,
             description,
+            ...(featuredRank !== null ? { featured_rank: featuredRank } : {}),
           })
           .eq("id", id);
 

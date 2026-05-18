@@ -76,26 +76,7 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#39;");
 }
 
-function splitIntoReadableParagraphs(text: string) {
-  const sentences = text
-    .replace(/\s+/g, " ")
-    .split(/(?<=[.!?])\s+(?=[A-Z])/)
-    .map((sentence) => sentence.trim())
-    .filter(Boolean);
-
-  if (sentences.length <= 2) {
-    return [text.trim()];
-  }
-
-  const paragraphs: string[] = [];
-  for (let index = 0; index < sentences.length; index += 2) {
-    paragraphs.push(sentences.slice(index, index + 2).join(" "));
-  }
-
-  return paragraphs;
-}
-
-function formatJobDescriptionHtml(value: string | null | undefined) {
+function legacyFormatJobDescriptionHtml(value: string | null | undefined) {
   const raw = (value || "").trim();
   if (!raw) {
     return "<p>No job description provided yet.</p>";
@@ -173,6 +154,151 @@ function formatJobDescriptionHtml(value: string | null | undefined) {
     return splitIntoReadableParagraphs(lines.join(" "))
       .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
       .join("");
+  });
+
+  return renderedSections.join("");
+}
+
+function splitIntoReadableParagraphs(text: string) {
+  return [text.trim()];
+}
+
+function decodeHtmlEntities(value: string) {
+  return value
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">");
+}
+
+function normalizePlainTextDescription(value: string) {
+  return decodeHtmlEntities(value)
+    .replace(/\r/g, "")
+    .replace(/\u00a0/g, " ")
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/[–—]/g, "-")
+    .replace(/â€¢/g, "•")
+    .replace(/\s+•\s+/g, "\n• ")
+    .replace(/\s+[·▪◦]\s+/g, "\n• ")
+    .replace(/\s+�{1,}\s+/g, "\n• ")
+    .replace(
+      /\b(Description Summary|Overview|Responsibilities|Key Responsibilities|Requirements|Qualifications|Minimum Qualifications|Preferred Qualifications|Nice to Have|Skills Required|Benefits|About the Role|What You'll Do|Who You Are|What We're Looking For|Compensation|Location|Job Overview|About the Job)\s*:/gi,
+      "\n\n$1:"
+    )
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .trim();
+}
+
+function renderDescriptionBlocks(lines: string[]) {
+  const blocks: string[] = [];
+  const paragraphLines: string[] = [];
+  const bulletLines: string[] = [];
+
+  const flushParagraphs = () => {
+    if (paragraphLines.length === 0) return;
+    blocks.push(
+      ...paragraphLines.map((line) => `<p>${escapeHtml(line.replace(/\s+/g, " ").trim())}</p>`)
+    );
+    paragraphLines.length = 0;
+  };
+
+  const flushBullets = () => {
+    if (bulletLines.length === 0) return;
+    blocks.push(
+      `<ul>${bulletLines
+        .map((line) => `<li>${escapeHtml(line.replace(/^[-*•]\s+/, "").replace(/\s+/g, " ").trim())}</li>`)
+        .join("")}</ul>`
+    );
+    bulletLines.length = 0;
+  };
+
+  for (const line of lines) {
+    if (/^[-*•]\s+/.test(line)) {
+      flushParagraphs();
+      bulletLines.push(line);
+      continue;
+    }
+
+    flushBullets();
+    paragraphLines.push(line);
+  }
+
+  flushParagraphs();
+  flushBullets();
+
+  return blocks.join("");
+}
+
+function formatJobDescriptionHtml(value: string | null | undefined) {
+  const raw = (value || "").trim();
+  if (!raw) {
+    return "<p>No job description provided yet.</p>";
+  }
+
+  const withoutScripts = raw
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "");
+
+  const hasHtmlBlocks = /<(p|ul|ol|li|br|h1|h2|h3|h4|h5|h6|div)\b/i.test(withoutScripts);
+  if (hasHtmlBlocks) {
+    return withoutScripts
+      .replace(/<section>/gi, '<section class="job-detail-section">')
+      .replace(/<h4>/gi, '<h4 class="job-detail-heading">')
+      .replace(/<p>/gi, '<p class="job-detail-copy">')
+      .replace(/<ul>/gi, '<ul class="job-detail-list">')
+      .replace(/<li>/gi, '<li class="job-detail-list-item">');
+  }
+
+  const normalized = normalizePlainTextDescription(
+    withoutScripts.replace(/^job description[:\s-]*/i, "")
+  );
+
+  const sections = normalized
+    .split(/\n{2,}/)
+    .map((section) => section.trim())
+    .filter(Boolean);
+
+  const renderedSections = sections.map((section) => {
+    const lines = section
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (lines.length === 0) {
+      return "";
+    }
+
+    const bulletLines = lines.filter((line) => /^[-*•]\s+/.test(line));
+    if (bulletLines.length === lines.length) {
+      return `<ul>${bulletLines
+        .map((line) => `<li>${escapeHtml(line.replace(/^[-*•]\s+/, ""))}</li>`)
+        .join("")}</ul>`;
+    }
+
+    const headingMatch = lines[0].match(
+      /^(Description Summary|Overview|Responsibilities|Key Responsibilities|Requirements|Qualifications|Minimum Qualifications|Preferred Qualifications|Nice to Have|Skills Required|Benefits|About the Role|What You'll Do|Who You Are|What We're Looking For|Compensation|Location|Job Overview|About the Job)\s*:\s*(.*)$/i
+    );
+
+    if (headingMatch) {
+      const heading = headingMatch[1];
+      const firstLineBody = headingMatch[2]?.trim();
+      const remainingLines = lines.slice(1);
+      const contentLines = [firstLineBody, ...remainingLines].filter(Boolean) as string[];
+      const contentBullets = contentLines.filter((line) => /^[-*•]\s+/.test(line));
+
+      if (contentBullets.length === contentLines.length && contentBullets.length > 0) {
+        return `<section><h4>${escapeHtml(heading)}</h4><ul>${contentBullets
+          .map((line) => `<li>${escapeHtml(line.replace(/^[-*•]\s+/, ""))}</li>`)
+          .join("")}</ul></section>`;
+      }
+
+      return `<section><h4>${escapeHtml(heading)}</h4>${renderDescriptionBlocks(contentLines)}</section>`;
+    }
+
+    return renderDescriptionBlocks(lines);
   });
 
   return renderedSections.join("");
@@ -676,7 +802,7 @@ export default async function JobDetailPage({
           <div className="p-8 pt-16">
             <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
               <div className="space-y-4">
-                {job.featured_rank === 1 && (
+                {job.featured_rank != null && (
                   <div className="inline-flex items-center rounded-full border border-[#d8edd5] bg-[#eef9ea] px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-[#179720]">
                     Featured role
                   </div>
@@ -746,8 +872,22 @@ export default async function JobDetailPage({
                 </div>
               ) : (
                 <div className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:min-w-[220px] sm:w-auto">
-                  <p className="text-sm font-semibold text-zinc-700">Employer view</p>
-                  <p className="text-xs mt-1 text-zinc-500">Application controls are available in the applicants list below.</p>
+                  <p className="text-sm font-semibold text-zinc-700">{profile?.role === "admin" ? "Admin view" : "Employer view"}</p>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    {profile?.role === "admin"
+                      ? "You can edit this role directly or review the applicants below."
+                      : "Application controls are available in the applicants list below."}
+                  </p>
+                  {(isJobOwner || profile?.role === "admin") && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Link
+                        href={`/dashboard/employer/jobs/${job.id}/edit`}
+                        className="inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+                      >
+                        Edit Job
+                      </Link>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

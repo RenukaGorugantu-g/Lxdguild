@@ -12,6 +12,26 @@ function hasMissingColumn(message: string, column: string) {
   );
 }
 
+async function getNextFeaturedRank(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const { data, error } = await supabase
+    .from("jobs")
+    .select("featured_rank")
+    .not("featured_rank", "is", null)
+    .order("featured_rank", { ascending: false })
+    .limit(1);
+
+  if (error) {
+    if (error.code === "42703" || hasMissingColumn(error.message || "", "featured_rank")) {
+      return null;
+    }
+
+    throw error;
+  }
+
+  const highestRank = Array.isArray(data) ? data[0]?.featured_rank : null;
+  return typeof highestRank === "number" ? highestRank + 1 : 1;
+}
+
 function notifyJobPosted(userId: string, title: string, company: string, jobId?: string | null) {
   const jobUrl = jobId ? `${getSiteUrl()}/dashboard/jobs/${jobId}` : `${getSiteUrl()}/dashboard/employer`;
   queueMicrotask(() => {
@@ -118,6 +138,8 @@ export async function POST(req: Request) {
       }
     }
 
+    const featuredRank = await getNextFeaturedRank(supabase);
+
     const fullPayload = {
       title,
       company,
@@ -131,6 +153,7 @@ export async function POST(req: Request) {
       last_seen_at: nowIso,
       external_posted_at: nowIso,
       expires_at: expiresAt,
+      ...(featuredRank !== null ? { featured_rank: featuredRank } : {}),
     };
 
     const { data: insertedJob, error: insertError } = await supabase
@@ -157,6 +180,7 @@ export async function POST(req: Request) {
             source: "employer",
             apply_url: resolvedApplyUrl,
             user_id: user.id,
+            ...(featuredRank !== null ? { featured_rank: featuredRank } : {}),
           })
           .select("id, title, company");
 
@@ -189,6 +213,7 @@ export async function POST(req: Request) {
           last_seen_at: nowIso,
           external_posted_at: nowIso,
           expires_at: expiresAt,
+          ...(featuredRank !== null ? { featured_rank: featuredRank } : {}),
         }).select('id, title, company');
 
         if (fallbackError) {

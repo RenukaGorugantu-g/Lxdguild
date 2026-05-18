@@ -294,10 +294,10 @@ async function fetchFeaturedJobs(jobsReader: any) {
     .order("featured_rank", { ascending: true })
     .order("external_posted_at", { ascending: false, nullsFirst: false })
     .order("imported_at", { ascending: false })
-    .limit(3);
+    .limit(6);
 
   if (primaryQuery.error?.code !== "42703") {
-    return dedupeFeaturedJobs((primaryQuery.data || []).filter((job: JobListItem) => job.is_active !== false)).slice(0, 3);
+    return dedupeFeaturedJobs((primaryQuery.data || []).filter((job: JobListItem) => job.is_active !== false)).slice(0, 6);
   }
 
   return [] as JobListItem[];
