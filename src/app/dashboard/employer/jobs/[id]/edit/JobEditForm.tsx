@@ -2,28 +2,97 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Send, Star } from "lucide-react";
 import { normalizeExternalApplyUrl } from "@/lib/job-apply";
 
 type JobData = {
   id: string;
   title: string;
-  company: string;
+  company: string | null;
   location: string;
   apply_url: string | null;
   description: string;
+  employment_type?: string | null;
+  job_kind?: string | null;
+  featured_rank?: number | null;
 };
 
-export default function JobEditForm({ initialJob }: { initialJob: JobData }) {
+type PostingType = "full_time" | "part_time" | "freelance";
+
+const postingOptions: Array<{
+  value: PostingType;
+  label: string;
+  helper: string;
+}> = [
+  {
+    value: "full_time",
+    label: "Full-time",
+    helper: "Permanent roles with a standard weekly schedule.",
+  },
+  {
+    value: "part_time",
+    label: "Part-time",
+    helper: "Reduced weekly hours or a more flexible schedule.",
+  },
+  {
+    value: "freelance",
+    label: "Freelance",
+    helper: "Project-based or consultant-style contracts.",
+  },
+];
+
+function getPostingType(initialJob: JobData): PostingType {
+  if (initialJob.job_kind === "freelance" || initialJob.employment_type === "contract") {
+    return "freelance";
+  }
+
+  if (initialJob.employment_type === "part_time") {
+    return "part_time";
+  }
+
+  return "full_time";
+}
+
+function getJobAttributes(postingType: PostingType) {
+  if (postingType === "freelance") {
+    return {
+      job_kind: "freelance" as const,
+      employment_type: "contract" as const,
+    };
+  }
+
+  if (postingType === "part_time") {
+    return {
+      job_kind: "standard" as const,
+      employment_type: "part_time" as const,
+    };
+  }
+
+  return {
+    job_kind: "standard" as const,
+    employment_type: "full_time" as const,
+  };
+}
+
+export default function JobEditForm({
+  initialJob,
+  isAdmin,
+}: {
+  initialJob: JobData;
+  isAdmin: boolean;
+}) {
   const [title, setTitle] = useState(initialJob.title || "");
   const [company, setCompany] = useState(initialJob.company || "");
   const [location, setLocation] = useState(initialJob.location || "");
   const [applyUrl, setApplyUrl] = useState(normalizeExternalApplyUrl(initialJob.apply_url) || "");
   const [description, setDescription] = useState(initialJob.description || "");
+  const [postingType, setPostingType] = useState<PostingType>(getPostingType(initialJob));
+  const [featured, setFeatured] = useState(initialJob.featured_rank != null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const jobAttributes = getJobAttributes(postingType);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -36,7 +105,16 @@ export default function JobEditForm({ initialJob }: { initialJob: JobData }) {
       const res = await fetch(`/api/jobs/${initialJob.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, company, location, apply_url: applyUrl, description }),
+        body: JSON.stringify({
+          title,
+          company,
+          location,
+          apply_url: applyUrl,
+          description,
+          job_kind: jobAttributes.job_kind,
+          employment_type: jobAttributes.employment_type,
+          featured: isAdmin ? featured : undefined,
+        }),
       });
 
       const data = await res.json();
@@ -83,9 +161,11 @@ export default function JobEditForm({ initialJob }: { initialJob: JobData }) {
                 <input
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
-                  required
                   className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200"
                 />
+                <p className="text-xs leading-5 text-zinc-500">
+                  Optional for now if you want the client or company to stay private.
+                </p>
               </label>
             </div>
 
@@ -112,6 +192,55 @@ export default function JobEditForm({ initialJob }: { initialJob: JobData }) {
                 </p>
               </label>
             </div>
+
+            <div className="space-y-3">
+              <p className="text-sm font-medium">Role Type</p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {postingOptions.map((option) => {
+                  const selected = postingType === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setPostingType(option.value)}
+                      className={`rounded-2xl border px-4 py-4 text-left transition ${
+                        selected
+                          ? "border-brand-500 bg-brand-50 shadow-[0_10px_24px_rgba(34,197,94,0.10)]"
+                          : "border-zinc-200 bg-zinc-50 hover:border-zinc-300"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-zinc-900">{option.label}</p>
+                          <p className="mt-2 text-xs leading-5 text-zinc-500">{option.helper}</p>
+                        </div>
+                        {selected ? <CheckCircle2 className="mt-0.5 h-4 w-4 text-brand-600" /> : null}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {isAdmin ? (
+              <label className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+                <input
+                  type="checkbox"
+                  checked={featured}
+                  onChange={(event) => setFeatured(event.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-zinc-300 text-brand-600 focus:ring-brand-300"
+                />
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-zinc-900">
+                    <Star className="h-4 w-4 text-amber-600" />
+                    Featured job
+                  </div>
+                  <p className="mt-1 text-xs leading-5 text-zinc-600">
+                    Keep this enabled if you want the listing highlighted and available to custom-track candidates.
+                  </p>
+                </div>
+              </label>
+            ) : null}
 
             <label className="space-y-2 text-sm font-medium">
               Job Description

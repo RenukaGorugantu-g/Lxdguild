@@ -32,7 +32,18 @@ async function getNextFeaturedRank(supabase: Awaited<ReturnType<typeof createCli
   return typeof highestRank === "number" ? highestRank + 1 : 1;
 }
 
-function notifyJobPosted(userId: string, title: string, company: string, jobId?: string | null) {
+function normalizeJobKind(value: unknown) {
+  return value === "freelance" ? "freelance" : "standard";
+}
+
+function normalizeEmploymentType(value: unknown) {
+  if (value === "part_time") return "part_time";
+  if (value === "contract") return "contract";
+  return "full_time";
+}
+
+function notifyJobPosted(userId: string, title: string, company?: string | null, jobId?: string | null) {
+  const companyLabel = company?.trim() || "Confidential employer";
   const jobUrl = jobId ? `${getSiteUrl()}/dashboard/jobs/${jobId}` : `${getSiteUrl()}/dashboard/employer`;
   queueMicrotask(() => {
     void import("@/lib/notifications")
@@ -42,14 +53,14 @@ function notifyJobPosted(userId: string, title: string, company: string, jobId?:
             userId,
             "job_posted",
             "Job posted successfully",
-            `Your job posting for ${title} at ${company} is live. Candidates will be notified when they apply.`,
-            { job_id: jobId, title, company, job_url: jobUrl, employer_job_url: jobUrl }
+            `Your job posting for ${title} at ${companyLabel} is live. Candidates will be notified when they apply.`,
+            { job_id: jobId, title, company: companyLabel, job_url: jobUrl, employer_job_url: jobUrl }
           ),
           notifyAdmins(
             "job_posted_admin",
             "Employer posted a new job",
-            `An employer posted a new job: ${title} at ${company}.`,
-            { job_id: jobId, title, company, job_url: jobUrl, employer_job_url: jobUrl }
+            `An employer posted a new job: ${title} at ${companyLabel}.`,
+            { job_id: jobId, title, company: companyLabel, job_url: jobUrl, employer_job_url: jobUrl }
           ),
         ])
       )
@@ -59,7 +70,8 @@ function notifyJobPosted(userId: string, title: string, company: string, jobId?:
   });
 }
 
-function notifyLegacyJobPosted(userId: string, title: string, company: string, jobId?: string | null) {
+function notifyLegacyJobPosted(userId: string, title: string, company?: string | null, jobId?: string | null) {
+  const companyLabel = company?.trim() || "Confidential employer";
   const jobUrl = jobId ? `${getSiteUrl()}/dashboard/jobs/${jobId}` : `${getSiteUrl()}/dashboard/employer`;
   queueMicrotask(() => {
     void import("@/lib/notifications")
@@ -69,14 +81,14 @@ function notifyLegacyJobPosted(userId: string, title: string, company: string, j
             userId,
             "job_posted",
             "Job posted successfully",
-            `Your job posting for ${title} at ${company} is live. Apply the latest jobs migrations to enable expiry and freshness tracking.`,
-            { job_id: jobId, title, company, job_url: jobUrl, employer_job_url: jobUrl }
+            `Your job posting for ${title} at ${companyLabel} is live. Apply the latest jobs migrations to enable expiry and freshness tracking.`,
+            { job_id: jobId, title, company: companyLabel, job_url: jobUrl, employer_job_url: jobUrl }
           ),
           notifyAdmins(
             "job_posted_admin",
             "Employer posted a new job",
-            `An employer posted a new job: ${title} at ${company}. The database is missing job lifecycle columns, so the job was saved in compatibility mode.`,
-            { job_id: jobId, title, company, job_url: jobUrl, employer_job_url: jobUrl }
+            `An employer posted a new job: ${title} at ${companyLabel}. The database is missing job lifecycle columns, so the job was saved in compatibility mode.`,
+            { job_id: jobId, title, company: companyLabel, job_url: jobUrl, employer_job_url: jobUrl }
           ),
         ])
       )
@@ -89,14 +101,18 @@ function notifyLegacyJobPosted(userId: string, title: string, company: string, j
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { title, company, location, apply_url, description } = body;
+    const { title, company, location, apply_url, description, job_kind, employment_type, featured } = body;
+    const normalizedCompany = typeof company === "string" ? company.trim() : "";
     const normalizedApplyUrl = typeof apply_url === "string" ? apply_url.trim() : "";
     const resolvedApplyUrl = normalizedApplyUrl || buildInternalApplyValue(crypto.randomUUID());
+    const normalizedJobKind = normalizeJobKind(job_kind);
+    const normalizedEmploymentType =
+      normalizedJobKind === "freelance" ? "contract" : normalizeEmploymentType(employment_type);
     const nowIso = new Date().toISOString();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    if (!title || !company || !location || !description) {
-      return NextResponse.json({ error: "All fields are required." }, { status: 400 });
+    if (!title || !location || !description) {
+      return NextResponse.json({ error: "Title, location, and description are required." }, { status: 400 });
     }
 
     const supabase = await createClient();
@@ -138,13 +154,16 @@ export async function POST(req: Request) {
       }
     }
 
-    const featuredRank = await getNextFeaturedRank(supabase);
+    const featuredRank =
+      isAdminRole(profile.role) && featured === true ? await getNextFeaturedRank(supabase) : null;
 
     const fullPayload = {
       title,
-      company,
+      company: normalizedCompany || null,
       location,
       description,
+      job_kind: normalizedJobKind,
+      employment_type: normalizedEmploymentType,
       source: "employer",
       apply_url: resolvedApplyUrl,
       user_id: user.id,
@@ -174,9 +193,11 @@ export async function POST(req: Request) {
           .from("jobs")
           .insert({
             title,
-            company,
+            company: normalizedCompany || null,
             location,
             description,
+            job_kind: normalizedJobKind,
+            employment_type: normalizedEmploymentType,
             source: "employer",
             apply_url: resolvedApplyUrl,
             user_id: user.id,
@@ -203,9 +224,11 @@ export async function POST(req: Request) {
       if (message.includes("user_id") && message.includes("does not exist")) {
         const { data: fallbackJob, error: fallbackError } = await supabase.from("jobs").insert({
           title,
-          company,
+          company: normalizedCompany || null,
           location,
           description,
+          job_kind: normalizedJobKind,
+          employment_type: normalizedEmploymentType,
           source: "employer",
           apply_url: resolvedApplyUrl,
           is_active: true,

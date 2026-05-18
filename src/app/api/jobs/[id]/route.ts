@@ -47,6 +47,16 @@ async function getNextFeaturedRank(supabase: Awaited<ReturnType<typeof createCli
   return typeof highestRank === "number" ? highestRank + 1 : 1;
 }
 
+function normalizeJobKind(value: unknown) {
+  return value === "freelance" ? "freelance" : "standard";
+}
+
+function normalizeEmploymentType(value: unknown) {
+  if (value === "part_time") return "part_time";
+  if (value === "contract") return "contract";
+  return "full_time";
+}
+
 function createDeletedJobPayload(job: JobRow, actorUserId: string, requestedAt: string) {
   return {
     original_job_id: job.id,
@@ -183,14 +193,18 @@ export async function PUT(
   try {
     const { id } = await context.params;
     const body = await req.json();
-    const { title, company, location, apply_url, description } = body;
+    const { title, company, location, apply_url, description, job_kind, employment_type, featured } = body;
+    const normalizedCompany = typeof company === "string" ? company.trim() : "";
     const normalizedApplyUrl = typeof apply_url === "string" ? apply_url.trim() : "";
     const resolvedApplyUrl = normalizedApplyUrl || buildInternalApplyValue(id);
+    const normalizedJobKind = normalizeJobKind(job_kind);
+    const normalizedEmploymentType =
+      normalizedJobKind === "freelance" ? "contract" : normalizeEmploymentType(employment_type);
     const nowIso = new Date().toISOString();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    if (!title || !company || !location || !description) {
-      return NextResponse.json({ error: "All fields are required." }, { status: 400 });
+    if (!title || !location || !description) {
+      return NextResponse.json({ error: "Title, location, and description are required." }, { status: 400 });
     }
 
     const supabase = await createClient();
@@ -223,20 +237,28 @@ export async function PUT(
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
 
-    const featuredRank = job.featured_rank ?? await getNextFeaturedRank(supabase);
+    const featuredRank = isAdminRole(profile.role)
+      ? featured === true
+        ? job.featured_rank ?? await getNextFeaturedRank(supabase)
+        : null
+      : job.featured_rank ?? null;
+    const featuredPayload =
+      isAdminRole(profile.role) || job.featured_rank != null ? { featured_rank: featuredRank } : {};
 
     const fullPayload = {
       title,
-      company,
+      company: normalizedCompany || null,
       location,
       apply_url: resolvedApplyUrl,
       description,
+      job_kind: normalizedJobKind,
+      employment_type: normalizedEmploymentType,
       is_active: true,
       imported_at: nowIso,
       last_seen_at: nowIso,
       external_posted_at: nowIso,
       expires_at: expiresAt,
-      ...(featuredRank !== null ? { featured_rank: featuredRank } : {}),
+      ...featuredPayload,
     };
 
     const { error } = await supabase
@@ -257,11 +279,13 @@ export async function PUT(
           .from("jobs")
           .update({
             title,
-            company,
+            company: normalizedCompany || null,
             location,
             apply_url: resolvedApplyUrl,
             description,
-            ...(featuredRank !== null ? { featured_rank: featuredRank } : {}),
+            job_kind: normalizedJobKind,
+            employment_type: normalizedEmploymentType,
+            ...featuredPayload,
           })
           .eq("id", id);
 
@@ -282,11 +306,13 @@ export async function PUT(
           .from("jobs")
           .update({
             title,
-            company,
+            company: normalizedCompany || null,
             location,
             apply_url: legacyApplyUrl,
             description,
-            ...(featuredRank !== null ? { featured_rank: featuredRank } : {}),
+            job_kind: normalizedJobKind,
+            employment_type: normalizedEmploymentType,
+            ...featuredPayload,
           })
           .eq("id", id);
 

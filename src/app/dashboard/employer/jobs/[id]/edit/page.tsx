@@ -25,7 +25,7 @@ export default async function EditJobPage({
 
   const { data: job } = await supabase
     .from("jobs")
-    .select("id, title, company, location, apply_url, description, user_id")
+    .select("id, title, company, location, apply_url, description, user_id, employment_type, job_kind, featured_rank")
     .eq("id", id)
     .single();
 
@@ -35,5 +35,5 @@ export default async function EditJobPage({
     redirect("/dashboard");
   }
 
-  return <JobEditForm initialJob={job} />;
+  return <JobEditForm initialJob={job} isAdmin={isAdminRole(profile.role)} />;
 }
