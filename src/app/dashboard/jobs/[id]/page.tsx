@@ -992,7 +992,7 @@ export default async function JobDetailPage({
                     You can review the role details now. Sign in to upload a resume, unlock ATS guidance, and apply.
                   </p>
                   <div className="mt-4 flex flex-col gap-2">
-                    <Link href="/register?role=candidate" className="marketing-primary justify-center text-sm">
+                    <Link href="/candidate" className="marketing-primary justify-center text-sm">
                       Sign in to apply
                     </Link>
                     <Link href="/candidate" className="marketing-secondary justify-center text-sm">

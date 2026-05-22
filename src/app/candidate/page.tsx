@@ -158,7 +158,7 @@ export default async function CandidateLandingPage() {
 
   const isSignedInCandidate = baseRole === "candidate";
   const primaryHref = isSignedInCandidate ? "/dashboard/candidate" : "/register?role=candidate";
-  const secondaryHref = isSignedInCandidate ? "/dashboard/candidate/exam" : "/register?role=candidate&intent=skill-validation";
+  const secondaryHref = isSignedInCandidate ? "/dashboard/candidate/exam" : "/candidate";
   const candidateJsonLd = {
     "@context": "https://schema.org",
     "@type": "WebPage",

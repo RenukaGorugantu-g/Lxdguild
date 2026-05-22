@@ -21,9 +21,15 @@ import {
 import Link from "next/link";
 import JobSidebar from "./JobSidebar";
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string; view?: string; remote?: string; schedule?: string; page?: string; q?: string }>;
+}): Promise<Metadata> {
   const { activeJobs } = await getMarketplaceSeoCounts();
   const formattedJobs = formatCount(activeJobs || 31780);
+  const { category, view, remote, schedule, page, q } = await searchParams;
+  const hasFilters = Boolean(category || view || remote || schedule || q || (page && page !== "1"));
 
   return {
     title: `${formattedJobs}+ Instructional Designer Jobs India | L&D Job Board`,
@@ -49,6 +55,18 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: {
       canonical: "/dashboard/jobs",
     },
+    robots: hasFilters
+      ? {
+          index: false,
+          follow: true,
+          googleBot: {
+            index: false,
+            follow: true,
+            "max-image-preview": "large",
+            "max-snippet": -1,
+          },
+        }
+      : undefined,
     openGraph: {
       title: `${formattedJobs}+ Instructional Designer Jobs India | L&D Job Board`,
       description:
@@ -628,6 +646,7 @@ export default async function JobsDashboard({
                   <Link
                     key={categoryName}
                     href={`/dashboard/jobs?category=${encodeURIComponent(categoryName)}`}
+                    rel="nofollow"
                     className="rounded-full border border-[#dbe6d6] bg-[#f8fbf5] px-4 py-2 text-sm font-medium text-[#2c3d29] transition hover:border-[#23b61f] hover:text-[#179720]"
                   >
                     {categoryName}
@@ -683,7 +702,7 @@ export default async function JobsDashboard({
                         Contract and consulting work sourced separately for freelance-focused members.
                       </p>
                     </div>
-                    <Link href="/dashboard/jobs?view=freelance" className="marketing-secondary">
+                    <Link href="/dashboard/jobs?view=freelance" rel="nofollow" className="marketing-secondary">
                       View all freelance jobs
                     </Link>
                   </div>
@@ -723,7 +742,7 @@ export default async function JobsDashboard({
                     {lockReason || "Jobs are visible, but applying is locked. Complete the assessment to unlock applications."}
                   </div>
                   <Link
-                    href={isGuestViewer ? "/register?role=candidate" : isFreeAccessCandidate ? "/dashboard/candidate/profile" : "/dashboard/candidate/exam"}
+                    href={isGuestViewer ? "/candidate" : isFreeAccessCandidate ? "/dashboard/candidate/profile" : "/dashboard/candidate/exam"}
                     className="marketing-primary px-4 py-2 text-sm"
                   >
                     {isGuestViewer ? "Sign in to apply" : isFreeAccessCandidate ? "Verify to Continue" : "Write Assessment"}

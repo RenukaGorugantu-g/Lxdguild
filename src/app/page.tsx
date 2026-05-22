@@ -173,9 +173,9 @@ export default async function LandingPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const primaryHref = user ? "/dashboard/candidate" : "/register?role=candidate";
+  const primaryHref = user ? "/dashboard/candidate" : "/candidate";
   const secondaryHref = user ? "/dashboard/employer" : "/employer";
-  const jobsCtaHref = user ? "/dashboard/jobs" : "/register?role=candidate&intent=job-board";
+  const jobsCtaHref = "/dashboard/jobs";
 
   const jobPreviewQuery = await jobsReader
     .from("jobs")
@@ -351,7 +351,7 @@ export default async function LandingPage() {
                 </p>
                 <div className="grid gap-4 lg:grid-cols-3">
                   {liveJobs.map((job) => {
-                    const href = user ? `/dashboard/jobs/${job.id}` : "/register?role=candidate&intent=job-board";
+                    const href = user ? `/dashboard/jobs/${job.id}` : "/dashboard/jobs";
                     const modeLabel =
                       job.work_mode === "remote"
                         ? "Remote"
@@ -622,6 +622,7 @@ export default async function LandingPage() {
                   <Link
                     key={category}
                     href={`/dashboard/jobs?category=${encodeURIComponent(category)}`}
+                    rel="nofollow"
                     className="rounded-full border border-[#dbe6d6] bg-[#f8fbf5] px-4 py-2 text-sm font-medium text-[#2c3d29] transition hover:border-[#179720] hover:text-[#179720]"
                   >
                     {category}

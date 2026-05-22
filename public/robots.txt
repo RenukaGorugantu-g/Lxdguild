@@ -3,7 +3,9 @@ Allow: /
 Allow: /dashboard/jobs
 Allow: /dashboard/jobs/
 Disallow: /api/
+Disallow: /_next/
 Disallow: /dashboard
+Disallow: /dashboard/jobs?*
 Disallow: /dashboard/admin
 Disallow: /dashboard/candidate
 Disallow: /dashboard/employer
@@ -11,5 +13,6 @@ Disallow: /dashboard/membership
 Disallow: /dashboard/resources
 Disallow: /login
 Disallow: /register
+Disallow: /register?*
 
 Sitemap: https://lxdmarketplace.lxdguild.com/sitemap.xml

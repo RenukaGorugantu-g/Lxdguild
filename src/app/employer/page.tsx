@@ -430,6 +430,7 @@ export default async function EmployerLandingPage() {
                   <Link
                     key={role}
                     href={`/dashboard/jobs?category=${encodeURIComponent(role)}`}
+                    rel="nofollow"
                     className="rounded-full border border-[#dbe6d6] bg-[#f8fbf5] px-4 py-2 text-sm font-medium text-[#2c3d29] transition hover:border-[#179720] hover:text-[#179720]"
                   >
                     {role}
