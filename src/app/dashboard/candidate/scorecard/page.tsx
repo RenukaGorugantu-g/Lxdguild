@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { Award, BookOpen, ChevronRight, AlertTriangle, CheckCircle2 } from "lucide-react";
@@ -5,6 +6,12 @@ import Link from "next/link";
 import AssessmentBadgeShare from "./AssessmentBadgeShare";
 import { getCourseRecommendations, PASS_THRESHOLD } from "@/lib/assessment";
 import { getSiteUrl } from "@/lib/site-url";
+import { buildNoIndexMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildNoIndexMetadata(
+  "Assessment Scorecard",
+  "Private assessment results, score breakdown, and recommended learning paths for candidates."
+);
 
 export default async function ScorecardPage() {
   const supabase = await createClient();

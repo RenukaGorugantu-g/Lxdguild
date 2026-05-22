@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import {
   buildRoleMatchedAssessment,
@@ -9,6 +10,12 @@ import {
 } from "@/lib/assessment";
 import { redirect } from "next/navigation";
 import ExamClient from "./client-page";
+import { buildNoIndexMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildNoIndexMetadata(
+  "Candidate Assessment",
+  "Private assessment route for candidate skill validation and LXD Guild score generation."
+);
 
 type ExamQuestionRow = {
   id: string;

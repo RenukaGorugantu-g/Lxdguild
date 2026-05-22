@@ -1,9 +1,11 @@
+import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { syncJobFeedIfStale } from "@/lib/job-feed";
 import { isAdminRole } from "@/lib/profile-role";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
+import { formatCount, getMarketplaceSeoCounts, toJsonLdScriptProps } from "@/lib/seo";
 import { redirect } from "next/navigation";
 import {
   BriefcaseBusiness,
@@ -18,6 +20,48 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import JobSidebar from "./JobSidebar";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const { activeJobs } = await getMarketplaceSeoCounts();
+  const formattedJobs = formatCount(activeJobs || 31780);
+
+  return {
+    title: `${formattedJobs}+ Instructional Designer Jobs India | L&D Job Board`,
+    description:
+      "Browse verified instructional design, eLearning development, and L&D jobs in India. Full-time, remote, and freelance opportunities. Apply to exclusive L&D roles today.",
+    keywords: [
+      "Instructional designer jobs India",
+      "eLearning developer jobs",
+      "Learning experience designer openings",
+      "L&D manager positions",
+      "Curriculum developer careers",
+      "Instructional design jobs remote",
+      "Corporate trainer jobs",
+      "Learning consultant opportunities",
+      "Articulate Storyline developer jobs",
+      "LMS administrator jobs",
+      "Training specialist positions",
+      "EdTech jobs India",
+      "Full-time instructional design roles",
+      "Freelance eLearning developer work",
+      "L&D job board India",
+    ],
+    alternates: {
+      canonical: "/dashboard/jobs",
+    },
+    openGraph: {
+      title: `${formattedJobs}+ Instructional Designer Jobs India | L&D Job Board`,
+      description:
+        "Browse verified instructional design, eLearning development, and L&D jobs in India. Full-time, remote, and freelance opportunities.",
+      url: "/dashboard/jobs",
+    },
+    twitter: {
+      title: `${formattedJobs}+ Instructional Designer Jobs India | L&D Job Board`,
+      description:
+        "Browse verified instructional design, eLearning development, and L&D jobs in India. Full-time, remote, and freelance opportunities.",
+    },
+  };
+}
 
 type JobListItem = {
   id: string;
@@ -392,19 +436,85 @@ export default async function JobsDashboard({
 
   const jobsToRender = view === "freelance" ? jobsList : jobsList.filter((job: JobListItem) => !featuredFreelanceIds.has(job.id));
   const paginatedJobs = jobsToRender;
-  const pageTitle = view === "freelance" ? "Freelance L&D Jobs" : view === "standard" ? "Standard L&D Jobs" : "L&D Job Board";
+  const formattedTotalJobs = formatCount(totalJobs);
+  const topCompanies = Array.from(
+    new Set(
+      [...featuredJobs, ...freelanceJobs, ...paginatedJobs]
+        .map((job: JobListItem) => job.company?.trim())
+        .filter((company): company is string => Boolean(company))
+    )
+  ).slice(0, 6);
+  const schemaLeadJob = featuredJobs[0] || paginatedJobs[0] || freelanceJobs[0] || null;
+  const pageTitle =
+    view === "freelance"
+      ? "Remote & Freelance eLearning Developer Jobs"
+      : view === "standard"
+        ? "Full-Time L&D Jobs in India"
+        : `Browse ${formattedTotalJobs}+ Instructional Designer & L&D Jobs in India`;
   const pageDescription =
     view === "freelance"
-      ? "Short-term, contract, and freelance-friendly L&D opportunities."
+      ? "Discover freelance eLearning developer work, contract instructional design roles, and remote L&D projects."
       : isGuestViewer
-        ? "Preview a curated set of marketplace roles. Sign in to unlock the full board and apply."
-        : "Exclusive roles for verified LXD Guild professionals.";
+        ? "Browse instructional designer jobs in India, remote eLearning developer roles, and curated L&D opportunities before you sign in."
+        : "Browse verified instructional design, eLearning development, and L&D jobs across India with full application access.";
   const activeFilterChips = [
     normalizedQuery ? `Search: ${normalizedQuery}` : null,
     remote === "remote" ? "Remote" : null,
     schedule === "full-time" ? "Full-time" : null,
     schedule === "part-time" ? "Part-time" : null,
   ].filter(Boolean);
+  const jobsJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "L&D Job Board",
+    description: "Browse instructional design jobs, eLearning developer positions, and L&D career opportunities across India.",
+    url: "https://lxdmarketplace.lxdguild.com/dashboard/jobs",
+    breadcrumb: {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: "https://lxdmarketplace.lxdguild.com/",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Job Board",
+          item: "https://lxdmarketplace.lxdguild.com/dashboard/jobs",
+        },
+      ],
+    },
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: totalJobs,
+      itemListElement: schemaLeadJob
+        ? [
+            {
+              "@type": "JobPosting",
+              title: schemaLeadJob.title,
+              hiringOrganization: {
+                "@type": "Organization",
+                name: schemaLeadJob.company || "LXD Guild employer",
+              },
+              jobLocation: {
+                "@type": "Place",
+                address: {
+                  "@type": "PostalAddress",
+                  addressLocality: schemaLeadJob.location || "India",
+                  addressCountry: "IN",
+                },
+              },
+              datePosted: schemaLeadJob.external_posted_at || schemaLeadJob.imported_at || schemaLeadJob.created_at || undefined,
+              validThrough: schemaLeadJob.expires_at || undefined,
+              employmentType: schemaLeadJob.employment_type?.toUpperCase() || "FULL_TIME",
+              description: stripHtmlPreview(schemaLeadJob.description),
+            },
+          ]
+        : [],
+    },
+  };
 
   const buildJobsHref = (nextPage: number) => {
     const params = new URLSearchParams();
@@ -421,6 +531,7 @@ export default async function JobsDashboard({
     <div className="marketing-page min-h-screen">
       <div className="marketing-section pt-32 pb-16">
         <div className="marketing-container space-y-8">
+          <script type="application/ld+json" dangerouslySetInnerHTML={toJsonLdScriptProps(jobsJsonLd)} />
           <div className="lg:hidden">
             <JobSidebar categories={categories} />
           </div>
@@ -431,6 +542,10 @@ export default async function JobsDashboard({
               <div>
                 <h1 className="marketing-title max-w-2xl text-5xl">{pageTitle}</h1>
                 <p className="marketing-copy mt-4 max-w-2xl text-base leading-8">{pageDescription}</p>
+                <p className="mt-4 max-w-2xl text-sm leading-7 text-[#5b6757]">
+                  Explore instructional designer jobs in India, remote eLearning developer opportunities, curriculum
+                  developer careers, and learning experience designer openings from one focused L&amp;D job board.
+                </p>
               </div>
               {activeFilterChips.length > 0 && (
                 <div className="flex flex-wrap gap-2">
@@ -477,6 +592,47 @@ export default async function JobsDashboard({
                     <div key={index} className={`${index === 3 ? "bg-[#35d421]" : "bg-[#dff5d8]"} rounded-t-xl`} style={{ height: `${height + 18}px` }} />
                   ))}
                 </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="grid gap-6 lg:grid-cols-[1.02fr_0.98fr]">
+            <div className="marketing-grid-card p-5">
+              <h2 className="text-2xl font-semibold text-[#111827]">Top Instructional Design Companies Hiring Now</h2>
+              <p className="mt-3 text-sm leading-7 text-[#5b6757]">
+                These employers appear most often in the current marketplace mix for instructional design, eLearning
+                development, and broader learning and development roles.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-3">
+                {topCompanies.length > 0 ? (
+                  topCompanies.map((company) => (
+                    <span key={company} className="rounded-full border border-[#dbe6d6] bg-[#f8fbf5] px-4 py-2 text-sm font-medium text-[#2c3d29]">
+                      {company}
+                    </span>
+                  ))
+                ) : (
+                  <span className="rounded-full border border-[#dbe6d6] bg-[#f8fbf5] px-4 py-2 text-sm font-medium text-[#2c3d29]">
+                    Verified employers
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="marketing-grid-card p-5">
+              <h2 className="text-2xl font-semibold text-[#111827]">Popular L&amp;D Job Categories</h2>
+              <h3 className="mt-3 text-sm font-semibold uppercase tracking-[0.16em] text-[#6d7d68]">
+                Filter by Role Type, Location &amp; Schedule
+              </h3>
+              <div className="mt-5 flex flex-wrap gap-3">
+                {categories.map((categoryName) => (
+                  <Link
+                    key={categoryName}
+                    href={`/dashboard/jobs?category=${encodeURIComponent(categoryName)}`}
+                    className="rounded-full border border-[#dbe6d6] bg-[#f8fbf5] px-4 py-2 text-sm font-medium text-[#2c3d29] transition hover:border-[#23b61f] hover:text-[#179720]"
+                  >
+                    {categoryName}
+                  </Link>
+                ))}
               </div>
             </div>
           </section>

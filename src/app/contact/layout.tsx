@@ -4,6 +4,15 @@ export const metadata: Metadata = {
   title: "Contact | LXD Guild",
   description:
     "Talk to the LXD Guild team about hiring, partnerships, pricing, support, or product questions.",
+  alternates: {
+    canonical: "/contact",
+  },
+  openGraph: {
+    title: "Contact LXD Guild",
+    description:
+      "Talk to the LXD Guild team about hiring, partnerships, pricing, support, or product questions.",
+    url: "/contact",
+  },
 };
 
 export default function ContactLayout({ children }: { children: React.ReactNode }) {

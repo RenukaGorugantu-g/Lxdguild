@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import MembershipCheckout from "./MembershipCheckout";
 import { MEMBER_ANNUAL_PRICE_INR, formatMembershipDate, getMembershipState } from "@/lib/membership";
+import { buildNoIndexMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildNoIndexMetadata(
+  "Membership Dashboard",
+  "Private membership checkout and plan management for LXD Guild users."
+);
 
 export const dynamic = "force-dynamic";
 

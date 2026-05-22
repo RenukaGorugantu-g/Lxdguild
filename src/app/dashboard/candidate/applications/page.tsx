@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowLeft, Briefcase, ExternalLink } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { normalizeExternalApplyUrl } from "@/lib/job-apply";
+import { buildNoIndexMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildNoIndexMetadata(
+  "My Applications",
+  "Private view of your submitted LXD Guild job applications and interview progress."
+);
 
 type ApplicationJob = {
   id?: string;

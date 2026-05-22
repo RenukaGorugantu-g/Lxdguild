@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import { getBaseRole } from "@/lib/profile-role";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { loadProfile } from "@/lib/load-profile";
+import { buildNoIndexMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildNoIndexMetadata(
+  "Dashboard Redirect",
+  "Private account redirect for LXD Guild members."
+);
 
 export const dynamic = "force-dynamic";
 

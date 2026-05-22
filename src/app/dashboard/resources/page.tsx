@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
@@ -5,6 +6,12 @@ import { getResourceSlug, syncResourceCatalog } from "@/lib/resource-catalog";
 import { getMembershipState } from "@/lib/membership";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import ResourcesCatalog from "./ResourcesCatalog";
+import { buildNoIndexMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildNoIndexMetadata(
+  "Resource Library",
+  "Private member resource library with curated L&D assets, templates, and guides."
+);
 
 export const dynamic = "force-dynamic";
 

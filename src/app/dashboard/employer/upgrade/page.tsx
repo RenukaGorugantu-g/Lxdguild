@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, BriefcaseBusiness, Mail, Sparkles } from "lucide-react";
+import { buildNoIndexMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildNoIndexMetadata(
+  "Employer Upgrade",
+  "Private employer pricing and upgrade information for deeper hiring access inside LXD Guild."
+);
 
 const tiers = [
   {

@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import JobEditForm from "./JobEditForm";
 import { isAdminRole, isEmployerRole } from "@/lib/profile-role";
+import { buildNoIndexMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildNoIndexMetadata(
+  "Edit Job Posting",
+  "Private employer route for editing an existing job listing."
+);
 
 export default async function EditJobPage({
   params,

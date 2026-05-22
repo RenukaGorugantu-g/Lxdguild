@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { Search, Lock, Star, Building2, Mail, PenSquare } from "lucide-react";
@@ -9,6 +10,12 @@ import { getMembershipState } from "@/lib/membership";
 import { getEmployerPlan } from "@/lib/profile-role";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { loadProfile } from "@/lib/load-profile";
+import { buildNoIndexMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildNoIndexMetadata(
+  "Employer Dashboard",
+  "Private employer dashboard for hiring activity, posted jobs, and candidate access."
+);
 
 type EmployerDashboardProfile = {
   role?: string | null;

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
@@ -22,6 +23,12 @@ import { getMembershipState } from "@/lib/membership";
 import { isVerifiedCandidateRole } from "@/lib/profile-role";
 import { loadProfile } from "@/lib/load-profile";
 import CertificateUpload from "./certificate-upload";
+import { buildNoIndexMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildNoIndexMetadata(
+  "Candidate Dashboard",
+  "Private candidate dashboard for assessments, profile progress, applications, and marketplace access."
+);
 
 type CandidateDashboardProfile = {
   name?: string | null;

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
@@ -6,6 +7,12 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Award, Briefcase, FileText } from "lucide-react";
 import ProfileForm from "./ProfileForm";
+import { buildNoIndexMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildNoIndexMetadata(
+  "Candidate Profile",
+  "Private candidate profile editor for resume, portfolio, skills, and marketplace visibility."
+);
 
 type CandidateProfileRecord = {
   id: string;

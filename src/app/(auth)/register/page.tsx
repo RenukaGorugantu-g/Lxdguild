@@ -184,7 +184,7 @@ function RegisterPageContent() {
           <section className="flex flex-col justify-between bg-[#0a8615] px-7 py-8 text-white md:px-10 md:py-10 lg:min-h-[680px]">
             <div>
               <div className="max-w-[420px]">
-                <h1 className="text-[1.7rem] font-medium tracking-[-0.04em]">Unlock your next career chapter.</h1>
+                <h2 className="text-[1.7rem] font-medium tracking-[-0.04em]">Unlock your next career chapter.</h2>
                 <p className="mt-6 text-[1rem] leading-7 text-[#b7f0b3]">
                   Join 50,000+ professionals who have accelerated their career path with our AI-driven ecosystem.
                 </p>

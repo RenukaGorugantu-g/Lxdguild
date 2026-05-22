@@ -1,9 +1,16 @@
+import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, FileText, Link as LinkIcon, ShieldCheck, User, GraduationCap } from "lucide-react";
 import { isAdminRole, isEmployerRole } from "@/lib/profile-role";
+import { buildNoIndexMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildNoIndexMetadata(
+  "Candidate Profile Review",
+  "Private employer view of a candidate profile, assessment signals, and resume access."
+);
 
 type CandidateResume = {
   id: string;

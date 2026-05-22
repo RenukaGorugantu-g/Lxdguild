@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { redirect } from "next/navigation";
@@ -7,6 +8,12 @@ import JobDeletionReviewList from "./job-deletion-review-list";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { isAdminRole } from "@/lib/profile-role";
 import Link from "next/link";
+import { buildNoIndexMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildNoIndexMetadata(
+  "Admin Control Center",
+  "Private administration area for certificate approvals, job management, and platform operations."
+);
 
 type AdminProfile = {
   id?: string;

@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import EmployerProfileForm from "./EmployerProfileForm";
 import { isEmployerRole } from "@/lib/profile-role";
+import { buildNoIndexMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildNoIndexMetadata(
+  "Employer Profile",
+  "Private employer profile editor for company details, hiring requirements, and brand presentation."
+);
 
 function isMissingColumnError(message?: string | null) {
   const normalized = message || "";

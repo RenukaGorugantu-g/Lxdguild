@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createAdminClient } from "@/utils/supabase/admin";
+import type { Metadata } from "next";
 
 export function toJsonLdScriptProps(data: unknown) {
   return {
@@ -24,6 +25,23 @@ export function buildFaqJsonLd(
         text: item.answer,
       },
     })),
+  };
+}
+
+export function buildNoIndexMetadata(title: string, description: string): Metadata {
+  return {
+    title,
+    description,
+    robots: {
+      index: false,
+      follow: false,
+      googleBot: {
+        index: false,
+        follow: false,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
+    },
   };
 }
 
