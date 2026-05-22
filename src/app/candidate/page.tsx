@@ -4,11 +4,43 @@ import Link from "next/link";
 import { ArrowRight, BadgeCheck, BookOpen, BriefcaseBusiness, Sparkles, Target } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getBaseRole } from "@/lib/profile-role";
+import { buildFaqJsonLd, toJsonLdScriptProps } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Candidate Journey | LXD Guild",
+  title: "Instructional Designer Career Growth | AI Tools & Job Matching",
   description:
-    "Build your verified L&D profile, sharpen your resume, validate your skills, and unlock stronger-fit opportunities.",
+    "Build your verified L&D profile with AI-powered resume analysis, ATS insights, and skill validation. Get matched with better-fit instructional design jobs. Join free.",
+  keywords: [
+    "Instructional designer career growth",
+    "L&D professional development",
+    "eLearning developer career path",
+    "Resume analyzer for instructional designers",
+    "ATS resume optimization L&D",
+    "Skill validation for learning professionals",
+    "Career pathmaker for instructional designers",
+    "L&D job search tools",
+    "Learning designer portfolio builder",
+    "Instructional design career coaching",
+    "eLearning professional assessment",
+    "L&D resume writing service",
+    "Career advancement learning designers",
+    "AI-powered career guidance L&D",
+    "Job matching instructional designers",
+  ],
+  alternates: {
+    canonical: "/candidate",
+  },
+  openGraph: {
+    title: "Instructional Designer Career Growth | AI Tools & Job Matching",
+    description:
+      "Build your verified L&D profile with AI-powered resume analysis, ATS insights, and skill validation. Get matched with better-fit instructional design jobs. Join free.",
+    url: "/candidate",
+  },
+  twitter: {
+    title: "Instructional Designer Career Growth | AI Tools & Job Matching",
+    description:
+      "Build your verified L&D profile with AI-powered resume analysis, ATS insights, and skill validation. Get matched with better-fit instructional design jobs. Join free.",
+  },
 };
 
 const journeySteps = [
@@ -91,6 +123,24 @@ const actionEngine = [
   "Academy course recommendations",
 ] as const;
 
+const candidateFaqs = [
+  {
+    question: "What does a verified profile mean on LXD Guild?",
+    answer:
+      "A verified profile combines your resume, role details, and platform signals so employers can review stronger evidence of your instructional design and L&D capabilities.",
+  },
+  {
+    question: "How do the AI tools help my career growth?",
+    answer:
+      "The tools analyze your resume, surface ATS insights, recommend improvements, and map realistic next-step roles based on your current experience and skill mix.",
+  },
+  {
+    question: "Is this useful for both beginners and experienced professionals?",
+    answer:
+      "Yes. Whether you are entering L&D or growing toward senior instructional design, consulting, or leadership roles, the platform helps you understand what to improve next.",
+  },
+] as const;
+
 export default async function CandidateLandingPage() {
   const supabase = await createClient();
   const {
@@ -109,10 +159,52 @@ export default async function CandidateLandingPage() {
   const isSignedInCandidate = baseRole === "candidate";
   const primaryHref = isSignedInCandidate ? "/dashboard/candidate" : "/register?role=candidate";
   const secondaryHref = isSignedInCandidate ? "/dashboard/candidate/exam" : "/register?role=candidate&intent=skill-validation";
+  const candidateJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    name: "Candidate Career Growth Platform",
+    description:
+      "AI-powered career development platform for Learning & Development professionals featuring resume analysis, skill validation, and intelligent job matching.",
+    url: "https://lxdmarketplace.lxdguild.com/candidate",
+    mainEntity: {
+      "@type": "Service",
+      serviceType: "Career Development Platform",
+      provider: {
+        "@type": "Organization",
+        name: "LXD Guild",
+      },
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "INR",
+        availability: "https://schema.org/InStock",
+      },
+    },
+    breadcrumb: {
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: "https://lxdmarketplace.lxdguild.com/",
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "For Candidates",
+          item: "https://lxdmarketplace.lxdguild.com/candidate",
+        },
+      ],
+    },
+  };
+  const candidateFaqJsonLd = buildFaqJsonLd(candidateFaqs);
 
   return (
     <div className="marketing-page">
       <main className="pt-22 sm:pt-24">
+        <script type="application/ld+json" dangerouslySetInnerHTML={toJsonLdScriptProps(candidateJsonLd)} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={toJsonLdScriptProps(candidateFaqJsonLd)} />
         <section className="marketing-section pb-14 pt-3">
           <div className="marketing-container">
             <div className="grid items-center gap-10 lg:grid-cols-[1.02fr_0.98fr]">
@@ -122,12 +214,12 @@ export default async function CandidateLandingPage() {
                 </div>
                 <h1 className="marketing-title max-w-2xl text-[3.2rem] leading-[0.96] sm:text-[4.3rem]">
                   {isSignedInCandidate
-                    ? `Your AI-powered career growth platform${profileName ? `, ${profileName}` : ""}.`
-                    : "Your AI-powered career growth platform for L&D."}
+                    ? `Accelerate your instructional design career with AI-powered tools${profileName ? `, ${profileName}` : ""}.`
+                    : "Accelerate your instructional design career with AI-powered tools."}
                 </h1>
                 <p className="marketing-copy max-w-2xl text-base leading-8">
-                  Understand how hiring teams see you, validate your strengths, improve your resume, and move toward
-                  better-fit opportunities with one connected candidate ecosystem.
+                  Build instructional designer career growth with resume analysis, ATS optimization, skill validation,
+                  and job matching designed for L&amp;D professionals and eLearning developers.
                 </p>
                 <div className="flex flex-wrap gap-3 text-sm">
                   <span className="rounded-full border border-[#dbe6d6] bg-white/90 px-4 py-2 text-[#51604d] shadow-[0_10px_24px_rgba(87,108,67,0.06)]">
@@ -157,7 +249,7 @@ export default async function CandidateLandingPage() {
                 <div className="relative min-h-[470px] overflow-hidden rounded-[1.7rem] border border-[#102028] bg-[#10161d] shadow-[0_18px_44px_rgba(15,23,42,0.14)]">
                   <Image
                     src="/landing-candidate-human.png"
-                    alt="Candidate using AI-powered career tools"
+                    alt="Instructional designer reviewing skill-validated profile on LXD Guild marketplace"
                     fill
                     sizes="(max-width: 1024px) 100vw, 620px"
                     className="object-cover object-[center_28%]"
@@ -179,7 +271,7 @@ export default async function CandidateLandingPage() {
         <section className="bg-[#121514] px-6 py-14 text-white">
           <div className="marketing-container">
             <div className="text-center">
-              <h2 className="text-3xl font-semibold text-white sm:text-4xl">The journey to career mastery</h2>
+              <h2 className="text-3xl font-semibold text-white sm:text-4xl">How Instructional Designers Use LXD Guild to Advance Their Careers</h2>
             </div>
             <div className="mt-10 grid gap-8 lg:grid-cols-4">
               {journeySteps.map((step, index) => (
@@ -205,7 +297,7 @@ export default async function CandidateLandingPage() {
             <div className="max-w-3xl">
               <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#7b8775]">Why candidates choose LXD Guild</p>
               <h2 className="mt-4 text-4xl font-semibold text-[#111827]">
-                More than a profile builder. It is a candidate action engine.
+                Tools to strengthen your L&amp;D career
               </h2>
               <p className="mt-4 max-w-2xl text-base leading-8 text-[#5b6757]">
                 Instead of only storing your information, the platform actively diagnoses your resume, scores readiness,
@@ -260,7 +352,7 @@ export default async function CandidateLandingPage() {
             <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Candidate insight system</p>
-                <h2 className="mt-3 text-4xl font-semibold text-[#111827]">See where your career can go next.</h2>
+                <h2 className="mt-3 text-4xl font-semibold text-[#111827]">AI Career Pathmaker for Learning Professionals</h2>
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-[#5f6b5a]">
                   Use assessments, AI analysis, and role-fit signals to understand what you should improve, what roles are
                   realistic next, and how to move toward better-fit opportunities with stronger positioning.
@@ -329,7 +421,7 @@ export default async function CandidateLandingPage() {
 
               <article className="overflow-hidden rounded-[2rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f5faef_100%)] p-7 shadow-[0_20px_50px_rgba(87,108,67,0.08)]">
                 <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">From insight to execution</p>
-                <h2 className="mt-3 text-4xl font-semibold text-[#111827]">One candidate workflow, multiple upgrade layers.</h2>
+                <h2 className="mt-3 text-4xl font-semibold text-[#111827]">Get discovered by top L&amp;D employers</h2>
                 <p className="mt-4 max-w-2xl text-sm leading-7 text-[#5b6757]">
                   Your profile does not stop at a score. Once the system reads your resume, it can immediately help you
                   rewrite it, generate a cover letter, suggest LXD Guild academy directions, and predict the next role you
@@ -347,12 +439,73 @@ export default async function CandidateLandingPage() {
           </div>
         </section>
 
+        <section className="marketing-section pb-16">
+          <div className="marketing-container grid gap-6 lg:grid-cols-[1.02fr_0.98fr]">
+            <article className="rounded-[2rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbf2_100%)] p-6 shadow-[0_20px_50px_rgba(87,108,67,0.08)]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Profile comparison</p>
+              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">With vs Without an LXD Guild Profile</h2>
+              <div className="mt-8 overflow-hidden rounded-[1.4rem] border border-[#dbe6d6]">
+                <div className="grid grid-cols-3 bg-[#eef6ea] text-sm font-semibold text-[#111827]">
+                  <div className="p-4">Area</div>
+                  <div className="p-4">Without it</div>
+                  <div className="p-4">With it</div>
+                </div>
+                {[
+                  ["Resume signal", "Generic positioning", "ATS-aware feedback and stronger proof"],
+                  ["Career direction", "Guesswork on next role", "Guided role-fit and path signals"],
+                  ["Employer visibility", "Limited context", "Verified profile and clearer strengths"],
+                ].map(([label, before, after]) => (
+                  <div key={label} className="grid grid-cols-3 border-t border-[#dbe6d6] bg-white text-sm text-[#5a6656]">
+                    <div className="p-4 font-semibold text-[#111827]">{label}</div>
+                    <div className="p-4">{before}</div>
+                    <div className="p-4">{after}</div>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article className="rounded-[2rem] border border-[#dbe6d6] bg-white p-6 shadow-[0_20px_50px_rgba(87,108,67,0.08)]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Career progression</p>
+              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">Example instructional design career path</h2>
+              <div className="mt-6 space-y-4">
+                {[
+                  "Junior instructional designer: build foundations in storyboarding, authoring tools, and learning design process.",
+                  "Mid-level eLearning developer: strengthen ATS-facing skills, tool fluency, and project evidence.",
+                  "Senior learning experience designer: move toward strategy, consulting, and leadership pathways.",
+                ].map((item) => (
+                  <div key={item} className="flex items-start gap-3 rounded-[1.3rem] border border-[#e1eadb] bg-[#f8fbf5] px-4 py-4 text-sm text-[#30402d]">
+                    <Sparkles className="mt-0.5 h-4 w-4 text-[#17931b]" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section className="marketing-section pb-16">
+          <div className="marketing-container">
+            <div className="max-w-3xl">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Candidate FAQs</p>
+              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">Common questions from learning professionals</h2>
+            </div>
+            <div className="mt-8 grid gap-4">
+              {candidateFaqs.map((item) => (
+                <details key={item.question} className="rounded-[1.5rem] border border-[#dbe6d6] bg-white p-5 shadow-[0_12px_30px_rgba(87,108,67,0.06)]">
+                  <summary className="cursor-pointer list-none text-lg font-semibold text-[#111827]">{item.question}</summary>
+                  <p className="mt-3 max-w-3xl text-sm leading-7 text-[#5a6656]">{item.answer}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section className="marketing-section pb-20">
           <div className="marketing-container overflow-hidden rounded-[2.3rem] bg-[linear-gradient(135deg,#32d61f_0%,#22b91f_100%)] px-8 py-10 shadow-[0_24px_60px_rgba(31,157,39,0.2)]">
             <div className="grid items-center gap-8 lg:grid-cols-[0.92fr_1.08fr]">
               <div className="text-[#07131f]">
                 <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#0a3b11]">Expertise engine</p>
-                <h2 className="mt-3 text-5xl font-semibold leading-[0.95]">Validate your expertise</h2>
+                <h2 className="mt-3 text-5xl font-semibold leading-[0.95]">Validate your instructional design skills</h2>
                 <p className="mt-4 max-w-xl text-sm leading-7 text-[#0d3414]">
                   Start with your candidate flow, strengthen your proof, and unlock better guidance for career growth
                   and opportunity placement.

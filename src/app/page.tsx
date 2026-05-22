@@ -1,7 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { formatCount, getMarketplaceSeoCounts, toJsonLdScriptProps } from "@/lib/seo";
 import {
   ArrowRight,
   Bot,
@@ -14,6 +16,43 @@ import {
   ShieldCheck,
   Users,
 } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "L&D Job Marketplace India | Verified Instructional Designers",
+  description:
+    "Find verified L&D professionals and instructional design jobs in India. Skill-validated talent marketplace connecting eLearning developers with top employers.",
+  keywords: [
+    "L&D job marketplace India",
+    "Learning and development jobs India",
+    "Instructional designer jobs marketplace",
+    "eLearning developer platform",
+    "Verified L&D professionals",
+    "Learning experience designer careers",
+    "L&D talent marketplace",
+    "Skill-validated instructional designers",
+    "AI-powered L&D job board",
+    "Corporate training jobs India",
+    "LXD Guild marketplace",
+    "Learning professional community",
+    "EdTech job platform India",
+    "L&D recruitment platform",
+    "Training and development careers",
+  ],
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "L&D Job Marketplace India | Verified Instructional Designers",
+    description:
+      "Find verified L&D professionals and instructional design jobs in India. Skill-validated talent marketplace connecting eLearning developers with top employers.",
+    url: "/",
+  },
+  twitter: {
+    title: "L&D Job Marketplace India | Verified Instructional Designers",
+    description:
+      "Find verified L&D professionals and instructional design jobs in India. Skill-validated talent marketplace connecting eLearning developers with top employers.",
+  },
+};
 
 const platformCards = [
   {
@@ -65,6 +104,30 @@ const journeySteps = [
     step: "04",
     title: "Growth",
     copy: "Connect with jobs, employers, and continuous learning systems built for modern L&D careers.",
+  },
+] as const;
+
+const popularCategories = [
+  "Instructional Designer",
+  "eLearning Developer",
+  "Learning Experience Designer",
+  "Corporate Trainer",
+  "L&D Manager",
+  "Curriculum Developer",
+] as const;
+
+const marketplaceCities = ["Bangalore", "Hyderabad", "Mumbai", "Delhi", "Pune"] as const;
+
+const ecosystemBenefits = [
+  {
+    heading: "For Instructional Designers & eLearning Developers",
+    copy:
+      "Create a stronger professional signal with a verified profile, ATS-aware resume support, and job discovery built around L&D careers in India.",
+  },
+  {
+    heading: "For Learning & Development Employers",
+    copy:
+      "Reach instructional designers, eLearning developers, and learning experience designers through a hiring flow made for L&D roles instead of generic job board noise.",
   },
 ] as const;
 
@@ -128,10 +191,43 @@ export default async function LandingPage() {
 
   const ldJobs = dedupeJobs(jobPreviewPool.filter(isLdMarketplaceJob));
   const liveJobs = ldJobs.slice(0, 3);
+  const seoCounts = await getMarketplaceSeoCounts();
+  const formattedActiveJobs = formatCount(seoCounts.activeJobs);
+  const homeJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "LXD Guild Marketplace",
+    alternateName: "LXD Marketplace",
+    url: "https://lxdmarketplace.lxdguild.com/",
+    description:
+      "India's verified marketplace for Learning & Development professionals. Skill-validated instructional designers, eLearning developers, and L&D talent.",
+    publisher: {
+      "@type": "Organization",
+      name: "LXD Guild",
+      url: "https://lxdmarketplace.lxdguild.com",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://lxdmarketplace.lxdguild.com/icon.png",
+      },
+      sameAs: [
+        "https://in.linkedin.com/company/lxd-guild",
+        "https://www.youtube.com/@lxdguild",
+        "https://www.instagram.com/lxd_guild/",
+        "https://x.com/GuildLxd20077",
+        "https://www.facebook.com/100648556092707/",
+      ],
+    },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: "https://lxdmarketplace.lxdguild.com/dashboard/jobs?query={search_term_string}",
+      "query-input": "required name=search_term_string",
+    },
+  };
 
   return (
     <div className="marketing-page">
       <main className="pt-22 sm:pt-24">
+        <script type="application/ld+json" dangerouslySetInnerHTML={toJsonLdScriptProps(homeJsonLd)} />
         <section className="landing-hero-shell marketing-section flex min-h-[min(calc(100vh-6.25rem),41rem)] items-center pb-10 pt-2 sm:pb-14 sm:pt-3">
           <div className="marketing-container">
             <div className="grid items-center gap-8 lg:grid-cols-[1.06fr_0.94fr]">
@@ -142,11 +238,15 @@ export default async function LandingPage() {
                 </div>
                 <div className="space-y-5">
                   <h1 className="marketing-title max-w-3xl text-[3.2rem] leading-[0.95] sm:text-[4.25rem]">
-                    India&apos;s verified marketplace for L&amp;D professionals.
+                    L&amp;D job marketplace India for verified learning professionals.
                   </h1>
                   <p className="marketing-copy max-w-2xl text-base leading-8">
-                    Get your instructional design and learning skills validated, get discovered by hiring teams, and
-                    access premium L&amp;D resources all in one place.
+                    LXD Guild is an AI-powered L&amp;D job board and talent marketplace for instructional designers,
+                    eLearning developers, learning experience designers, and employers hiring across India.
+                  </p>
+                  <p className="marketing-copy max-w-2xl text-base leading-8">
+                    Discover learning and development jobs in India, build a skill-validated profile, and connect with
+                    verified employers in Bangalore, Hyderabad, Mumbai, Delhi, Pune, and remote-first teams.
                   </p>
                 </div>
 
@@ -167,11 +267,11 @@ export default async function LandingPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4 text-[#179720]" />
-                    <span>500+ founding L&amp;D members</span>
+                    <span>{formattedActiveJobs}+ active L&amp;D jobs</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-[#179720]" />
-                    <span>Backed by Maple Learning Solutions</span>
+                    <span>India-focused L&amp;D hiring ecosystem</span>
                   </div>
                 </div>
               </div>
@@ -181,7 +281,7 @@ export default async function LandingPage() {
                   <div className="absolute inset-0">
                     <Image
                       src="/landing-hero-human.png"
-                      alt="L&D professional using AI-guided career tools"
+                      alt="L&D professional using AI-powered career development tools on laptop"
                       fill
                       sizes="(max-width: 1024px) 100vw, 420px"
                       className="object-cover object-[center_28%]"
@@ -241,9 +341,14 @@ export default async function LandingPage() {
 
             {liveJobs.length > 0 ? (
               <div className="mt-8 rounded-[2rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#f6f3ea_0%,#f3f1e7_100%)] p-5 shadow-[0_20px_50px_rgba(87,108,67,0.06)]">
-                <div className="mb-4 text-[11px] font-bold uppercase tracking-[0.22em] text-[#7a7d70]">
+                <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-[#7a7d70]">
                   Live jobs from verified employers
-                </div>
+                </p>
+                <h2 className="text-3xl font-semibold text-[#111827]">Featured L&amp;D Roles Available Now</h2>
+                <p className="mt-2 max-w-3xl text-sm leading-7 text-[#5b6757]">
+                  Preview instructional designer jobs, eLearning developer openings, and learning experience designer
+                  roles now visible on the marketplace.
+                </p>
                 <div className="grid gap-4 lg:grid-cols-3">
                   {liveJobs.map((job) => {
                     const href = user ? `/dashboard/jobs/${job.id}` : "/register?role=candidate&intent=job-board";
@@ -310,6 +415,31 @@ export default async function LandingPage() {
           </div>
         </section>
 
+        <section className="marketing-section pb-16">
+          <div className="marketing-container">
+            <div className="max-w-3xl">
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#6e7c68]">Marketplace flow</p>
+              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">How Our L&amp;D Marketplace Works</h2>
+              <p className="mt-4 text-base leading-8 text-[#5a6656]">
+                The platform connects career growth and hiring in one L&amp;D recruitment platform, so candidates and
+                employers both work from clearer proof, better matching signals, and a shared language for learning talent.
+              </p>
+            </div>
+
+            <div className="mt-10 grid gap-6 lg:grid-cols-2">
+              {ecosystemBenefits.map((item) => (
+                <article
+                  key={item.heading}
+                  className="rounded-[2rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbf2_100%)] p-6 shadow-[0_20px_50px_rgba(87,108,67,0.08)]"
+                >
+                  <h3 className="text-2xl font-semibold text-[#111827]">{item.heading}</h3>
+                  <p className="mt-4 text-sm leading-7 text-[#5a6656]">{item.copy}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <section className="bg-[#151817] px-6 py-16 text-white">
           <div className="marketing-container grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
             <div>
@@ -350,7 +480,7 @@ export default async function LandingPage() {
           <div className="marketing-container">
             <div className="mb-10">
               <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#6e7c68]">The three pillars</p>
-              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">A unified ecosystem</h2>
+              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">Three Ways to Accelerate Your L&amp;D Career</h2>
             </div>
 
             <div className="grid gap-6 lg:grid-cols-3">
@@ -433,12 +563,12 @@ export default async function LandingPage() {
             </div>
 
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#6e7c68]">Core technology</p>
-              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">AI intelligence for the human element</h2>
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#6e7c68]">Why LXD Guild</p>
+              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">Why Learning Professionals Choose LXD Guild</h2>
               <p className="mt-5 max-w-2xl text-base leading-8 text-[#5a6656]">
-                Our intelligence engine goes beyond simple keyword matching. It understands the nuances of learning
-                experience design, instructional strategy, and performance consulting to provide deep insights for both
-                sides of the marketplace.
+                Our intelligence engine goes beyond simple keyword matching. It understands the nuances of instructional
+                design, learning experience design, performance consulting, and corporate training careers to help both
+                sides of the marketplace make better decisions.
               </p>
 
               <div className="mt-8 space-y-5">
@@ -455,6 +585,53 @@ export default async function LandingPage() {
                   copy="Join hiring, learning, resources, and recommendations in one continuous ecosystem."
                 />
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="marketing-section pb-18">
+          <div className="marketing-container grid gap-8 lg:grid-cols-[1.08fr_0.92fr]">
+            <div className="rounded-[2rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbf2_100%)] p-6 shadow-[0_20px_50px_rgba(87,108,67,0.08)]">
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#6e7c68]">Candidate vs employer value</p>
+              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">Why LXD Guild vs Traditional Job Boards</h2>
+              <div className="mt-8 overflow-hidden rounded-[1.4rem] border border-[#dbe6d6]">
+                <div className="grid grid-cols-3 bg-[#eef6ea] text-sm font-semibold text-[#111827]">
+                  <div className="p-4">What matters</div>
+                  <div className="p-4">Candidates</div>
+                  <div className="p-4">Employers</div>
+                </div>
+                {[
+                  ["Signal quality", "Verified profiles and ATS-aware tools", "Role-aware candidate evaluation"],
+                  ["Career fit", "Instructional design and L&D job relevance", "Hiring flow tailored to L&D roles"],
+                  ["Marketplace focus", "India and remote learning careers", "Access to niche L&D talent"],
+                ].map(([label, candidate, employer]) => (
+                  <div key={label} className="grid grid-cols-3 border-t border-[#dbe6d6] bg-white text-sm text-[#5a6656]">
+                    <div className="p-4 font-semibold text-[#111827]">{label}</div>
+                    <div className="p-4">{candidate}</div>
+                    <div className="p-4">{employer}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[2rem] border border-[#dbe6d6] bg-white p-6 shadow-[0_20px_50px_rgba(87,108,67,0.08)]">
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#6e7c68]">Popular categories</p>
+              <h2 className="mt-4 text-3xl font-semibold text-[#111827]">Popular L&amp;D Job Categories</h2>
+              <div className="mt-6 flex flex-wrap gap-3">
+                {popularCategories.map((category) => (
+                  <Link
+                    key={category}
+                    href={`/dashboard/jobs?category=${encodeURIComponent(category)}`}
+                    className="rounded-full border border-[#dbe6d6] bg-[#f8fbf5] px-4 py-2 text-sm font-medium text-[#2c3d29] transition hover:border-[#179720] hover:text-[#179720]"
+                  >
+                    {category}
+                  </Link>
+                ))}
+              </div>
+              <p className="mt-6 text-sm leading-7 text-[#5a6656]">
+                Explore L&amp;D opportunities across {marketplaceCities.join(", ")}, plus remote learning and development
+                jobs for instructional designers, eLearning developers, and training specialists.
+              </p>
             </div>
           </div>
         </section>

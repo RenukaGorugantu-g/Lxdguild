@@ -5,20 +5,50 @@ import {
   ArrowRight,
   BriefcaseBusiness,
   CheckCircle2,
-  Eye,
   FileSearch,
   ShieldCheck,
-  Sparkles,
   Target,
   Users,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getBaseRole } from "@/lib/profile-role";
+import { buildFaqJsonLd, toJsonLdScriptProps } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Employer Hiring Flow | LXD Guild",
+  title: "Hire Verified Instructional Designers & L&D Talent | India",
   description:
-    "Discover verified L&D professionals, review stronger fit signals, and hire through a cleaner employer workflow.",
+    "Discover skill-validated L&D professionals with AI-powered hiring intelligence. Post jobs, evaluate candidates, and hire instructional designers faster with smart ATS workflows.",
+  keywords: [
+    "Hire instructional designers India",
+    "Recruit L&D professionals",
+    "Find eLearning developers",
+    "Hire learning experience designers",
+    "L&D talent recruitment platform",
+    "Instructional design staffing solutions",
+    "Verified L&D talent pool",
+    "AI-powered L&D recruitment",
+    "Hire curriculum developers",
+    "Corporate training recruitment",
+    "Learning consultant hiring",
+    "EdTech talent acquisition",
+    "Skill-validated instructional designers",
+    "ATS integration for L&D hiring",
+    "Employer hiring platform L&D",
+  ],
+  alternates: {
+    canonical: "/employer",
+  },
+  openGraph: {
+    title: "Hire Verified Instructional Designers & L&D Talent | India",
+    description:
+      "Discover skill-validated L&D professionals with AI-powered hiring intelligence. Post jobs, evaluate candidates, and hire instructional designers faster with smart ATS workflows.",
+    url: "/employer",
+  },
+  twitter: {
+    title: "Hire Verified Instructional Designers & L&D Talent | India",
+    description:
+      "Discover skill-validated L&D professionals with AI-powered hiring intelligence. Post jobs, evaluate candidates, and hire instructional designers faster with smart ATS workflows.",
+  },
 };
 
 const ecosystemSteps = [
@@ -64,11 +94,22 @@ const workflowCards = [
   },
 ] as const;
 
-const finalMetrics = [
-  { title: "Faster shortlists", detail: "3x", width: "78%" },
-  { title: "Direct access", detail: "No middle layer", width: "86%" },
-  { title: "Verified profiles", detail: "500+", width: "74%" },
-  { title: "Review confidence", detail: "98%", width: "92%" },
+const employerFaqs = [
+  {
+    question: "Who should use the employer marketplace?",
+    answer:
+      "The employer flow is built for organizations hiring instructional designers, eLearning developers, corporate trainers, learning consultants, and L&D leaders.",
+  },
+  {
+    question: "What makes this different from a general job board?",
+    answer:
+      "LXD Guild focuses on learning talent, skill validation, and ATS-aware candidate review so your team can evaluate L&D specialists with more context.",
+  },
+  {
+    question: "Can I post jobs and review candidates in one place?",
+    answer:
+      "Yes. The employer workflow is designed to support posting, screening, shortlist review, and interview coordination inside one connected process.",
+  },
 ] as const;
 
 export default async function EmployerLandingPage() {
@@ -89,10 +130,39 @@ export default async function EmployerLandingPage() {
   const isSignedInEmployer = baseRole === "employer";
   const primaryHref = isSignedInEmployer ? "/dashboard/employer" : "/register?role=employer";
   const secondaryHref = isSignedInEmployer ? "/dashboard/employer/post-job" : "/dashboard/employer/upgrade";
+  const employerJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    serviceType: "Recruitment and Hiring Platform",
+    name: "LXD Guild Employer Hiring Services",
+    description:
+      "AI-powered hiring platform for recruiting verified Learning & Development professionals including instructional designers, eLearning developers, and L&D specialists.",
+    provider: {
+      "@type": "Organization",
+      name: "LXD Guild",
+      url: "https://lxdguild.com",
+    },
+    areaServed: {
+      "@type": "Country",
+      name: "India",
+    },
+    audience: {
+      "@type": "Audience",
+      audienceType: "Employers and Recruiters",
+    },
+    offers: {
+      "@type": "Offer",
+      availability: "https://schema.org/InStock",
+      url: "https://lxdmarketplace.lxdguild.com/employer",
+    },
+  };
+  const employerFaqJsonLd = buildFaqJsonLd(employerFaqs);
 
   return (
     <div className="marketing-page">
       <main className="pt-22 sm:pt-24">
+        <script type="application/ld+json" dangerouslySetInnerHTML={toJsonLdScriptProps(employerJsonLd)} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={toJsonLdScriptProps(employerFaqJsonLd)} />
         <section className="marketing-section pb-16 pt-3">
           <div className="marketing-container">
             <div className="grid items-center gap-10 lg:grid-cols-[1fr_0.95fr]">
@@ -102,12 +172,12 @@ export default async function EmployerLandingPage() {
                 </div>
                 <h1 className="marketing-title max-w-2xl text-[3rem] leading-[0.96] sm:text-[4.2rem]">
                   {isSignedInEmployer
-                    ? `Smarter hiring for modern L&D teams${profileName ? `, ${profileName}` : ""}.`
-                    : "Smarter hiring for modern L&D teams."}
+                    ? `Hire verified instructional designers and L&D professionals in India${profileName ? `, ${profileName}` : ""}.`
+                    : "Hire verified instructional designers and L&D professionals in India."}
                 </h1>
                 <p className="marketing-copy max-w-2xl text-base leading-8">
-                  Discover verified professionals, evaluate talent intelligently, and streamline hiring with a powered
-                  recruitment workflow built for modern L&D teams.
+                  Recruit L&amp;D professionals, find eLearning developers, and hire learning experience designers
+                  through an AI-powered recruitment platform built specifically for modern learning teams.
                 </p>
                 <div className="flex flex-col gap-4 sm:flex-row">
                   <Link href={primaryHref} className="marketing-primary rounded-full px-6">
@@ -124,7 +194,7 @@ export default async function EmployerLandingPage() {
                 <div className="relative min-h-[360px] overflow-hidden rounded-[1.5rem] border border-white/10">
                   <Image
                     src="/landing-employer-human.png"
-                    alt="Employer workspace using AI hiring tools"
+                    alt="Employer dashboard showing AI-matched instructional designer candidates"
                     fill
                     sizes="(max-width: 1024px) 100vw, 430px"
                     className="object-cover object-center"
@@ -145,7 +215,7 @@ export default async function EmployerLandingPage() {
           <div className="marketing-container">
             <div className="max-w-2xl">
               <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">The ecosystem fuel line</p>
-              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">Cinematic hiring ecosystem</h2>
+              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">Why Top Companies Choose LXD Guild for L&amp;D Hiring</h2>
             </div>
 
             <div className="mt-10 grid gap-8 lg:grid-cols-4">
@@ -197,7 +267,7 @@ export default async function EmployerLandingPage() {
 
             <article className="self-center">
               <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">AI candidate evaluation</p>
-              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">See beyond the resume</h2>
+              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">AI-Powered Candidate Evaluation</h2>
               <p className="mt-4 max-w-2xl text-sm leading-7 text-[#5d6958]">
                 Our deep scanning AI does more than spot keywords. It understands project context, skill nuance, and
                 instructional performance to provide a clearer view of talent alignment.
@@ -218,7 +288,7 @@ export default async function EmployerLandingPage() {
           <div className="marketing-container grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#93d89f]">Verified professionals</p>
-              <h2 className="mt-4 max-w-xl text-4xl font-semibold leading-tight">Discover verified professionals</h2>
+              <h2 className="mt-4 max-w-xl text-4xl font-semibold leading-tight">Access skill-validated L&amp;D professionals</h2>
               <p className="mt-4 max-w-xl text-sm leading-7 text-white/70">
                 Every profile on LXD Marketplace can surface assessment-backed proof, hiring-relevant signals, and
                 stronger confidence for employer review.
@@ -317,6 +387,73 @@ export default async function EmployerLandingPage() {
                 </div>
               </article>
             ))}
+          </div>
+        </section>
+
+        <section className="marketing-section pb-16">
+          <div className="marketing-container grid gap-6 lg:grid-cols-[1.02fr_0.98fr]">
+            <article className="rounded-[2rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbf2_100%)] p-6 shadow-[0_20px_50px_rgba(87,108,67,0.08)]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Hiring comparison</p>
+              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">Traditional Hiring vs LXD Guild Hiring</h2>
+              <div className="mt-8 overflow-hidden rounded-[1.4rem] border border-[#dbe6d6]">
+                <div className="grid grid-cols-3 bg-[#eef6ea] text-sm font-semibold text-[#111827]">
+                  <div className="p-4">Focus area</div>
+                  <div className="p-4">Traditional boards</div>
+                  <div className="p-4">LXD Guild</div>
+                </div>
+                {[
+                  ["Role relevance", "Broad, mixed candidate pools", "L&D-specific talent discovery"],
+                  ["Signal depth", "Resume-only screening", "ATS context and validation-led review"],
+                  ["Workflow", "Fragmented handoffs", "Connected employer hiring flow"],
+                ].map(([label, oldWay, guildWay]) => (
+                  <div key={label} className="grid grid-cols-3 border-t border-[#dbe6d6] bg-white text-sm text-[#5a6656]">
+                    <div className="p-4 font-semibold text-[#111827]">{label}</div>
+                    <div className="p-4">{oldWay}</div>
+                    <div className="p-4">{guildWay}</div>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article className="rounded-[2rem] border border-[#dbe6d6] bg-white p-6 shadow-[0_20px_50px_rgba(87,108,67,0.08)]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Typical roles</p>
+              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">Roles employers hire for on the platform</h2>
+              <div className="mt-6 flex flex-wrap gap-3">
+                {[
+                  "Instructional Designer",
+                  "eLearning Developer",
+                  "Learning Experience Designer",
+                  "Curriculum Developer",
+                  "Corporate Trainer",
+                  "Learning Consultant",
+                ].map((role) => (
+                  <Link
+                    key={role}
+                    href={`/dashboard/jobs?category=${encodeURIComponent(role)}`}
+                    className="rounded-full border border-[#dbe6d6] bg-[#f8fbf5] px-4 py-2 text-sm font-medium text-[#2c3d29] transition hover:border-[#179720] hover:text-[#179720]"
+                  >
+                    {role}
+                  </Link>
+                ))}
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section className="marketing-section pb-16">
+          <div className="marketing-container">
+            <div className="max-w-3xl">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Employer FAQs</p>
+              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">Answers for hiring teams</h2>
+            </div>
+            <div className="mt-8 grid gap-4">
+              {employerFaqs.map((item) => (
+                <details key={item.question} className="rounded-[1.5rem] border border-[#dbe6d6] bg-white p-5 shadow-[0_12px_30px_rgba(87,108,67,0.06)]">
+                  <summary className="cursor-pointer list-none text-lg font-semibold text-[#111827]">{item.question}</summary>
+                  <p className="mt-3 max-w-3xl text-sm leading-7 text-[#5a6656]">{item.answer}</p>
+                </details>
+              ))}
+            </div>
           </div>
         </section>
 

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
@@ -7,6 +8,8 @@ import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { loadProfile } from "@/lib/load-profile";
 import { getEmployerPlan, isAdminRole } from "@/lib/profile-role";
 import { decideApplicationStatus, downloadResumeBuffer } from "@/lib/resume-analysis";
+import { getSiteUrl } from "@/lib/site-url";
+import { toJsonLdScriptProps } from "@/lib/seo";
 import { extractKeywords, extractSkills, parseResumeFile, scoreCandidate } from "../../../../../ats-module";
 import { notFound, redirect } from "next/navigation";
 import { MapPin, Building, Calendar, ArrowLeft, CheckCircle, Clock3 } from "lucide-react";
@@ -15,6 +18,7 @@ import ApplyButtonWithModal from "./ApplyButtonWithModal";
 import ApplicationReviewActions from "./ApplicationReviewActions";
 import ApplicationInterviewScheduleCard from "./ApplicationInterviewScheduleCard";
 import EmployerPipelineBoard from "./EmployerPipelineBoard";
+import { cache } from "react";
 
 type ApplicantRow = {
   id: string;
@@ -49,6 +53,111 @@ type CachedLiveAtsResult = LiveAtsResult & {
 
 const LIVE_ATS_CACHE_TTL_MS = 10 * 60 * 1000;
 const liveAtsCache = new Map<string, CachedLiveAtsResult>();
+
+const getSeoJobRecord = cache(async (id: string) => {
+  const supabase = await createClient();
+  const adminSupabaseClient = createAdminClient();
+  const jobsReader = adminSupabaseClient ?? supabase;
+
+  const primaryQuery = await jobsReader
+    .from("jobs")
+    .select("id, title, description, company, location, external_posted_at, imported_at, created_at, expires_at, is_active, deleted_at")
+    .eq("id", id)
+    .single();
+
+  if (!primaryQuery.error) {
+    return primaryQuery.data as Pick<
+      JobDetailRecord,
+      "id" | "title" | "description" | "company" | "location" | "external_posted_at" | "imported_at" | "created_at" | "expires_at" | "is_active" | "deleted_at"
+    > | null;
+  }
+
+  if (primaryQuery.error.code === "42703") {
+    const fallbackQuery = await jobsReader
+      .from("jobs")
+      .select("id, title, description, company, location, created_at")
+      .eq("id", id)
+      .single();
+
+    return fallbackQuery.data
+      ? {
+          ...fallbackQuery.data,
+          external_posted_at: null,
+          imported_at: fallbackQuery.data.created_at,
+          expires_at: null,
+          is_active: true,
+          deleted_at: null,
+        }
+      : null;
+  }
+
+  return null;
+});
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const job = await getSeoJobRecord(id);
+
+  if (!job) {
+    return {
+      title: "Job Not Found",
+      robots: {
+        index: false,
+        follow: false,
+      },
+    };
+  }
+
+  const siteUrl = getSiteUrl();
+  const title = `${job.title} at ${job.company || "LXD Guild Employer"} | L&D Jobs India`;
+  const descriptionSource = stripHtml(job.description);
+  const description = descriptionSource
+    ? descriptionSource.length > 160
+      ? `${descriptionSource.slice(0, 157).trim()}...`
+      : descriptionSource
+    : `Apply for ${job.title} at ${job.company || "a verified employer"} on LXD Guild Marketplace.`;
+  const shouldIndex = job.is_active !== false && !job.deleted_at;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: `/dashboard/jobs/${id}`,
+    },
+    robots: {
+      index: shouldIndex,
+      follow: shouldIndex,
+      googleBot: {
+        index: shouldIndex,
+        follow: shouldIndex,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
+    },
+    openGraph: {
+      title,
+      description,
+      url: `/dashboard/jobs/${id}`,
+      type: "article",
+      images: [
+        {
+          url: `${siteUrl}/opengraph-image`,
+          alt: `${job.title} on LXD Guild Marketplace`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [`${siteUrl}/twitter-image`],
+    },
+  };
+}
 
 function toNumericScore(value: number | string | null | undefined) {
   if (typeof value === "number" && Number.isFinite(value)) {
@@ -790,6 +899,36 @@ export default async function JobDetailPage({
   const expiryDate = job.expires_at ? new Date(job.expires_at).toLocaleDateString() : null;
   const isDeactivated = job.is_active === false;
   const hasPendingDeletion = job.deletion_request_status === "pending";
+  const siteUrl = getSiteUrl();
+  const jobJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "JobPosting",
+    title: job.title,
+    description: stripHtml(job.description),
+    datePosted: job.external_posted_at || job.imported_at || job.created_at || undefined,
+    validThrough: job.expires_at || undefined,
+    employmentType: undefined,
+    hiringOrganization: {
+      "@type": "Organization",
+      name: job.company || "LXD Guild employer",
+      sameAs: siteUrl,
+      logo: `${siteUrl}/icon.png`,
+    },
+    jobLocation: {
+      "@type": "Place",
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: job.location || "India",
+        addressCountry: "IN",
+      },
+    },
+    applicantLocationRequirements: {
+      "@type": "Country",
+      name: "India",
+    },
+    directApply: false,
+    url: `${siteUrl}/dashboard/jobs/${job.id}`,
+  };
   const returnParams = new URLSearchParams();
   if (q) returnParams.set("q", q);
   if (category) returnParams.set("category", category);
@@ -802,6 +941,7 @@ export default async function JobDetailPage({
   return (
     <div className="min-h-screen bg-zinc-50 pt-28 pb-16 px-4 sm:px-6">
       <div className={`${isJobOwner ? "max-w-7xl" : "max-w-4xl"} mx-auto`}>
+        <script type="application/ld+json" dangerouslySetInnerHTML={toJsonLdScriptProps(jobJsonLd)} />
         <Link href={backToJobsHref} className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-brand-600 transition-colors mb-8 group">
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Job Board
         </Link>

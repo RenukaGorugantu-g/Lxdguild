@@ -1,8 +1,14 @@
 User-agent: *
 Allow: /
 Allow: /dashboard/jobs
+Allow: /dashboard/jobs/
 Disallow: /api/
-Disallow: /dashboard/
+Disallow: /dashboard
+Disallow: /dashboard/admin
+Disallow: /dashboard/candidate
+Disallow: /dashboard/employer
+Disallow: /dashboard/membership
+Disallow: /dashboard/resources
 Disallow: /login
 Disallow: /register
 

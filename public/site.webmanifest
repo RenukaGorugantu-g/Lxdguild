@@ -1,0 +1,21 @@
+{
+  "name": "LXD Guild Marketplace",
+  "short_name": "LXD Guild",
+  "description": "Verified marketplace for Learning and Development professionals, instructional designer jobs, and L&D hiring.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7fbf2",
+  "theme_color": "#138d1a",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

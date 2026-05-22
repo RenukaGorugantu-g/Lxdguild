@@ -9,15 +9,46 @@ import {
   Eye,
   FileText,
   Sparkles,
-  Users,
 } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { MEMBER_ANNUAL_PRICE_INR } from "@/lib/membership";
+import { buildFaqJsonLd, toJsonLdScriptProps } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: "Membership | LXD Guild",
+  title: "L&D Membership: AI Tools & 180+ Premium Resources | ₹499/Year",
   description:
-    "Unlock premium resources, guided growth tools, and stronger visibility across the LXD Guild marketplace.",
+    "Access 180+ premium L&D resources, AI career tools, skill assessments, and exclusive networking. Join India's top learning design professional community for ₹499/year.",
+  keywords: [
+    "L&D membership benefits",
+    "Learning design professional membership",
+    "Instructional designer resources",
+    "eLearning professional community",
+    "L&D career development tools",
+    "AI-powered career pathmaker",
+    "Premium instructional design resources",
+    "LXD Guild membership",
+    "Learning and development networking",
+    "Skill validation for L&D professionals",
+    "Professional L&D community India",
+    "Instructional design templates",
+    "eLearning storyboard resources",
+    "L&D playbooks and frameworks",
+    "Career intelligence for instructional designers",
+  ],
+  alternates: {
+    canonical: "/membership",
+  },
+  openGraph: {
+    title: "L&D Membership: AI Tools & 180+ Premium Resources | ₹499/Year",
+    description:
+      "Access 180+ premium L&D resources, AI career tools, skill assessments, and exclusive networking. Join India's top learning design professional community for ₹499/year.",
+    url: "/membership",
+  },
+  twitter: {
+    title: "L&D Membership: AI Tools & 180+ Premium Resources | ₹499/Year",
+    description:
+      "Access 180+ premium L&D resources, AI career tools, skill assessments, and exclusive networking. Join India's top learning design professional community for ₹499/year.",
+  },
 };
 
 const curatedAssets = [
@@ -53,6 +84,29 @@ const advancedTools = [
   },
 ] as const;
 
+const membershipFaqs = [
+  {
+    question: "What do I get with LXD Guild membership?",
+    answer:
+      "Membership adds premium L&D resources, AI-powered career tools, stronger marketplace visibility, skill validation support, and member-only networking experiences.",
+  },
+  {
+    question: "Who is this membership for?",
+    answer:
+      "It is designed for instructional designers, eLearning developers, learning experience designers, trainers, consultants, and L&D leaders who want deeper career support.",
+  },
+  {
+    question: "Does membership include job access?",
+    answer:
+      "Membership strengthens your visibility and unlocks premium ecosystem value, while job access still depends on your role, profile readiness, and marketplace pathway.",
+  },
+  {
+    question: "How often do the resources update?",
+    answer:
+      "The library is curated as an active resource hub, so members keep access to new playbooks, templates, and guidance as the ecosystem grows.",
+  },
+] as const;
+
 export default async function PublicMembershipPage() {
   const supabase = await createClient();
   const {
@@ -62,10 +116,33 @@ export default async function PublicMembershipPage() {
   const primaryHref = user ? "/dashboard/membership" : "/register";
   const secondaryHref = "/dashboard/resources";
   const freeResourcesHref = "/dashboard/resources";
+  const membershipJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: "LXD Guild Membership",
+    description:
+      "Premium membership for Learning & Development professionals featuring AI-powered career tools, 180+ curated resources, skill assessments, and exclusive networking.",
+    brand: {
+      "@type": "Organization",
+      name: "LXD Guild",
+    },
+    offers: {
+      "@type": "Offer",
+      price: String(MEMBER_ANNUAL_PRICE_INR),
+      priceCurrency: "INR",
+      priceValidUntil: "2027-12-31",
+      availability: "https://schema.org/InStock",
+      url: "https://lxdmarketplace.lxdguild.com/membership",
+    },
+    category: "Professional Membership",
+  };
+  const membershipFaqJsonLd = buildFaqJsonLd(membershipFaqs);
 
   return (
     <div className="marketing-page">
       <main className="pt-22 sm:pt-24">
+        <script type="application/ld+json" dangerouslySetInnerHTML={toJsonLdScriptProps(membershipJsonLd)} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={toJsonLdScriptProps(membershipFaqJsonLd)} />
         <section className="marketing-section pb-16 pt-3">
           <div className="marketing-container">
             <div className="grid items-center gap-10 lg:grid-cols-[0.96fr_1.04fr]">
@@ -74,11 +151,11 @@ export default async function PublicMembershipPage() {
                   Exclusive membership
                 </div>
                 <h1 className="marketing-title max-w-2xl text-[3rem] leading-[0.96] sm:text-[4.25rem]">
-                  Unlock the full LXD ecosystem
+                  Premium L&amp;D Membership: AI Tools, Resources &amp; Networking
                 </h1>
                 <p className="marketing-copy max-w-2xl text-base leading-8">
-                  Access premium AI-powered tools, learning resources, professional visibility, and ecosystem
-                  advantages built for the future of L&D.
+                  Access L&amp;D membership benefits built for instructional designers, eLearning developers, and
+                  learning professionals who want premium resources, AI career tools, networking, and stronger market visibility.
                 </p>
                 <div className="flex flex-col gap-4 sm:flex-row">
                   <Link href={primaryHref} className="marketing-primary rounded-full px-6">
@@ -98,7 +175,7 @@ export default async function PublicMembershipPage() {
                   <div className="relative min-h-[460px] overflow-hidden rounded-[1.65rem] border border-[#112019] bg-[#11171c] shadow-[0_18px_44px_rgba(15,23,42,0.14)] sm:min-h-[430px]">
                     <Image
                       src="/landing-membership-human.png"
-                      alt="Membership experience with premium learning support"
+                      alt="Premium L&D resources including storyboards and playbooks on member dashboard"
                       fill
                       sizes="(max-width: 1024px) 100vw, 520px"
                       className="object-cover object-center"
@@ -137,7 +214,7 @@ export default async function PublicMembershipPage() {
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Curated assets</p>
                   <h2 className="mt-4 max-w-lg text-3xl font-semibold leading-tight text-[#111827] sm:text-4xl">
-                    180+ premium L&amp;D resources
+                    What&apos;s Included in Your L&amp;D Membership
                   </h2>
                   <p className="mt-4 max-w-xl text-sm leading-7 text-[#606c5b]">
                     Step away from generic templates. Access cinematic storyboards, AI-integrated playbooks, and
@@ -166,7 +243,7 @@ export default async function PublicMembershipPage() {
                 <div className="relative min-h-[320px] overflow-hidden rounded-[1.8rem] border border-[#102028] bg-[#11171c] shadow-[0_20px_50px_rgba(15,23,42,0.14)] lg:min-h-[360px]">
                   <Image
                     src="/landing-membership-human.png"
-                    alt="Premium learning resources"
+                    alt="Premium instructional design resources for L&D members"
                     fill
                     sizes="(max-width: 1024px) 100vw, 280px"
                     className="object-cover object-center"
@@ -178,7 +255,7 @@ export default async function PublicMembershipPage() {
                   <div className="relative min-h-[240px] overflow-hidden rounded-[1.7rem] border border-[#dbe6d6] bg-[#f2f6ef] shadow-[0_18px_44px_rgba(87,108,67,0.08)]">
                     <Image
                       src="/landing-hero-human.png"
-                      alt="Ecosystem verification layer"
+                      alt="AI-powered career development tools for learning professionals"
                       fill
                       sizes="(max-width: 1024px) 100vw, 280px"
                       className="object-cover object-center opacity-80"
@@ -211,7 +288,7 @@ export default async function PublicMembershipPage() {
           <div className="marketing-container">
             <div className="text-center">
               <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Advanced AI tools</p>
-              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">Career intelligence reimagined</h2>
+              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">Exclusive Member Benefits for Learning Professionals</h2>
             </div>
 
             <div className="mt-10 grid gap-6 lg:grid-cols-[1.12fr_0.88fr]">
@@ -251,7 +328,7 @@ export default async function PublicMembershipPage() {
                 <div className="grid gap-6 lg:grid-cols-[0.96fr_1.04fr]">
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Networking</p>
-                    <h3 className="mt-3 text-3xl font-semibold text-[#111827]">The Intelligence Hub</h3>
+                    <h3 className="mt-3 text-3xl font-semibold text-[#111827]">Monthly Networking &amp; Industry Events</h3>
                     <p className="mt-4 text-sm leading-7 text-[#606c5b]">
                       Join monthly think-tanks with industry leaders. Our network is not just about contacts, it is about
                       collaboration and evolution.
@@ -269,7 +346,7 @@ export default async function PublicMembershipPage() {
                   <div className="relative min-h-[260px] overflow-hidden rounded-[1.6rem] border border-[#dbe6d6] bg-[#ecefee]">
                     <Image
                       src="/landing-employer-human.png"
-                      alt="Membership intelligence community"
+                      alt="Learning and development networking community for premium members"
                       fill
                       sizes="(max-width: 1024px) 100vw, 420px"
                       className="object-cover object-center"
@@ -277,6 +354,68 @@ export default async function PublicMembershipPage() {
                   </div>
                 </div>
               </article>
+            </div>
+          </div>
+        </section>
+
+        <section className="marketing-section pb-16">
+          <div className="marketing-container grid gap-6 lg:grid-cols-[1.04fr_0.96fr]">
+            <article className="rounded-[2rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbf2_100%)] p-6 shadow-[0_20px_50px_rgba(87,108,67,0.08)]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Membership comparison</p>
+              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">Free vs Membership Benefits</h2>
+              <div className="mt-8 overflow-hidden rounded-[1.4rem] border border-[#dbe6d6]">
+                <div className="grid grid-cols-3 bg-[#eef6ea] text-sm font-semibold text-[#111827]">
+                  <div className="p-4">Feature</div>
+                  <div className="p-4">Free access</div>
+                  <div className="p-4">Membership</div>
+                </div>
+                {[
+                  ["Resources", "Selected ecosystem access", "180+ premium instructional design resources"],
+                  ["Career tools", "Core marketplace entry", "AI Pathmaker and deeper career intelligence"],
+                  ["Visibility", "Standard profile presence", "Enhanced employer-facing visibility"],
+                  ["Community", "General ecosystem access", "Member networking and curated support"],
+                ].map(([label, free, paid]) => (
+                  <div key={label} className="grid grid-cols-3 border-t border-[#dbe6d6] bg-white text-sm text-[#5a6656]">
+                    <div className="p-4 font-semibold text-[#111827]">{label}</div>
+                    <div className="p-4">{free}</div>
+                    <div className="p-4">{paid}</div>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article className="rounded-[2rem] border border-[#dbe6d6] bg-white p-6 shadow-[0_20px_50px_rgba(87,108,67,0.08)]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">Who it is for</p>
+              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">Built for modern learning professionals</h2>
+              <div className="mt-6 space-y-4">
+                {[
+                  "Instructional designers who want better resources and stronger profile positioning.",
+                  "eLearning developers looking for premium templates, frameworks, and career growth tools.",
+                  "Learning experience designers and consultants who want sharper visibility in India’s L&D market.",
+                ].map((item) => (
+                  <div key={item} className="flex items-start gap-3 rounded-[1.3rem] border border-[#e1eadb] bg-[#f8fbf5] px-4 py-4 text-sm text-[#30402d]">
+                    <CheckCircle2 className="mt-0.5 h-4 w-4 text-[#17931b]" />
+                    <span>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section className="marketing-section pb-16">
+          <div className="marketing-container">
+            <div className="max-w-3xl">
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#7b8775]">FAQ</p>
+              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">Membership FAQs</h2>
+            </div>
+            <div className="mt-8 grid gap-4">
+              {membershipFaqs.map((item) => (
+                <details key={item.question} className="rounded-[1.5rem] border border-[#dbe6d6] bg-white p-5 shadow-[0_12px_30px_rgba(87,108,67,0.06)]">
+                  <summary className="cursor-pointer list-none text-lg font-semibold text-[#111827]">{item.question}</summary>
+                  <p className="mt-3 max-w-3xl text-sm leading-7 text-[#5a6656]">{item.answer}</p>
+                </details>
+              ))}
             </div>
           </div>
         </section>
