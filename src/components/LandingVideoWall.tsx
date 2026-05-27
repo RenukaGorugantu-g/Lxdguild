@@ -126,7 +126,7 @@ export default function LandingVideoWall({
           onClick={() => setActiveVideo(null)}
         >
           <div
-            className="relative w-full max-w-4xl overflow-hidden rounded-[1.8rem] border border-white/10 bg-[#07131b] p-3 shadow-[0_30px_80px_rgba(0,0,0,0.35)]"
+            className="landing-video-modal-shell relative w-full max-w-3xl overflow-hidden rounded-[1.8rem] border border-white/10 bg-[#07131b] p-3 shadow-[0_30px_80px_rgba(0,0,0,0.35)]"
             onClick={(event) => event.stopPropagation()}
           >
             <button
@@ -139,7 +139,7 @@ export default function LandingVideoWall({
             </button>
             <video
               key={activeVideo.id}
-              className="aspect-video w-full rounded-[1.25rem] bg-black object-cover"
+              className="landing-video-modal-player w-full rounded-[1.25rem] bg-black"
               controls
               autoPlay
               playsInline

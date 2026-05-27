@@ -891,6 +891,18 @@ h3.text-3xl {
     radial-gradient(circle at center, rgba(95, 213, 255, 0.08), rgba(8, 14, 18, 0.08));
 }
 
+.landing-video-modal-shell {
+  background:
+    radial-gradient(circle at top, rgba(95, 213, 255, 0.08), transparent 35%),
+    linear-gradient(180deg, #07131b 0%, #0b1821 100%);
+}
+
+.landing-video-modal-player {
+  aspect-ratio: 16 / 9;
+  max-height: min(70vh, 32rem);
+  object-fit: contain;
+}
+
 @keyframes landing-video-scroll-down {
   0% {
     transform: translateY(-50%);
@@ -925,6 +937,15 @@ h3.text-3xl {
 
   .landing-video-mobile-column {
     height: 15rem;
+  }
+
+  .landing-video-modal-shell {
+    max-width: 100%;
+    padding: 0.75rem;
+  }
+
+  .landing-video-modal-player {
+    max-height: 52vh;
   }
 
   .landing-video-wall {
