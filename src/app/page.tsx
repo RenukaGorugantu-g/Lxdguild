@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
+import LandingVideoWall from "@/components/LandingVideoWall";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { formatCount, getMarketplaceSeoCounts, toJsonLdScriptProps } from "@/lib/seo";
@@ -18,9 +18,9 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "L&D Job Marketplace India | Verified Instructional Designers",
+  title: "L&D Jobs in India",
   description:
-    "Find verified L&D professionals and instructional design jobs in India. Skill-validated talent marketplace connecting eLearning developers with top employers.",
+    "AI-powered L&D marketplace for instructional designers, eLearning developers, and employers hiring across India.",
   keywords: [
     "L&D job marketplace India",
     "Learning and development jobs India",
@@ -42,17 +42,68 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "L&D Job Marketplace India | Verified Instructional Designers",
+    title: "L&D Jobs in India",
     description:
-      "Find verified L&D professionals and instructional design jobs in India. Skill-validated talent marketplace connecting eLearning developers with top employers.",
+      "AI-powered L&D marketplace for instructional designers, eLearning developers, and employers hiring across India.",
     url: "/",
   },
   twitter: {
-    title: "L&D Job Marketplace India | Verified Instructional Designers",
+    title: "L&D Jobs in India",
     description:
-      "Find verified L&D professionals and instructional design jobs in India. Skill-validated talent marketplace connecting eLearning developers with top employers.",
+      "AI-powered L&D marketplace for instructional designers, eLearning developers, and employers hiring across India.",
   },
 };
+
+const heroVideos = [
+  {
+    id: 1,
+    src: "https://oldlxd.lxdguild.com/wp-content/uploads/2025/11/WhatsApp-Video-2025-11-04-at-10.54.40-AM.mp4",
+  },
+  {
+    id: 2,
+    src: "https://oldlxd.lxdguild.com/wp-content/uploads/2025/11/WhatsApp-Video-2025-11-04-at-10.54.41-AM.mp4",
+  },
+  {
+    id: 3,
+    src: "https://oldlxd.lxdguild.com/wp-content/uploads/2025/11/WhatsApp-Video-2025-11-04-at-10.54.42-AM.mp4",
+  },
+  {
+    id: 4,
+    src: "https://oldlxd.lxdguild.com/wp-content/uploads/2025/11/WhatsApp-Video-2025-11-04-at-10.54.45-AM.mp4",
+  },
+  {
+    id: 5,
+    src: "https://oldlxd.lxdguild.com/wp-content/uploads/2025/11/WhatsApp-Video-2025-11-04-at-10.54.46-AM.mp4",
+  },
+  {
+    id: 6,
+    src: "https://oldlxd.lxdguild.com/wp-content/uploads/2025/11/WhatsApp-Video-2025-11-04-at-10.54.35-AM.mp4",
+  },
+  {
+    id: 7,
+    src: "https://oldlxd.lxdguild.com/wp-content/uploads/2025/11/WhatsApp-Video-2025-11-04-at-10.54.38-AM.mp4",
+  },
+  {
+    id: 8,
+    src: "https://oldlxd.lxdguild.com/wp-content/uploads/2025/11/WhatsApp-Video-2025-11-04-at-10.54.38-AM-1.mp4",
+  },
+  {
+    id: 9,
+    src: "https://oldlxd.lxdguild.com/wp-content/uploads/2025/11/WhatsApp-Video-2025-09-29-at-5.27.56-PM.mp4",
+  },
+  {
+    id: 10,
+    src: "https://oldlxd.lxdguild.com/wp-content/uploads/2025/11/WhatsApp-Video-2025-10-15-at-1.08.12-PM.mp4",
+  },
+  {
+    id: 11,
+    src: "https://oldlxd.lxdguild.com/wp-content/uploads/2025/11/InShot_20251021_120021667.mp4",
+  },
+  {
+    id: 12,
+    src: "https://oldlxd.lxdguild.com/wp-content/uploads/2025/11/WhatsApp-Video-2025-11-04-at-12.14.40-PM.mp4",
+  },
+] as const;
 
 const platformCards = [
   {
@@ -228,7 +279,7 @@ export default async function LandingPage() {
     <div className="marketing-page">
       <main className="pt-22 sm:pt-24">
         <script type="application/ld+json" dangerouslySetInnerHTML={toJsonLdScriptProps(homeJsonLd)} />
-        <section className="landing-hero-shell marketing-section flex min-h-[min(calc(100vh-6.25rem),41rem)] items-center pb-10 pt-2 sm:pb-14 sm:pt-3">
+        <section className="landing-hero-shell marketing-section flex min-h-[min(calc(100vh-6.25rem),35rem)] items-center pb-8 pt-2 sm:pb-10 sm:pt-3">
           <div className="marketing-container">
             <div className="grid items-center gap-8 lg:grid-cols-[1.06fr_0.94fr]">
               <div className="space-y-6">
@@ -241,12 +292,8 @@ export default async function LandingPage() {
                     L&amp;D job marketplace India for verified learning professionals.
                   </h1>
                   <p className="marketing-copy max-w-2xl text-base leading-8">
-                    LXD Guild is an AI-powered L&amp;D job board and talent marketplace for instructional designers,
-                    eLearning developers, learning experience designers, and employers hiring across India.
-                  </p>
-                  <p className="marketing-copy max-w-2xl text-base leading-8">
-                    Discover learning and development jobs in India, build a skill-validated profile, and connect with
-                    verified employers in Bangalore, Hyderabad, Mumbai, Delhi, Pune, and remote-first teams.
+                    LXD Guild is an AI-powered L&amp;D job board for instructional designers, eLearning developers,
+                    learning experience designers, and employers hiring across India.
                   </p>
                 </div>
 
@@ -276,64 +323,12 @@ export default async function LandingPage() {
                 </div>
               </div>
 
-              <div className="relative mx-auto w-full max-w-[390px] sm:max-w-[420px]">
-                <div className="landing-hero-panel relative overflow-hidden rounded-[2.15rem] border border-[#10253d] shadow-[0_28px_80px_rgba(7,19,31,0.24)]">
-                  <div className="absolute inset-0">
-                    <Image
-                      src="/landing-hero-human.png"
-                      alt="L&D professional using AI-powered career development tools on laptop"
-                      fill
-                      sizes="(max-width: 1024px) 100vw, 420px"
-                      className="object-cover object-[center_28%]"
-                      priority
-                    />
-                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,14,20,0.08),rgba(5,14,20,0.58))]" />
-                  </div>
+              <div className="relative mx-auto w-full max-w-[390px] sm:max-w-[500px]">
+                <div className="landing-hero-panel relative overflow-hidden rounded-[2rem] shadow-[0_18px_54px_rgba(7,19,31,0.12)]">
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(83,201,112,0.12),transparent_45%),linear-gradient(180deg,rgba(255,255,255,0.14),rgba(255,255,255,0.08))]" />
 
-                  <div className="relative flex min-h-[430px] flex-col justify-end p-4 sm:min-h-[480px] sm:p-5">
-                    <div className="max-w-[270px] rounded-[1.35rem] border border-white/12 bg-[linear-gradient(180deg,rgba(8,17,24,0.34),rgba(8,17,24,0.56))] px-4 py-4 text-white shadow-[0_20px_50px_rgba(7,19,31,0.24)] backdrop-blur-md">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#b4f8b0]">
-                            Ecosystem signal
-                          </p>
-                          <p className="mt-2 text-3xl font-semibold leading-none text-white">94%</p>
-                        </div>
-                        <div className="rounded-full border border-white/10 bg-white/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#d8ffe0]">
-                          Live
-                        </div>
-                      </div>
-
-                      <div className="mt-4 space-y-3">
-                        <div>
-                          <div className="mb-1 flex items-center justify-between text-[11px] text-white/78">
-                            <span>Career alignment</span>
-                            <span>91%</span>
-                          </div>
-                          <div className="h-2 rounded-full bg-white/10">
-                            <div className="h-2 w-[91%] rounded-full bg-[linear-gradient(90deg,#64da53,#1ba51b)]" />
-                          </div>
-                        </div>
-                        <div>
-                          <div className="mb-1 flex items-center justify-between text-[11px] text-white/78">
-                            <span>Hiring clarity</span>
-                            <span>87%</span>
-                          </div>
-                          <div className="h-2 rounded-full bg-white/10">
-                            <div className="h-2 w-[87%] rounded-full bg-[linear-gradient(90deg,#7be86b,#34cd2f)]" />
-                          </div>
-                        </div>
-                        <div>
-                          <div className="mb-1 flex items-center justify-between text-[11px] text-white/78">
-                            <span>Learning momentum</span>
-                            <span>89%</span>
-                          </div>
-                          <div className="h-2 rounded-full bg-white/10">
-                            <div className="h-2 w-[89%] rounded-full bg-[linear-gradient(90deg,#9bf38f,#42d53e)]" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="relative p-3 sm:p-4">
+                    <LandingVideoWall videos={heroVideos} />
                   </div>
                 </div>
               </div>

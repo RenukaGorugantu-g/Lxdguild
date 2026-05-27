@@ -25,11 +25,11 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "LXD Guild Marketplace | Verified L&D Talent and Jobs",
+    default: "LXD Guild Marketplace | L&D Jobs and Talent",
     template: "%s | LXD Guild Marketplace",
   },
   description:
-    "Verified marketplace for Learning and Development professionals. Discover instructional designer jobs, hire L&D talent, and grow careers with skill validation and AI-powered tools.",
+    "L&D job marketplace for verified learning professionals, instructional designers, and employers hiring across India.",
   applicationName: "LXD Guild Marketplace",
   keywords: [
     "L&D jobs",
@@ -67,9 +67,9 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   openGraph: {
-    title: "LXD Guild Marketplace | Verified L&D Talent and Jobs",
+    title: "LXD Guild Marketplace | L&D Jobs and Talent",
     description:
-      "Discover instructional designer jobs, verified L&D professionals, and skill-first hiring tools built for the learning industry.",
+      "Find L&D jobs, verified talent, and hiring tools built for learning teams in India.",
     siteName: "LXD Guild",
     type: "website",
     url: "/",
@@ -83,9 +83,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "LXD Guild Marketplace | Verified L&D Talent and Jobs",
+    title: "LXD Guild Marketplace | L&D Jobs and Talent",
     description:
-      "Discover instructional designer jobs, verified L&D professionals, and skill-first hiring tools built for the learning industry.",
+      "Find L&D jobs, verified talent, and hiring tools built for learning teams in India.",
     images: ["/twitter-image"],
   },
 };
