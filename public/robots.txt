@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
-Allow: /dashboard/jobs
-Allow: /dashboard/jobs/
+Allow: /jobs
+Allow: /jobs/
 Disallow: /api/
 Disallow: /_next/
 Disallow: /dashboard

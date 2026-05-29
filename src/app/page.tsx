@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import LandingVideoWall from "@/components/LandingVideoWall";
+import { buildPublicJobHref } from "@/lib/public-jobs";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { formatCount, getMarketplaceSeoCounts, toJsonLdScriptProps } from "@/lib/seo";
@@ -226,7 +227,7 @@ export default async function LandingPage() {
   } = await supabase.auth.getUser();
   const primaryHref = user ? "/dashboard/candidate" : "/candidate";
   const secondaryHref = user ? "/dashboard/employer" : "/employer";
-  const jobsCtaHref = "/dashboard/jobs";
+  const jobsCtaHref = user ? "/dashboard/jobs" : "/jobs";
 
   const jobPreviewQuery = await jobsReader
     .from("jobs")
@@ -270,7 +271,7 @@ export default async function LandingPage() {
     },
     potentialAction: {
       "@type": "SearchAction",
-      target: "https://lxdmarketplace.lxdguild.com/dashboard/jobs?query={search_term_string}",
+      target: "https://lxdmarketplace.lxdguild.com/jobs?q={search_term_string}",
       "query-input": "required name=search_term_string",
     },
   };
@@ -346,7 +347,7 @@ export default async function LandingPage() {
                 </p>
                 <div className="grid gap-4 lg:grid-cols-3">
                   {liveJobs.map((job) => {
-                    const href = user ? `/dashboard/jobs/${job.id}` : "/dashboard/jobs";
+                    const href = user ? `/dashboard/jobs/${job.id}` : buildPublicJobHref(job);
                     const modeLabel =
                       job.work_mode === "remote"
                         ? "Remote"
@@ -616,7 +617,7 @@ export default async function LandingPage() {
                 {popularCategories.map((category) => (
                   <Link
                     key={category}
-                    href={`/dashboard/jobs?category=${encodeURIComponent(category)}`}
+                    href={`/jobs?category=${encodeURIComponent(category)}`}
                     rel="nofollow"
                     className="rounded-full border border-[#dbe6d6] bg-[#f8fbf5] px-4 py-2 text-sm font-medium text-[#2c3d29] transition hover:border-[#179720] hover:text-[#179720]"
                   >
@@ -678,7 +679,7 @@ export default async function LandingPage() {
               opportunities.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Link href="/dashboard/jobs" className="marketing-primary rounded-full px-7">
+              <Link href="/jobs" className="marketing-primary rounded-full px-7">
                 Join the marketplace
               </Link>
               <Link href="/contact" className="inline-flex items-center justify-center rounded-full border border-white/18 bg-white/10 px-7 py-3 text-sm font-semibold text-white">

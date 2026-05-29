@@ -41,7 +41,7 @@ const footerLinks = {
   Platform: [
     { label: "Candidate", href: "/candidate" },
     { label: "Employer", href: "/employer" },
-    { label: "Job Board", href: "/dashboard/jobs" },
+    { label: "Job Board", href: "/jobs" },
     { label: "Candidate Dashboard", href: "/dashboard/candidate" },
     { label: "Professional Profile", href: "/dashboard/candidate/profile" },
   ],

@@ -217,7 +217,7 @@ export default function Header() {
   const baseRole = getBaseRole(profile);
   const brandHref = baseRole === "candidate" ? "/candidate" : baseRole === "employer" ? "/employer" : "/";
   const dashboardHref = user ? "/dashboard" : "/login";
-  const jobBoardHref = user && (isCandidate || isVerifiedMVP || canViewJobBoard) ? "/dashboard/jobs" : "/dashboard/jobs";
+  const jobBoardHref = user && (isCandidate || isVerifiedMVP || canViewJobBoard) ? "/dashboard/jobs" : "/jobs";
   const resourcesHref = "/dashboard/resources";
   const profileHref = user
     ? isEmployer
@@ -242,7 +242,7 @@ export default function Header() {
   ];
 
   const primaryLinks: NavLink[] = [
-    { href: "/dashboard/jobs", label: "Job Board" },
+    { href: jobBoardHref, label: "Job Board" },
     ...(user ? [{ href: "/dashboard/resources", label: "Resources" }] : []),
     { href: "/membership", label: "Membership" },
     { href: "/contact", label: "Contact" },

@@ -7,6 +7,7 @@ import { deriveRoleKeyword, scoreSimilarJob } from "@/lib/job-preferences";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { loadProfile } from "@/lib/load-profile";
 import { getEmployerPlan, isAdminRole } from "@/lib/profile-role";
+import { buildPublicJobHref, buildPublicJobUrl } from "@/lib/public-jobs";
 import { decideApplicationStatus, downloadResumeBuffer } from "@/lib/resume-analysis";
 import { getSiteUrl } from "@/lib/site-url";
 import { toJsonLdScriptProps } from "@/lib/seo";
@@ -120,20 +121,20 @@ export async function generateMetadata({
       ? `${descriptionSource.slice(0, 157).trim()}...`
       : descriptionSource
     : `Apply for ${job.title} at ${job.company || "a verified employer"} on LXD Guild Marketplace.`;
-  const shouldIndex = job.is_active !== false && !job.deleted_at;
+  const publicCanonical = buildPublicJobHref(job);
 
   return {
     title,
     description,
     alternates: {
-      canonical: `/dashboard/jobs/${id}`,
+      canonical: publicCanonical,
     },
     robots: {
-      index: shouldIndex,
-      follow: shouldIndex,
+      index: false,
+      follow: true,
       googleBot: {
-        index: shouldIndex,
-        follow: shouldIndex,
+        index: false,
+        follow: true,
         "max-image-preview": "large",
         "max-snippet": -1,
       },
@@ -141,7 +142,7 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      url: `/dashboard/jobs/${id}`,
+      url: publicCanonical,
       type: "article",
       images: [
         {
@@ -927,7 +928,7 @@ export default async function JobDetailPage({
       name: "India",
     },
     directApply: false,
-    url: `${siteUrl}/dashboard/jobs/${job.id}`,
+    url: buildPublicJobUrl(job),
   };
   const returnParams = new URLSearchParams();
   if (q) returnParams.set("q", q);

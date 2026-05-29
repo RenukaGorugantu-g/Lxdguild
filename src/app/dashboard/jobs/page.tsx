@@ -28,8 +28,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { activeJobs } = await getMarketplaceSeoCounts();
   const formattedJobs = formatCount(activeJobs || 31780);
-  const { category, view, remote, schedule, page, q } = await searchParams;
-  const hasFilters = Boolean(category || view || remote || schedule || q || (page && page !== "1"));
+  await searchParams;
 
   return {
     title: `${formattedJobs}+ Instructional Designer Jobs India | L&D Job Board`,
@@ -53,25 +52,23 @@ export async function generateMetadata({
       "L&D job board India",
     ],
     alternates: {
-      canonical: "/dashboard/jobs",
+      canonical: "/jobs",
     },
-    robots: hasFilters
-      ? {
-          index: false,
-          follow: true,
-          googleBot: {
-            index: false,
-            follow: true,
-            "max-image-preview": "large",
-            "max-snippet": -1,
-          },
-        }
-      : undefined,
+    robots: {
+      index: false,
+      follow: true,
+      googleBot: {
+        index: false,
+        follow: true,
+        "max-image-preview": "large",
+        "max-snippet": -1,
+      },
+    },
     openGraph: {
       title: `${formattedJobs}+ Instructional Designer Jobs India | L&D Job Board`,
       description:
         "Browse verified instructional design, eLearning development, and L&D jobs in India. Full-time, remote, and freelance opportunities.",
-      url: "/dashboard/jobs",
+      url: "/jobs",
     },
     twitter: {
       title: `${formattedJobs}+ Instructional Designer Jobs India | L&D Job Board`,
@@ -486,7 +483,7 @@ export default async function JobsDashboard({
     "@type": "CollectionPage",
     name: "L&D Job Board",
     description: "Browse instructional design jobs, eLearning developer positions, and L&D career opportunities across India.",
-    url: "https://lxdmarketplace.lxdguild.com/dashboard/jobs",
+    url: "https://lxdmarketplace.lxdguild.com/jobs",
     breadcrumb: {
       "@type": "BreadcrumbList",
       itemListElement: [
@@ -500,7 +497,7 @@ export default async function JobsDashboard({
           "@type": "ListItem",
           position: 2,
           name: "Job Board",
-          item: "https://lxdmarketplace.lxdguild.com/dashboard/jobs",
+          item: "https://lxdmarketplace.lxdguild.com/jobs",
         },
       ],
     },
