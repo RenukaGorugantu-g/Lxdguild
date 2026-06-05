@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { getSiteUrl } from "@/lib/site-url";
 import { shouldSurfaceMarketplaceJob } from "@/lib/marketplace-job-filter";
+import { buildVisibleJobDedupKey } from "@/lib/job-dedupe";
 
 export type PublicJobRecord = {
   id: string;
@@ -46,13 +47,7 @@ function dedupePublicJobs(jobs: PublicJobRecord[]) {
   const seen = new Set<string>();
 
   return jobs.filter((job) => {
-    const key = [
-      (job.title || "").trim().toLowerCase(),
-      (job.company || "").trim().toLowerCase(),
-      (job.location || "").trim().toLowerCase(),
-      (job.work_mode || "").trim().toLowerCase(),
-      (job.employment_type || "").trim().toLowerCase(),
-    ].join("::");
+    const key = buildVisibleJobDedupKey(job);
 
     if (!key || seen.has(key)) return false;
     seen.add(key);

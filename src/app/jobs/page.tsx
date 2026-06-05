@@ -79,10 +79,11 @@ export default async function PublicJobsPage({
 }) {
   const { category, q } = await searchParams;
   const jobs = await getPublicJobs();
-  const featuredJobs = (await getPublicFeaturedJobs()).filter((job) => matchesJob(job, category, q));
   const normalizedQuery = q?.trim().toLowerCase() || "";
+  const featuredJobs = (await getPublicFeaturedJobs()).filter((job) => matchesJob(job, category, normalizedQuery));
   const filteredJobs = jobs.filter((job) => matchesJob(job, category, normalizedQuery));
-  const jobsToRender = filteredJobs.slice(0, 36);
+  const featuredJobIds = new Set(featuredJobs.map((job) => job.id));
+  const jobsToRender = filteredJobs.filter((job) => !featuredJobIds.has(job.id)).slice(0, 36);
   const visibilityCounts = await getMarketplaceVisibilityCounts();
   const visibleJobCountLabel = formatCount(filteredJobs.length);
   const unlockedJobCountLabel = formatCount(visibilityCounts.unlockedJobCount);

@@ -4,6 +4,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { syncJobFeedIfStale } from "@/lib/job-feed";
 import { filterMarketplaceRelevantJobs, shouldSurfaceMarketplaceJob } from "@/lib/marketplace-job-filter";
+import { buildVisibleJobDedupKey } from "@/lib/job-dedupe";
 import { isAdminRole } from "@/lib/profile-role";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { formatCount, getMarketplaceSeoCounts, toJsonLdScriptProps } from "@/lib/seo";
@@ -193,14 +194,7 @@ function dedupeJobListings(jobs: JobListItem[]) {
   const seen = new Set<string>();
 
   return jobs.filter((job) => {
-    const key = [
-      (job.title || "").trim().toLowerCase(),
-      (job.company || "").trim().toLowerCase(),
-      (job.location || "").trim().toLowerCase(),
-      (job.work_mode || "").trim().toLowerCase(),
-      (job.employment_type || "").trim().toLowerCase(),
-      (job.job_kind || "").trim().toLowerCase(),
-    ].join("::");
+    const key = buildVisibleJobDedupKey(job);
 
     if (!key || seen.has(key)) return false;
     seen.add(key);

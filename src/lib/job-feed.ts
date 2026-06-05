@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/utils/supabase/admin";
 import { IMPORT_CATEGORY_ALLOWLIST, isAllowedMarketplaceImportJob, isMarketplaceRelevantJob } from "@/lib/marketplace-job-filter";
+import { buildVisibleJobDedupKey } from "@/lib/job-dedupe";
 
 const JOB_FEED_KEYWORDS = [...IMPORT_CATEGORY_ALLOWLIST];
 
@@ -239,11 +240,17 @@ function buildJobFingerprint(job: Pick<NormalizedJob, "title" | "company" | "loc
   ].join("::");
 }
 
+function buildContentFingerprint(
+  job: Pick<NormalizedJob, "title" | "company" | "description" | "work_mode" | "employment_type" | "job_kind" | "source">
+) {
+  return buildVisibleJobDedupKey(job);
+}
+
 function dedupeNormalizedJobsByFingerprint(jobs: Iterable<NormalizedJob>) {
   const deduped = new Map<string, NormalizedJob>();
 
   for (const job of jobs) {
-    const fingerprint = buildJobFingerprint(job);
+    const fingerprint = buildContentFingerprint(job);
     const existing = deduped.get(fingerprint);
     deduped.set(fingerprint, pickPreferredJob(existing, job));
   }
@@ -261,7 +268,7 @@ function buildJobIdentity(job: NormalizedJob) {
     return `url:${normalizedApplyUrl}`;
   }
 
-  return `fingerprint:${buildJobFingerprint(job)}`;
+  return `fingerprint:${buildContentFingerprint(job)}`;
 }
 
 function pickPreferredJob(current: NormalizedJob | undefined, candidate: NormalizedJob) {
@@ -444,7 +451,7 @@ async function deactivateDuplicateImportedJobs(nowIso: string) {
 
   const { data } = await supabase
     .from("jobs")
-    .select("id, title, company, location, job_kind, external_posted_at, imported_at, created_at, source")
+    .select("id, title, company, location, description, work_mode, employment_type, job_kind, external_posted_at, imported_at, created_at, source")
     .eq("is_active", true)
     .neq("source", "employer")
     .limit(50000);
@@ -454,6 +461,9 @@ async function deactivateDuplicateImportedJobs(nowIso: string) {
     title: string | null;
     company: string | null;
     location: string | null;
+    description: string | null;
+    work_mode: "remote" | "hybrid" | "onsite" | null;
+    employment_type: "full_time" | "part_time" | "contract" | null;
     job_kind: "standard" | "freelance" | null;
     external_posted_at: string | null;
     imported_at: string | null;
@@ -464,11 +474,14 @@ async function deactivateDuplicateImportedJobs(nowIso: string) {
   const grouped = new Map<string, typeof rows>();
 
   for (const row of rows) {
-    const fingerprint = buildJobFingerprint({
+    const fingerprint = buildContentFingerprint({
       title: row.title || "",
       company: row.company || "",
-      location: row.location || "",
+      description: row.description || "",
+      work_mode: row.work_mode || "onsite",
+      employment_type: row.employment_type || "full_time",
       job_kind: row.job_kind || "standard",
+      source: row.source || "",
     });
 
     const existing = grouped.get(fingerprint);
