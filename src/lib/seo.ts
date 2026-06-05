@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { createAdminClient } from "@/utils/supabase/admin";
 import type { Metadata } from "next";
+import { getPublicJobs } from "@/lib/public-jobs";
 
 export function toJsonLdScriptProps(data: unknown) {
   return {
@@ -76,5 +77,14 @@ export const getMarketplaceSeoCounts = cache(async () => {
     employerProfiles: employers.count || 0,
     verifiedProfiles: verifiedProfiles.count || 0,
     activeMembers: activeMembers.count || 0,
+  };
+});
+
+export const getMarketplaceVisibilityCounts = cache(async () => {
+  const [seoCounts, publicJobs] = await Promise.all([getMarketplaceSeoCounts(), getPublicJobs()]);
+
+  return {
+    publicJobCount: publicJobs.length,
+    unlockedJobCount: seoCounts.activeJobs,
   };
 });

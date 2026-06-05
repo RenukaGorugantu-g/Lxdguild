@@ -1,20 +1,7 @@
 import { createAdminClient } from "@/utils/supabase/admin";
+import { IMPORT_CATEGORY_ALLOWLIST, isAllowedMarketplaceImportJob, isMarketplaceRelevantJob } from "@/lib/marketplace-job-filter";
 
-const JOB_FEED_KEYWORDS = [
-  "Instructional Designer",
-  "Senior Instructional Designer",
-  "Instructional Systems Designer",
-  "Learning Strategist",
-  "Learning Experience Designer",
-  "eLearning Developer",
-  "Curriculum Developer",
-  "Learning Designer",
-  "L&D Specialist",
-  "Learning and Development Manager",
-  "Learning Consultant",
-  "Assessment Designer",
-  "Instructional Technologist",
-];
+const JOB_FEED_KEYWORDS = [...IMPORT_CATEGORY_ALLOWLIST];
 
 const JOOBLE_LOCATIONS = [
   "Remote",
@@ -37,22 +24,6 @@ const JSEARCH_STANDARD_QUERIES = [
   "Learning Experience Designer",
   "Curriculum Developer",
 ];
-const RELEVANCE_TOKENS = [
-  "instructional",
-  "learning",
-  "elearning",
-  "e-learning",
-  "curriculum",
-  "training",
-  "enablement",
-  "l&d",
-  "learning development",
-  "content developer",
-  "assessment",
-  "courseware",
-  "course",
-];
-
 type NormalizedJob = {
   title: string;
   description: string;
@@ -268,6 +239,18 @@ function buildJobFingerprint(job: Pick<NormalizedJob, "title" | "company" | "loc
   ].join("::");
 }
 
+function dedupeNormalizedJobsByFingerprint(jobs: Iterable<NormalizedJob>) {
+  const deduped = new Map<string, NormalizedJob>();
+
+  for (const job of jobs) {
+    const fingerprint = buildJobFingerprint(job);
+    const existing = deduped.get(fingerprint);
+    deduped.set(fingerprint, pickPreferredJob(existing, job));
+  }
+
+  return deduped;
+}
+
 function buildJobIdentity(job: NormalizedJob) {
   if (job.source_job_id) {
     return `source:${job.source}::${job.source_job_id}`;
@@ -419,8 +402,110 @@ function inferEmploymentType(...values: Array<string | null | undefined>) {
 }
 
 function isRelevantLndRole(title: string, description: string, keyword: string) {
-  const haystack = `${normalizeText(title)} ${normalizeText(description)} ${normalizeText(keyword)}`;
-  return RELEVANCE_TOKENS.some((token) => haystack.includes(token));
+  return isAllowedMarketplaceImportJob({
+    title,
+    description,
+    search_keyword: keyword,
+  });
+}
+
+async function deactivateIrrelevantImportedJobs(nowIso: string) {
+  const supabase = createAdminClient();
+  if (!supabase) return 0;
+
+  const { data } = await supabase
+    .from("jobs")
+    .select("id, title, description, company, location, search_keyword, source")
+    .eq("is_active", true)
+    .neq("source", "employer")
+    .limit(50000);
+
+  const irrelevantIds = (data || [])
+    .filter((job) => !isMarketplaceRelevantJob(job))
+    .map((job) => job.id);
+
+  if (!irrelevantIds.length) {
+    return 0;
+  }
+
+  const { error } = await supabase
+    .from("jobs")
+    .update({ is_active: false, last_seen_at: nowIso })
+    .in("id", irrelevantIds);
+
+  if (error) throw error;
+
+  return irrelevantIds.length;
+}
+
+async function deactivateDuplicateImportedJobs(nowIso: string) {
+  const supabase = createAdminClient();
+  if (!supabase) return 0;
+
+  const { data } = await supabase
+    .from("jobs")
+    .select("id, title, company, location, job_kind, external_posted_at, imported_at, created_at, source")
+    .eq("is_active", true)
+    .neq("source", "employer")
+    .limit(50000);
+
+  const rows = (data || []) as Array<{
+    id: string;
+    title: string | null;
+    company: string | null;
+    location: string | null;
+    job_kind: "standard" | "freelance" | null;
+    external_posted_at: string | null;
+    imported_at: string | null;
+    created_at: string | null;
+    source: string | null;
+  }>;
+
+  const grouped = new Map<string, typeof rows>();
+
+  for (const row of rows) {
+    const fingerprint = buildJobFingerprint({
+      title: row.title || "",
+      company: row.company || "",
+      location: row.location || "",
+      job_kind: row.job_kind || "standard",
+    });
+
+    const existing = grouped.get(fingerprint);
+    if (existing) {
+      existing.push(row);
+      continue;
+    }
+
+    grouped.set(fingerprint, [row]);
+  }
+
+  const idsToDeactivate: string[] = [];
+
+  for (const matches of grouped.values()) {
+    if (matches.length < 2) continue;
+
+    matches.sort((left, right) => {
+      const rightDate = new Date(right.external_posted_at || right.imported_at || right.created_at || 0).getTime();
+      const leftDate = new Date(left.external_posted_at || left.imported_at || left.created_at || 0).getTime();
+      return rightDate - leftDate;
+    });
+
+    idsToDeactivate.push(...matches.slice(1).map((row) => row.id));
+  }
+
+  if (!idsToDeactivate.length) {
+    return 0;
+  }
+
+  const { error } = await supabase
+    .from("jobs")
+    .update({ is_active: false, last_seen_at: nowIso })
+    .in("id", idsToDeactivate);
+
+  if (error) throw error;
+
+  return idsToDeactivate.length;
 }
 
 async function fetchWithTimeout(url: string, init?: RequestInit) {
@@ -742,9 +827,11 @@ export async function syncJobFeed(options?: { trigger?: SyncTrigger }) {
       return emptyResult;
     }
 
+    const dedupedCollected = dedupeNormalizedJobsByFingerprint(collected.values());
+
     const result = supportsLifecycle
-      ? await upsertLifecycleJobs(collected, nowIso)
-      : await upsertLegacyJobs(collected);
+      ? await upsertLifecycleJobs(dedupedCollected, nowIso)
+      : await upsertLegacyJobs(dedupedCollected);
 
     if (supportsLifecycle) {
       await supabase
@@ -1020,6 +1107,9 @@ async function upsertLifecycleJobs(collected: Map<string, NormalizedJob>, nowIso
         .in("id", safeToDelete);
     }
   }
+
+  expired += await deactivateIrrelevantImportedJobs(nowIso);
+  expired += await deactivateDuplicateImportedJobs(nowIso);
 
   return { imported, refreshed, expired, hardDeleted, skipped: false };
 }

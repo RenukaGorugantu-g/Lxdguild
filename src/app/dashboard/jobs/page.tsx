@@ -3,6 +3,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { syncJobFeedIfStale } from "@/lib/job-feed";
+import { filterMarketplaceRelevantJobs, shouldSurfaceMarketplaceJob } from "@/lib/marketplace-job-filter";
 import { isAdminRole } from "@/lib/profile-role";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { formatCount, getMarketplaceSeoCounts, toJsonLdScriptProps } from "@/lib/seo";
@@ -94,6 +95,7 @@ type JobListItem = {
   source?: string | null;
   job_kind?: string | null;
   featured_rank?: number | null;
+  user_id?: string | null;
 };
 
 type JobSearchFilters = {
@@ -107,10 +109,10 @@ type JobSearchFilters = {
 type FilterableJobQuery = any;
 
 const JOB_SELECT =
-  "id, title, description, company, location, work_mode, employment_type, expires_at, external_posted_at, imported_at, created_at, is_active, source, job_kind, featured_rank";
+  "id, title, description, company, location, work_mode, employment_type, expires_at, external_posted_at, imported_at, created_at, is_active, source, job_kind, featured_rank, user_id";
 
 const JOB_SELECT_FALLBACK =
-  "id, title, description, company, location, work_mode, employment_type, expires_at, external_posted_at, imported_at, created_at, is_active, source, job_kind";
+  "id, title, description, company, location, work_mode, employment_type, expires_at, external_posted_at, imported_at, created_at, is_active, source, job_kind, user_id";
 
 function stripHtmlPreview(value: string | null | undefined) {
   return decodeHtmlEntities((value || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim());
@@ -187,6 +189,25 @@ function dedupeFeaturedJobs(jobs: JobListItem[]) {
   });
 }
 
+function dedupeJobListings(jobs: JobListItem[]) {
+  const seen = new Set<string>();
+
+  return jobs.filter((job) => {
+    const key = [
+      (job.title || "").trim().toLowerCase(),
+      (job.company || "").trim().toLowerCase(),
+      (job.location || "").trim().toLowerCase(),
+      (job.work_mode || "").trim().toLowerCase(),
+      (job.employment_type || "").trim().toLowerCase(),
+      (job.job_kind || "").trim().toLowerCase(),
+    ].join("::");
+
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function buildJobDetailHref(
   jobId: string,
   filters: {
@@ -254,8 +275,15 @@ function applyJobFilters(query: FilterableJobQuery, filters: JobSearchFilters) {
   return nextQuery;
 }
 
+async function getAdminUserIds(jobsReader: any) {
+  const { data, error } = await jobsReader.from("profiles").select("id").eq("role", "admin");
+  if (error) return new Set<string>();
+  return new Set<string>((data || []).map((profile: { id: string }) => profile.id));
+}
+
 async function fetchJobsPage(
   jobsReader: any,
+  adminUserIds: ReadonlySet<string>,
   filters: JobSearchFilters,
   currentPage: number,
   pageSize: number,
@@ -284,7 +312,10 @@ async function fetchJobsPage(
 
   if (primaryResult.error?.code !== "42703") {
     return {
-      data: (primaryResult.data || []).filter((job: JobListItem) => job.is_active !== false),
+      data: filterMarketplaceRelevantJobs(
+        (primaryResult.data || []).filter((job: JobListItem) => job.is_active !== false),
+        { adminUserIds }
+      ),
       count: primaryResult.count || 0,
       error: primaryResult.error,
     };
@@ -301,7 +332,10 @@ async function fetchJobsPage(
   const fallbackResult = await fallbackQuery;
 
   return {
-    data: (fallbackResult.data || []).filter((job: JobListItem) => job.is_active !== false),
+    data: filterMarketplaceRelevantJobs(
+      (fallbackResult.data || []).filter((job: JobListItem) => job.is_active !== false),
+      { adminUserIds }
+    ),
     count: fallbackResult.count || 0,
     error: fallbackResult.error,
   };
@@ -309,8 +343,9 @@ async function fetchJobsPage(
 
 async function fetchFeaturedFreelanceJobs(
   jobsReader: any,
+  adminUserIds: ReadonlySet<string>,
   filters: JobSearchFilters
-) {
+): Promise<JobListItem[]> {
   const freelanceFilters: JobSearchFilters = {
     ...filters,
     view: "freelance",
@@ -329,7 +364,10 @@ async function fetchFeaturedFreelanceJobs(
   const primaryResult = await primaryQuery;
 
   if (primaryResult.error?.code !== "42703") {
-    return (primaryResult.data || []).filter((job: JobListItem) => job.is_active !== false);
+    return filterMarketplaceRelevantJobs(
+      (primaryResult.data || []).filter((job: JobListItem) => job.is_active !== false),
+      { adminUserIds }
+    );
   }
 
   const fallbackQuery = applyJobFilters(
@@ -341,10 +379,13 @@ async function fetchFeaturedFreelanceJobs(
   ).limit(4);
 
   const fallbackResult = await fallbackQuery;
-  return (fallbackResult.data || []).filter((job: JobListItem) => job.is_active !== false);
+  return filterMarketplaceRelevantJobs(
+    (fallbackResult.data || []).filter((job: JobListItem) => job.is_active !== false),
+    { adminUserIds }
+  );
 }
 
-async function fetchFeaturedJobs(jobsReader: any) {
+async function fetchFeaturedJobs(jobsReader: any, adminUserIds: ReadonlySet<string>): Promise<JobListItem[]> {
   const primaryQuery = await jobsReader
     .from("jobs")
     .select(JOB_SELECT)
@@ -356,7 +397,12 @@ async function fetchFeaturedJobs(jobsReader: any) {
     .limit(6);
 
   if (primaryQuery.error?.code !== "42703") {
-    return dedupeFeaturedJobs((primaryQuery.data || []).filter((job: JobListItem) => job.is_active !== false)).slice(0, 6);
+    return dedupeFeaturedJobs(
+      filterMarketplaceRelevantJobs(
+        (primaryQuery.data || []).filter((job: JobListItem) => job.is_active !== false),
+        { adminUserIds }
+      )
+    ).slice(0, 6);
   }
 
   return [] as JobListItem[];
@@ -373,6 +419,7 @@ export default async function JobsDashboard({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const adminUserIds = await getAdminUserIds(jobsReader);
   const { category, view, remote, schedule, page, q } = await searchParams;
   const isGuestViewer = !user;
   let profile: { role?: string | null } | null = null;
@@ -425,31 +472,35 @@ export default async function JobsDashboard({
   const filters: JobSearchFilters = { category, view, remote, schedule, normalizedQuery };
 
   const shouldSplitFeaturedJobs = view !== "freelance";
-  let jobsPageResult = await fetchJobsPage(jobsReader, filters, requestedPage, pageSize, shouldSplitFeaturedJobs);
+  let jobsPageResult = await fetchJobsPage(jobsReader, adminUserIds, filters, requestedPage, pageSize, shouldSplitFeaturedJobs);
 
   if ((jobsPageResult.count === 0 || jobsPageResult.data.length === 0) && !jobsPageResult.error) {
     await syncJobFeedIfStale();
-    jobsPageResult = await fetchJobsPage(jobsReader, filters, requestedPage, pageSize, shouldSplitFeaturedJobs);
+    jobsPageResult = await fetchJobsPage(jobsReader, adminUserIds, filters, requestedPage, pageSize, shouldSplitFeaturedJobs);
   }
 
-  let jobsList: JobListItem[] = (jobsPageResult.data as JobListItem[]).filter((job: JobListItem) => matchesRemoteFilter(job, remote));
+  let jobsList: JobListItem[] = dedupeJobListings((jobsPageResult.data as JobListItem[])
+    .filter((job: JobListItem) => shouldSurfaceMarketplaceJob(job, { adminUserIds }))
+    .filter((job: JobListItem) => matchesRemoteFilter(job, remote)));
   jobsList = jobsList.filter((job: JobListItem) => matchesScheduleFilter(job, schedule));
 
   const categories = ["Instructional Designer", "eLearning Developer", "Learning Experience Designer", "L&D Manager", "Curriculum Developer"];
-  const featuredJobs = view === "freelance" ? [] : await fetchFeaturedJobs(jobsReader);
-  const freelanceJobs = view === "freelance" ? [] : await fetchFeaturedFreelanceJobs(jobsReader, filters);
+  const featuredJobs: JobListItem[] = view === "freelance" ? [] : dedupeJobListings(await fetchFeaturedJobs(jobsReader, adminUserIds));
+  const freelanceJobs: JobListItem[] = view === "freelance" ? [] : dedupeJobListings(await fetchFeaturedFreelanceJobs(jobsReader, adminUserIds, filters));
   const featuredFreelanceIds = new Set(freelanceJobs.map((job: JobListItem) => job.id));
   const totalJobs = jobsPageResult.count;
   const totalPages = Math.max(1, Math.ceil(totalJobs / pageSize));
   const currentPage = Math.min(requestedPage, totalPages);
 
   if (requestedPage !== currentPage && totalJobs > 0) {
-    jobsPageResult = await fetchJobsPage(jobsReader, filters, currentPage, pageSize, shouldSplitFeaturedJobs);
-    jobsList = (jobsPageResult.data as JobListItem[]).filter((job: JobListItem) => matchesRemoteFilter(job, remote));
+    jobsPageResult = await fetchJobsPage(jobsReader, adminUserIds, filters, currentPage, pageSize, shouldSplitFeaturedJobs);
+    jobsList = dedupeJobListings((jobsPageResult.data as JobListItem[])
+      .filter((job: JobListItem) => shouldSurfaceMarketplaceJob(job, { adminUserIds }))
+      .filter((job: JobListItem) => matchesRemoteFilter(job, remote)));
     jobsList = jobsList.filter((job: JobListItem) => matchesScheduleFilter(job, schedule));
   }
 
-  const jobsToRender = view === "freelance" ? jobsList : jobsList.filter((job: JobListItem) => !featuredFreelanceIds.has(job.id));
+  const jobsToRender = view === "freelance" ? jobsList : dedupeJobListings(jobsList.filter((job: JobListItem) => !featuredFreelanceIds.has(job.id)));
   const paginatedJobs = jobsToRender;
   const formattedTotalJobs = formatCount(totalJobs);
   const topCompanies = Array.from(

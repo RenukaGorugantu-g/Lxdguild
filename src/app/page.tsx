@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import LandingVideoWall from "@/components/LandingVideoWall";
 import { buildPublicJobHref } from "@/lib/public-jobs";
+import { filterMarketplaceRelevantJobs } from "@/lib/marketplace-job-filter";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
-import { formatCount, getMarketplaceSeoCounts, toJsonLdScriptProps } from "@/lib/seo";
+import { formatCount, getMarketplaceVisibilityCounts, toJsonLdScriptProps } from "@/lib/seo";
 import {
   ArrowRight,
   Bot,
@@ -193,20 +194,6 @@ type HeroJobPreview = {
   employment_type?: string | null;
 };
 
-function isLdMarketplaceJob(job: HeroJobPreview) {
-  const haystack = `${job.title || ""} ${job.company || ""} ${job.description || ""}`.toLowerCase();
-  const includeMatch =
-    /(learning|instructional|l&d|training|curriculum|elearning|e-learning|facilitation|designer|developer|capability|learning experience|course creator|content designer|learning consultant)/.test(
-      haystack
-    );
-  const excludeMatch =
-    /(registered nurse|nursing|clinical educator|physician|therapist|medical|hospital|healthcare assistant|bedside)/.test(
-      haystack
-    );
-
-  return includeMatch && !excludeMatch;
-}
-
 function dedupeJobs(jobs: HeroJobPreview[]) {
   const seen = new Set<string>();
 
@@ -241,10 +228,11 @@ export default async function LandingPage() {
     (job) => job.is_active !== false
   );
 
-  const ldJobs = dedupeJobs(jobPreviewPool.filter(isLdMarketplaceJob));
+  const ldJobs = dedupeJobs(filterMarketplaceRelevantJobs(jobPreviewPool));
   const liveJobs = ldJobs.slice(0, 3);
-  const seoCounts = await getMarketplaceSeoCounts();
-  const formattedActiveJobs = formatCount(seoCounts.activeJobs);
+  const visibilityCounts = await getMarketplaceVisibilityCounts();
+  const formattedPublicJobs = formatCount(visibilityCounts.publicJobCount);
+  const formattedUnlockedJobs = formatCount(visibilityCounts.unlockedJobCount);
   const homeJsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -315,11 +303,11 @@ export default async function LandingPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4 text-[#179720]" />
-                    <span>{formattedActiveJobs}+ active L&amp;D jobs</span>
+                    <span>{formattedPublicJobs} L&amp;D roles publicly visible</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-[#179720]" />
-                    <span>India-focused L&amp;D hiring ecosystem</span>
+                    <span>{formattedUnlockedJobs} unlocked with free membership</span>
                   </div>
                 </div>
               </div>

@@ -1,12 +1,13 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { CATEGORY_ALLOWLIST, shouldImportMarketplaceJob } from "../_shared/marketplace-job-filter.ts";
 
 const ADZUNA_APP_ID = typeof Deno !== 'undefined' ? Deno.env.get('ADZUNA_APP_ID') || '38c5d4ef' : '';
 const ADZUNA_APP_KEY = typeof Deno !== 'undefined' ? Deno.env.get('ADZUNA_APP_KEY') || '456857cd33fb800c9e17dfc068c108b5' : '';
 const supabaseUrl = typeof Deno !== 'undefined' ? Deno.env.get('SUPABASE_URL')! : '';
 const supabaseServiceKey = typeof Deno !== 'undefined' ? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')! : '';
 
-const keywords = ['Instructional', 'eLearning'];
+const keywords = [...CATEGORY_ALLOWLIST];
 const country = 'in'; // or map array similar to jooble
 
 serve(async (req: Request) => {
@@ -34,6 +35,7 @@ serve(async (req: Request) => {
         const desc = job.description || '';
 
         if (!title || !applyUrl) continue;
+        if (!shouldImportMarketplaceJob({ title, searchKeyword: keyword })) continue;
 
         const { data: existing } = await supabase
           .from('jobs')
@@ -48,7 +50,8 @@ serve(async (req: Request) => {
             company,
             location: jobLocation,
             source: 'adzuna',
-            apply_url: applyUrl
+            apply_url: applyUrl,
+            search_keyword: keyword,
           });
           imported++;
         }

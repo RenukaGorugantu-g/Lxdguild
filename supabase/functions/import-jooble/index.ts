@@ -1,11 +1,12 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { CATEGORY_ALLOWLIST, shouldImportMarketplaceJob } from "../_shared/marketplace-job-filter.ts";
 
 const JOOBLE_API_KEY = typeof Deno !== 'undefined' ? Deno.env.get('JOOBLE_API_KEY') || 'efe3267d-0fb5-4d3c-b261-ec8806aa97f0' : '';
 const supabaseUrl = typeof Deno !== 'undefined' ? Deno.env.get('SUPABASE_URL')! : '';
 const supabaseServiceKey = typeof Deno !== 'undefined' ? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')! : '';
 
-const keywords = ['elearning developer', 'course developer', 'curriculum developer', 'instructional designer'];
+const keywords = [...CATEGORY_ALLOWLIST];
 const locations = ['India', 'USA', 'UK'];
 
 serve(async (req: Request) => {
@@ -53,6 +54,8 @@ serve(async (req: Request) => {
              const jobLocation = job.location || location;
              const desc = job.snippet || '';
 
+             if (!shouldImportMarketplaceJob({ title, searchKeyword: keyword })) continue;
+
              // check duplicates
              const { data: existing } = await supabase
                .from('jobs')
@@ -67,7 +70,8 @@ serve(async (req: Request) => {
                  company,
                  location: jobLocation,
                  source: 'jooble',
-                 apply_url: applyUrl
+                 apply_url: applyUrl,
+                 search_keyword: keyword
                });
                imported++;
              }

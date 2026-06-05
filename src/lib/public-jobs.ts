@@ -2,6 +2,7 @@ import { cache } from "react";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { getSiteUrl } from "@/lib/site-url";
+import { shouldSurfaceMarketplaceJob } from "@/lib/marketplace-job-filter";
 
 export type PublicJobRecord = {
   id: string;
@@ -18,13 +19,15 @@ export type PublicJobRecord = {
   is_active?: boolean | null;
   deleted_at?: string | null;
   featured_rank?: number | null;
+  source?: string | null;
+  user_id?: string | null;
 };
 
 const PRIMARY_SELECT =
-  "id, title, description, company, location, work_mode, employment_type, external_posted_at, imported_at, created_at, expires_at, is_active, deleted_at, featured_rank";
+  "id, title, description, company, location, work_mode, employment_type, external_posted_at, imported_at, created_at, expires_at, is_active, deleted_at, featured_rank, source, user_id";
 
 const FALLBACK_SELECT =
-  "id, title, description, company, location, work_mode, employment_type, external_posted_at, imported_at, created_at, expires_at, is_active";
+  "id, title, description, company, location, work_mode, employment_type, external_posted_at, imported_at, created_at, expires_at, is_active, source, user_id";
 
 async function getJobsReader() {
   const admin = createAdminClient();
@@ -32,10 +35,40 @@ async function getJobsReader() {
   return createClient();
 }
 
-function sanitizeJobRows(jobs: PublicJobRecord[] | null | undefined) {
-  return (jobs || [])
+const getAdminUserIds = cache(async () => {
+  const jobsReader = await getJobsReader();
+  const { data, error } = await jobsReader.from("profiles").select("id").eq("role", "admin");
+  if (error) return new Set<string>();
+  return new Set<string>((data || []).map((profile: { id: string }) => profile.id));
+});
+
+function dedupePublicJobs(jobs: PublicJobRecord[]) {
+  const seen = new Set<string>();
+
+  return jobs.filter((job) => {
+    const key = [
+      (job.title || "").trim().toLowerCase(),
+      (job.company || "").trim().toLowerCase(),
+      (job.location || "").trim().toLowerCase(),
+      (job.work_mode || "").trim().toLowerCase(),
+      (job.employment_type || "").trim().toLowerCase(),
+    ].join("::");
+
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+async function sanitizeJobRows(jobs: PublicJobRecord[] | null | undefined) {
+  const adminUserIds = await getAdminUserIds();
+
+  return dedupePublicJobs(
+    (jobs || [])
     .filter((job) => job.is_active !== false)
-    .filter((job) => !job.deleted_at);
+    .filter((job) => !job.deleted_at)
+    .filter((job) => shouldSurfaceMarketplaceJob(job, { adminUserIds }))
+  );
 }
 
 export function stripJobHtml(value: string | null | undefined) {
@@ -125,6 +158,7 @@ export const getPublicNonFeaturedJobs = cache(async (limit = 24) => {
 
 export const getPublicJobById = cache(async (id: string) => {
   const jobsReader = await getJobsReader();
+  const adminUserIds = await getAdminUserIds();
   const primaryResult = await jobsReader
     .from("jobs")
     .select(PRIMARY_SELECT)
@@ -133,7 +167,7 @@ export const getPublicJobById = cache(async (id: string) => {
 
   if (!primaryResult.error) {
     const job = primaryResult.data as PublicJobRecord;
-    if (job.is_active === false || job.deleted_at) return null;
+    if (job.is_active === false || job.deleted_at || !shouldSurfaceMarketplaceJob(job, { adminUserIds })) return null;
     return job;
   }
 
@@ -146,7 +180,7 @@ export const getPublicJobById = cache(async (id: string) => {
 
     if (!fallbackResult.error && fallbackResult.data) {
       const fallbackJob = fallbackResult.data as PublicJobRecord;
-      if (fallbackJob.is_active === false) return null;
+      if (fallbackJob.is_active === false || !shouldSurfaceMarketplaceJob(fallbackJob, { adminUserIds })) return null;
       return {
         ...fallbackJob,
         deleted_at: null,

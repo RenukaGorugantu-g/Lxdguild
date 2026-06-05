@@ -11,7 +11,7 @@ import {
   stripJobHtml,
   type PublicJobRecord,
 } from "@/lib/public-jobs";
-import { formatCount, toJsonLdScriptProps } from "@/lib/seo";
+import { formatCount, getMarketplaceVisibilityCounts, toJsonLdScriptProps } from "@/lib/seo";
 import { getSiteUrl } from "@/lib/site-url";
 
 type JobsSearchParams = {
@@ -83,6 +83,9 @@ export default async function PublicJobsPage({
   const normalizedQuery = q?.trim().toLowerCase() || "";
   const filteredJobs = jobs.filter((job) => matchesJob(job, category, normalizedQuery));
   const jobsToRender = filteredJobs.slice(0, 36);
+  const visibilityCounts = await getMarketplaceVisibilityCounts();
+  const visibleJobCountLabel = formatCount(filteredJobs.length);
+  const unlockedJobCountLabel = formatCount(visibilityCounts.unlockedJobCount);
   const siteUrl = getSiteUrl();
   const jobsJsonLd = {
     "@context": "https://schema.org",
@@ -125,8 +128,15 @@ export default async function PublicJobsPage({
               </div>
 
               <div className="marketing-panel p-5">
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <StatCard label="Visible jobs" value={formatCount(filteredJobs.length)} />
+                <div className="rounded-[1.35rem] border border-[#dbe6d6] bg-[#f8fbf5] p-4">
+                  <p className="text-sm font-semibold text-[#111827]">
+                    Showing {visibleJobCountLabel} L&amp;D roles - register free to unlock full access
+                  </p>
+                  <p className="mt-2 text-sm leading-7 text-[#5b6757]">
+                    {unlockedJobCountLabel} active roles are currently available across the marketplace, while this page shows the public L&amp;D selection.
+                  </p>
+                </div>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
                   <StatCard label="Featured roles" value={formatCount(featuredJobs.length)} />
                   <StatCard label="Focus" value="India" />
                 </div>
