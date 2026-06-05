@@ -1,17 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import LandingVideoWall from "@/components/LandingVideoWall";
-import { buildPublicJobHref } from "@/lib/public-jobs";
-import { filterMarketplaceRelevantJobs } from "@/lib/marketplace-job-filter";
+import {
+  getEmploymentTypeLabel,
+  getJobPostedDate,
+  getPublicJobs,
+  getWorkModeLabel,
+  type PublicJobRecord,
+} from "@/lib/public-jobs";
 import { createClient } from "@/utils/supabase/server";
-import { createAdminClient } from "@/utils/supabase/admin";
-import { formatCount, getMarketplaceVisibilityCounts, toJsonLdScriptProps } from "@/lib/seo";
+import { toJsonLdScriptProps } from "@/lib/seo";
 import {
   ArrowRight,
-  Bot,
   BriefcaseBusiness,
   Check,
-  CircuitBoard,
   Crown,
   MapPin,
   Sparkles,
@@ -184,55 +186,94 @@ const ecosystemBenefits = [
   },
 ] as const;
 
-type HeroJobPreview = {
-  id: string;
-  title: string;
-  company: string | null;
-  location: string | null;
-  description?: string | null;
-  work_mode?: string | null;
-  employment_type?: string | null;
-};
+const INDIA_LOCATION_SIGNALS = [
+  "india",
+  "bangalore",
+  "bengaluru",
+  "hyderabad",
+  "mumbai",
+  "navi mumbai",
+  "pune",
+  "delhi",
+  "new delhi",
+  "noida",
+  "gurgaon",
+  "gurugram",
+  "chennai",
+  "kolkata",
+  "ahmedabad",
+  "coimbatore",
+  "kochi",
+  "cochin",
+  "trivandrum",
+  "thiruvananthapuram",
+  "bhubaneswar",
+  "indore",
+  "jaipur",
+  "visakhapatnam",
+  "vizag",
+] as const;
 
-function dedupeJobs(jobs: HeroJobPreview[]) {
-  const seen = new Set<string>();
+const HOMEPAGE_CURATED_COMPANIES = [
+  "accenture",
+  "maple learning solutions",
+  "maple learning solution",
+] as const;
 
-  return jobs.filter((job) => {
-    const key = `${job.title}|${job.company}`.trim().toLowerCase();
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
+function normalizeHomepageJobText(...values: Array<string | null | undefined>) {
+  return values.filter(Boolean).join(" ").toLowerCase();
+}
+
+function isIndiaBasedHomepageJob(job: PublicJobRecord) {
+  const haystack = normalizeHomepageJobText(job.location, job.title, job.description, job.company);
+  return INDIA_LOCATION_SIGNALS.some((signal) => haystack.includes(signal));
+}
+
+function getWeeklyRotationSeed() {
+  return Math.floor(Date.now() / (1000 * 60 * 60 * 24 * 7));
+}
+
+function rotateJobsWeekly<T>(jobs: T[], count: number) {
+  if (jobs.length <= count) return jobs.slice(0, count);
+
+  const startIndex = getWeeklyRotationSeed() % jobs.length;
+  const rotated: T[] = [];
+
+  for (let index = 0; index < jobs.length; index += 1) {
+    rotated.push(jobs[(startIndex + index) % jobs.length]);
+  }
+
+  return rotated.slice(0, count);
+}
+
+function selectHomepageHeroJobs(jobs: PublicJobRecord[]) {
+  const indiaJobs = jobs.filter(isIndiaBasedHomepageJob);
+  const sorted = [...indiaJobs].sort((left, right) => {
+    const leftCompany = normalizeHomepageJobText(left.company);
+    const rightCompany = normalizeHomepageJobText(right.company);
+    const leftPriority = HOMEPAGE_CURATED_COMPANIES.findIndex((company) => leftCompany.includes(company));
+    const rightPriority = HOMEPAGE_CURATED_COMPANIES.findIndex((company) => rightCompany.includes(company));
+    const normalizedLeftPriority = leftPriority === -1 ? Number.POSITIVE_INFINITY : leftPriority;
+    const normalizedRightPriority = rightPriority === -1 ? Number.POSITIVE_INFINITY : rightPriority;
+
+    if (normalizedLeftPriority !== normalizedRightPriority) {
+      return normalizedLeftPriority - normalizedRightPriority;
+    }
+
+    return new Date(getJobPostedDate(right)).getTime() - new Date(getJobPostedDate(left)).getTime();
   });
+
+  return rotateJobsWeekly(sorted, 3);
 }
 
 export default async function LandingPage() {
   const supabase = await createClient();
-  const adminSupabase = createAdminClient();
-  const jobsReader = adminSupabase ?? supabase;
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const primaryHref = user ? "/dashboard/candidate" : "/candidate";
   const secondaryHref = user ? "/dashboard/employer" : "/employer";
   const jobsCtaHref = user ? "/dashboard/jobs" : "/jobs";
-
-  const jobPreviewQuery = await jobsReader
-    .from("jobs")
-    .select("id, title, company, location, description, work_mode, employment_type, is_active")
-    .eq("is_active", true)
-    .order("external_posted_at", { ascending: false, nullsFirst: false })
-    .order("imported_at", { ascending: false })
-    .limit(24);
-
-  const jobPreviewPool = ((jobPreviewQuery.data || []) as Array<HeroJobPreview & { is_active?: boolean | null }>).filter(
-    (job) => job.is_active !== false
-  );
-
-  const ldJobs = dedupeJobs(filterMarketplaceRelevantJobs(jobPreviewPool));
-  const liveJobs = ldJobs.slice(0, 3);
-  const visibilityCounts = await getMarketplaceVisibilityCounts();
-  const formattedPublicJobs = formatCount(visibilityCounts.publicJobCount);
-  const formattedUnlockedJobs = formatCount(visibilityCounts.unlockedJobCount);
+  const liveJobs = selectHomepageHeroJobs(await getPublicJobs());
   const homeJsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -274,21 +315,41 @@ export default async function LandingPage() {
               <div className="space-y-6">
                 <div className="inline-flex w-fit items-center gap-2 rounded-full border border-[#d9e6d2] bg-[#eef6ff] px-4 py-2 text-[11px] font-semibold text-[#2f62b8] shadow-[0_10px_24px_rgba(47,98,184,0.08)]">
                   <Sparkles className="h-3.5 w-3.5" />
-                  Verified L&amp;D talent, premium resources, and live hiring momentum in one place
+                  Verified marketplace for learning professionals and hiring teams
                 </div>
                 <div className="space-y-5">
                   <h1 className="marketing-title max-w-3xl text-[3.2rem] leading-[0.95] sm:text-[4.25rem]">
-                    L&amp;D job marketplace India for verified learning professionals.
+                    Find your next L&amp;D job - or your next hire.
                   </h1>
-                  <p className="marketing-copy max-w-2xl text-base leading-8">
-                    LXD Guild is an AI-powered L&amp;D job board for instructional designers, eLearning developers,
-                    learning experience designers, and employers hiring across India.
+                  <p className="max-w-2xl text-base leading-8 text-[#5b6757] sm:text-lg">
+                    India&apos;s only verified marketplace for instructional designers, eLearning developers, and learning professionals.
                   </p>
                 </div>
 
-                <div className="flex flex-col gap-4 sm:flex-row">
-                  <Link href={primaryHref} className="marketing-primary rounded-full px-6">
-                    I&apos;m an L&amp;D professional
+                <form action="/jobs" className="max-w-2xl">
+                  <div className="flex flex-col gap-3 rounded-[1.6rem] border border-[#d8e6d2] bg-white/92 p-3 shadow-[0_18px_40px_rgba(15,23,42,0.08)] sm:flex-row sm:items-center">
+                    <input
+                      type="search"
+                      name="q"
+                      placeholder="Search by role or skill"
+                      className="min-w-0 flex-1 rounded-[1.1rem] border border-[#dbe6d6] bg-[#fbfdf8] px-4 py-3 text-sm text-[#111827] outline-none transition placeholder:text-[#7b8576] focus:border-[#23b61f]"
+                    />
+                    <button
+                      type="submit"
+                      className="inline-flex items-center justify-center gap-2 rounded-full bg-[#111827] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#1f2937]"
+                    >
+                      Search jobs
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </form>
+
+                <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
+                  <Link
+                    href={jobsCtaHref}
+                    className="inline-flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#27c93f,#118c1a)] px-7 py-4 text-base font-semibold text-white shadow-[0_18px_36px_rgba(35,182,31,0.28)] transition hover:-translate-y-0.5 hover:shadow-[0_24px_44px_rgba(35,182,31,0.34)]"
+                  >
+                    Browse L&amp;D Jobs
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                   <Link href={secondaryHref} className="marketing-secondary rounded-full px-6">
@@ -303,11 +364,11 @@ export default async function LandingPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Users className="h-4 w-4 text-[#179720]" />
-                    <span>{formattedPublicJobs} L&amp;D roles publicly visible</span>
+                    <span>L&amp;D-first hiring journey</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-[#179720]" />
-                    <span>{formattedUnlockedJobs} unlocked with free membership</span>
+                    <span>India-focused L&amp;D hiring ecosystem</span>
                   </div>
                 </div>
               </div>
@@ -335,65 +396,58 @@ export default async function LandingPage() {
                 </p>
                 <div className="grid gap-4 lg:grid-cols-3">
                   {liveJobs.map((job) => {
-                    const href = user ? `/dashboard/jobs/${job.id}` : buildPublicJobHref(job);
-                    const modeLabel =
-                      job.work_mode === "remote"
-                        ? "Remote"
-                        : job.work_mode === "hybrid"
-                          ? "Hybrid"
-                          : job.employment_type === "contract"
-                            ? "Contract"
-                            : "Verified role";
+                    const href = user ? `/dashboard/jobs/${job.id}` : "/register";
+                    const postedDate = new Date(getJobPostedDate(job)).toLocaleDateString();
 
                     return (
                       <Link
                         key={job.id}
                         href={href}
-                        className="group relative overflow-hidden rounded-[1.4rem] border border-[#dbddd3] bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.05)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(15,23,42,0.08)]"
+                        className="group overflow-hidden rounded-[1.4rem] border border-[#dbddd3] bg-white p-5 shadow-[0_12px_28px_rgba(15,23,42,0.05)] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_18px_34px_rgba(15,23,42,0.08)]"
                       >
-                        <div className={`${user ? "" : "blur-[2px] opacity-85"} transition duration-200`}>
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="text-xl font-semibold leading-7 text-[#111827]">{job.title}</p>
-                              <div className="mt-2 flex items-center gap-2 text-sm text-[#4f5b4b]">
-                                <BriefcaseBusiness className="h-4 w-4 text-[#179720]" />
-                                <span>{job.company || "Verified employer"}</span>
-                              </div>
-                              <div className="mt-1 flex items-center gap-2 text-sm text-[#4f5b4b]">
-                                <MapPin className="h-4 w-4 text-[#179720]" />
-                                <span>{job.location || "India"}</span>
-                              </div>
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-xl font-semibold leading-7 text-[#111827]">{job.title}</p>
+                            <div className="mt-2 flex items-center gap-2 text-sm text-[#4f5b4b]">
+                              <BriefcaseBusiness className="h-4 w-4 text-[#179720]" />
+                              <span>{job.company || "Verified employer"}</span>
                             </div>
-                          </div>
-                          <div className="mt-5 inline-flex rounded-full bg-[#eef6ea] px-3 py-1 text-xs font-semibold text-[#486246]">
-                            {modeLabel}
+                            <div className="mt-1 flex items-center gap-2 text-sm text-[#4f5b4b]">
+                              <MapPin className="h-4 w-4 text-[#179720]" />
+                              <span>{getWorkModeLabel(job.work_mode, job.location)}</span>
+                            </div>
                           </div>
                         </div>
-
+                        <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold">
+                          <span className="rounded-full bg-[#eef6ea] px-3 py-1 text-[#486246]">
+                            {getEmploymentTypeLabel(job.employment_type)}
+                          </span>
+                          <span className="rounded-full bg-[#eef3ff] px-3 py-1 text-[#2f62b8]">
+                            Posted {postedDate}
+                          </span>
+                        </div>
+                        <div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#138d1a]">
+                          View full details
+                          <ArrowRight className="h-4 w-4" />
+                        </div>
                         {!user ? (
-                          <div className="absolute inset-0 flex items-center justify-center bg-[linear-gradient(180deg,rgba(244,239,232,0.14),rgba(244,239,232,0.82))] p-4">
-                            <div className="rounded-[1.2rem] border border-[#d7e4d1] bg-white/96 px-5 py-4 text-center shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
-                              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#179720]">
-                                Locked preview
-                              </div>
-                              <div className="mt-2 text-sm font-semibold text-[#111827]">Join free to unlock this job</div>
-                            </div>
-                          </div>
+                          <p className="mt-3 text-xs font-medium uppercase tracking-[0.16em] text-[#7b8576]">
+                            Register free to unlock the full role
+                          </p>
                         ) : null}
                       </Link>
                     );
                   })}
                 </div>
-                {!user ? (
-                  <div className="mt-5 flex flex-col gap-3 border-t border-[#e3e6db] pt-4 text-center lg:flex-row lg:items-center lg:justify-between lg:text-left">
-                    <p className="text-sm text-[#4f5b4b]">
-                      Browse vetted L&amp;D roles, unlock the full job board, and start applying after registration.
-                    </p>
-                    <Link href={jobsCtaHref} className="marketing-secondary rounded-full px-5">
-                      View full job board
-                    </Link>
-                  </div>
-                ) : null}
+                <div className="mt-5 flex flex-col gap-3 border-t border-[#e3e6db] pt-4 text-center lg:flex-row lg:items-center lg:justify-between lg:text-left">
+                  <p className="text-sm text-[#4f5b4b]">
+                    Browse curated India-based L&amp;D roles, then open the full marketplace for more matches.
+                  </p>
+                  <Link href={jobsCtaHref} className="marketing-secondary rounded-full px-5">
+                    See all 1,000+ roles
+                    <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
               </div>
             ) : null}
           </div>
@@ -424,37 +478,36 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        <section className="bg-[#151817] px-6 py-16 text-white">
-          <div className="marketing-container grid gap-10 lg:grid-cols-[0.9fr_1.1fr]">
-            <div>
-              <p className="max-w-lg text-4xl font-semibold leading-tight">
-                L&amp;D has evolved.
-                <br />
-                The platforms <span className="text-[#55df54]">haven&apos;t.</span>
-              </p>
+        <section className="marketing-section pb-16">
+          <div className="marketing-container">
+            <div className="text-center">
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#6e7c68]">Why LXD Guild?</p>
+              <h2 className="mt-4 text-4xl font-semibold text-[#111827]">Built for focused L&amp;D hiring in India</h2>
             </div>
-            <div className="grid gap-8 md:grid-cols-3">
-              <div className="md:col-span-3">
-                <p className="max-w-2xl text-sm leading-7 text-white/72">
-                  The modern learning specialist is not data scientist, recruiter, and designer all at once. Yet the
-                  tools available for hiring and growth are still stuck in the past. LXD Guild reimagines the entire
-                  lifecycle through the lens of AI-first cinematic intelligence.
+            <div className="mt-10 grid gap-6 md:grid-cols-3">
+              <article className="rounded-[2rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbf2_100%)] p-6 shadow-[0_20px_50px_rgba(87,108,67,0.08)]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#eef8e9] text-[#138d1a]">
+                  <BriefcaseBusiness className="h-5 w-5" />
+                </div>
+                <h3 className="mt-4 text-2xl font-semibold text-[#111827]">Verified roles</h3>
+                <p className="mt-3 text-sm leading-7 text-[#5a6656]">
+                  Browse a cleaner stream of instructional design, eLearning, and learning team opportunities.
                 </p>
-              </div>
+              </article>
               <DarkFeature
                 icon={<Sparkles className="h-4 w-4" />}
-                title="Fragmented data"
-                copy="Disconnected platforms keep the true potential of talent hidden."
+                title="Verified roles"
+                copy="Browse a cleaner stream of instructional design, eLearning, and learning team opportunities."
               />
               <DarkFeature
-                icon={<Bot className="h-4 w-4" />}
-                title="Slow velocity"
+                icon={<ShieldCheck className="h-4 w-4" />}
+                title="Skill-validated profiles"
                 copy="Traditional hiring and onboarding tools move too slowly for today’s market pace."
               />
               <DarkFeature
-                icon={<CircuitBoard className="h-4 w-4" />}
-                title="Human + AI"
-                copy="We combine human growth pathways with machine-led precision and clarity."
+                icon={<MapPin className="h-4 w-4" />}
+                title="India-focused hiring"
+                copy="The marketplace is shaped around Indian L&D roles, employers, and career pathways instead of generic job-board noise."
               />
             </div>
           </div>
@@ -691,13 +744,18 @@ function DarkFeature({
   title: string;
   copy: string;
 }) {
+  const resolvedCopy =
+    title === "Skill-validated profiles"
+      ? "Employers get stronger signal quality, and professionals stand out with clearer proof of capability."
+      : copy;
+
   return (
     <div>
       <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full border border-white/12 bg-white/6 text-[#63f26b]">
         {icon}
       </div>
       <p className="text-sm font-semibold text-white">{title}</p>
-      <p className="mt-2 text-sm leading-6 text-white/62">{copy}</p>
+      <p className="mt-2 text-sm leading-6 text-white/62">{resolvedCopy}</p>
     </div>
   );
 }
