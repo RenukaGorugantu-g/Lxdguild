@@ -186,6 +186,24 @@ const ecosystemBenefits = [
   },
 ] as const;
 
+const marketplaceHighlights = [
+  {
+    icon: <BriefcaseBusiness className="h-5 w-5" />,
+    title: "Verified roles",
+    copy: "Browse a cleaner stream of instructional design, eLearning, and learning team opportunities.",
+  },
+  {
+    icon: <ShieldCheck className="h-5 w-5" />,
+    title: "Skill-validated profiles",
+    copy: "Employers get stronger signal quality, and professionals stand out with clearer proof of capability.",
+  },
+  {
+    icon: <MapPin className="h-5 w-5" />,
+    title: "India-focused hiring",
+    copy: "The marketplace is shaped around Indian L&D roles, employers, and career pathways instead of generic job-board noise.",
+  },
+] as const;
+
 const INDIA_LOCATION_SIGNALS = [
   "india",
   "bangalore",
@@ -485,30 +503,18 @@ export default async function LandingPage() {
               <h2 className="mt-4 text-4xl font-semibold text-[#111827]">Built for focused L&amp;D hiring in India</h2>
             </div>
             <div className="mt-10 grid gap-6 md:grid-cols-3">
-              <article className="rounded-[2rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbf2_100%)] p-6 shadow-[0_20px_50px_rgba(87,108,67,0.08)]">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#eef8e9] text-[#138d1a]">
-                  <BriefcaseBusiness className="h-5 w-5" />
-                </div>
-                <h3 className="mt-4 text-2xl font-semibold text-[#111827]">Verified roles</h3>
-                <p className="mt-3 text-sm leading-7 text-[#5a6656]">
-                  Browse a cleaner stream of instructional design, eLearning, and learning team opportunities.
-                </p>
-              </article>
-              <DarkFeature
-                icon={<Sparkles className="h-4 w-4" />}
-                title="Verified roles"
-                copy="Browse a cleaner stream of instructional design, eLearning, and learning team opportunities."
-              />
-              <DarkFeature
-                icon={<ShieldCheck className="h-4 w-4" />}
-                title="Skill-validated profiles"
-                copy="Traditional hiring and onboarding tools move too slowly for today’s market pace."
-              />
-              <DarkFeature
-                icon={<MapPin className="h-4 w-4" />}
-                title="India-focused hiring"
-                copy="The marketplace is shaped around Indian L&D roles, employers, and career pathways instead of generic job-board noise."
-              />
+              {marketplaceHighlights.map((item) => (
+                <article
+                  key={item.title}
+                  className="rounded-[2rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbf2_100%)] p-6 shadow-[0_20px_50px_rgba(87,108,67,0.08)]"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#eef8e9] text-[#138d1a]">
+                    {item.icon}
+                  </div>
+                  <h3 className="mt-4 text-2xl font-semibold text-[#111827]">{item.title}</h3>
+                  <p className="mt-3 text-sm leading-7 text-[#5a6656]">{item.copy}</p>
+                </article>
+              ))}
             </div>
           </div>
         </section>
@@ -731,31 +737,6 @@ export default async function LandingPage() {
         </section>
 
       </main>
-    </div>
-  );
-}
-
-function DarkFeature({
-  icon,
-  title,
-  copy,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  copy: string;
-}) {
-  const resolvedCopy =
-    title === "Skill-validated profiles"
-      ? "Employers get stronger signal quality, and professionals stand out with clearer proof of capability."
-      : copy;
-
-  return (
-    <div>
-      <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-full border border-white/12 bg-white/6 text-[#63f26b]">
-        {icon}
-      </div>
-      <p className="text-sm font-semibold text-white">{title}</p>
-      <p className="mt-2 text-sm leading-6 text-white/62">{resolvedCopy}</p>
     </div>
   );
 }
