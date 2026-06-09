@@ -787,7 +787,7 @@ export default async function JobsDashboard({
                     href={isGuestViewer ? "/candidate" : isFreeAccessCandidate ? "/dashboard/candidate/profile" : "/dashboard/candidate/exam"}
                     className="marketing-primary px-4 py-2 text-sm"
                   >
-                    {isGuestViewer ? "Sign in to apply" : isFreeAccessCandidate ? "Verify to Continue" : "Write Assessment"}
+                    {isGuestViewer ? "Sign in to apply" : isFreeAccessCandidate ? "Get Verified" : "Write Assessment"}
                   </Link>
                 </div>
               )}
@@ -905,6 +905,11 @@ function JobCard({
             {featured && (
               <span className="rounded-full bg-[#e9f8e3] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#179720]">
                 Featured
+              </span>
+            )}
+            {job.featured_rank != null && (
+              <span className="rounded-full bg-[#eef8e8] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#138d1a]">
+                Verified candidates preferred
               </span>
             )}
             {job.job_kind === "freelance" && (

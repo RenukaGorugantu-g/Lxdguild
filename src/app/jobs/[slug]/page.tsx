@@ -17,6 +17,90 @@ import {
   stripJobHtml,
 } from "@/lib/public-jobs";
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function formatPublicJobDescriptionHtml(value: string | null | undefined) {
+  const raw = (value || "").trim();
+  if (!raw) {
+    return "<p>No job description provided yet.</p>";
+  }
+
+  const normalized = raw
+    .replace(/\r/g, "")
+    .replace(/^job description[:\s-]*/i, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  const headingLabels = [
+    "Role Overview",
+    "Job Overview",
+    "Overview",
+    "Key Responsibilities",
+    "Responsibilities",
+    "Requirements",
+    "Required Qualifications",
+    "Qualifications",
+    "Preferred Skills",
+    "Preferred Qualifications",
+    "Key Competencies",
+    "Nice to Have",
+    "Why Join Us",
+    "Benefits",
+    "Stipend",
+    "Job Type",
+  ];
+
+  const headingSet = new Set(headingLabels.map((label) => label.toLowerCase()));
+  const lines = normalized.split("\n").map((line) => line.trim()).filter(Boolean);
+  const blocks: string[] = [];
+  let paragraphBuffer: string[] = [];
+  let bulletBuffer: string[] = [];
+
+  const flushParagraphs = () => {
+    if (paragraphBuffer.length === 0) return;
+    blocks.push(`<p>${escapeHtml(paragraphBuffer.join(" "))}</p>`);
+    paragraphBuffer = [];
+  };
+
+  const flushBullets = () => {
+    if (bulletBuffer.length === 0) return;
+    blocks.push(`<ul>${bulletBuffer.map((line) => `<li>${escapeHtml(line.replace(/^[-*•]\s+/, ""))}</li>`).join("")}</ul>`);
+    bulletBuffer = [];
+  };
+
+  for (const line of lines) {
+    if (/^[-*•]\s+/.test(line)) {
+      flushParagraphs();
+      bulletBuffer.push(line);
+      continue;
+    }
+
+    const normalizedLine = line.replace(/:$/, "").toLowerCase();
+    if (headingSet.has(normalizedLine)) {
+      flushParagraphs();
+      flushBullets();
+      blocks.push(`<h3>${escapeHtml(line.replace(/:$/, ""))}</h3>`);
+      continue;
+    }
+
+    flushBullets();
+    paragraphBuffer.push(line);
+  }
+
+  flushParagraphs();
+  flushBullets();
+
+  return blocks.join("");
+}
+
 function toEmploymentSchemaValue(value?: string | null) {
   if (value === "part_time") return "PART_TIME";
   if (value === "contract") return "CONTRACTOR";
@@ -113,6 +197,7 @@ export default async function PublicJobDetailPage({
   const postedDate = new Date(getJobPostedDate(job)).toLocaleDateString();
   const expiryDate = job.expires_at ? new Date(job.expires_at).toLocaleDateString() : null;
   const descriptionText = stripJobHtml(job.description);
+  const descriptionHtml = formatPublicJobDescriptionHtml(job.description);
   const jobJsonLd = {
     "@context": "https://schema.org",
     "@type": "JobPosting",
@@ -212,8 +297,10 @@ export default async function PublicJobDetailPage({
               <div className="grid gap-8 p-8 lg:grid-cols-[minmax(0,1fr)_300px]">
                 <section className="space-y-5">
                   <h2 className="text-2xl font-semibold text-[#111827]">Job description</h2>
-                  <div className="rounded-2xl bg-[#f8fbf5] p-6 text-[1rem] leading-8 text-[#5b6757]">
-                    <p className="whitespace-pre-line">{descriptionText || "No job description provided yet."}</p>
+                  <div
+                    className="rounded-2xl bg-[#f8fbf5] p-6 text-[1rem] leading-8 text-[#5b6757] [&_h3]:mt-6 [&_h3]:text-base [&_h3]:font-bold [&_h3]:uppercase [&_h3]:tracking-[0.08em] [&_h3]:text-[#11203b] [&_p]:mb-4 [&_ul]:mb-5 [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-6 [&_li]:pl-1"
+                    dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+                  >
                   </div>
                 </section>
 
