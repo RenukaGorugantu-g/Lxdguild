@@ -235,7 +235,7 @@ otp_expiry = 3600
 
 # Customize auth email templates for local/dev environments.
 [auth.email.template.confirmation]
-subject = "Confirm your LXD Guild account"
+subject = "One click to unlock your L&D jobs — verify your email"
 content_path = "./supabase/templates/confirmation.html"
 
 # [auth.email.template.invite]

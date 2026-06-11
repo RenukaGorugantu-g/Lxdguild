@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Suspense, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { getBucketForTargetRoleOrNull, OTHER_TARGET_ROLE_VALUE, TARGET_ROLE_OPTIONS } from "@/lib/assessment";
 import { ArrowRight, BriefcaseBusiness, Check, Eye, EyeOff, SearchCheck } from "lucide-react";
@@ -18,6 +18,10 @@ type PathCardProps = {
   description: string;
   icon: typeof SearchCheck;
   onSelect: () => void;
+};
+
+type ExistingAccountState = {
+  email: string;
 };
 
 export default function RegisterPage() {
@@ -46,6 +50,7 @@ function getExperienceMetadata(value: string) {
 }
 
 function RegisterPageContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const roleParam = searchParams.get("role");
   const initialRole = roleParam === "employer" ? "employer_free" : "candidate_onhold";
@@ -62,9 +67,8 @@ function RegisterPageContent() {
   const [companyName, setCompanyName] = useState("");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [existingAccount, setExistingAccount] = useState<ExistingAccountState | null>(null);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [requiresEmailVerification, setRequiresEmailVerification] = useState(false);
 
   const supabase = createClient();
   const normalizedOtherCandidateRole = candidateOtherTargetRole.trim();
@@ -78,12 +82,12 @@ function RegisterPageContent() {
   const candidateBucket = getBucketForTargetRoleOrNull(resolvedCandidateTargetRole);
   const candidateExperience = getExperienceMetadata(candidateExperienceYears);
   const name = `${firstName} ${lastName}`.trim();
-  const emailRedirectTo = `${CANONICAL_AUTH_REDIRECT_BASE.replace(/\/$/, "")}/login`;
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setExistingAccount(null);
 
     if (!agreedToTerms) {
       setError("Please accept the Terms of Service and Privacy Policy to continue.");
@@ -93,6 +97,33 @@ function RegisterPageContent() {
 
     if (selectedRole === "candidate_onhold" && candidateTargetRole === OTHER_TARGET_ROLE_VALUE && !normalizedOtherCandidateRole) {
       setError("Please enter the role title so we can assign the right assessment after registration.");
+      setLoading(false);
+      return;
+    }
+
+    const verificationNextPath =
+      selectedRole === "employer_free" ? "/dashboard/employer?verified=1" : "/dashboard/candidate/welcome?verified=1";
+    const emailRedirectTo = `${CANONICAL_AUTH_REDIRECT_BASE.replace(/\/$/, "")}/auth/confirm?next=${encodeURIComponent(verificationNextPath)}`;
+
+    const existingEmailResponse = await fetch("/api/auth/check-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+
+    const existingEmailResult = (await existingEmailResponse.json()) as {
+      exists?: boolean;
+      error?: string;
+    };
+
+    if (!existingEmailResponse.ok) {
+      setError(existingEmailResult.error || "We couldn't verify this email address right now.");
+      setLoading(false);
+      return;
+    }
+
+    if (existingEmailResult.exists) {
+      setExistingAccount({ email });
       setLoading(false);
       return;
     }
@@ -124,8 +155,6 @@ function RegisterPageContent() {
       return;
     }
 
-    setRequiresEmailVerification(!data.session);
-
     await fetch("/api/notifications/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -140,42 +169,15 @@ function RegisterPageContent() {
       }),
     });
 
-    setSuccess(true);
     setLoading(false);
-  };
+    if (data.session) {
+      router.replace(selectedRole === "employer_free" ? "/dashboard/employer" : "/dashboard/candidate/welcome");
+      router.refresh();
+      return;
+    }
 
-  if (success) {
-    return (
-      <div className="min-h-screen bg-[linear-gradient(180deg,#f8faef_0%,#f1f7e8_100%)] text-[#212733]">
-        <main className="mx-auto flex min-h-[60vh] w-full max-w-[1280px] items-center px-5 py-24 md:px-8">
-          <div className="mx-auto w-full max-w-[680px] rounded-[34px] border border-white/80 bg-white/92 px-8 py-12 text-center shadow-[0_28px_70px_rgba(86,106,58,0.14)]">
-            <p className="mt-8 text-[12px] font-semibold uppercase tracking-[0.24em] text-[#748068]">Registration complete</p>
-            <h1 className="mt-4 text-[2.8rem] font-semibold tracking-[-0.05em] text-[#20252f]">
-              {requiresEmailVerification ? "Check your email" : "Account created"}
-            </h1>
-            <p className="mx-auto mt-5 max-w-[520px] text-[1rem] leading-8 text-[#5f6876]">
-              {requiresEmailVerification ? (
-                <>
-                  We&apos;ve sent a verification link to <span className="font-semibold text-[#2a3039]">{email}</span>. Confirm your inbox and then sign in to continue.
-                </>
-              ) : (
-                <>
-                  Your account is active and ready. You can sign in right away with <span className="font-semibold text-[#2a3039]">{email}</span>.
-                </>
-              )}
-            </p>
-            <Link
-              href="/login"
-              className="mt-8 inline-flex h-[58px] items-center justify-center gap-2 rounded-[14px] bg-[#066c12] px-8 text-[1rem] font-semibold text-white shadow-[0_14px_26px_rgba(6,108,18,0.24)] transition-all hover:-translate-y-0.5 hover:bg-[#045b0e]"
-            >
-              Go to Login
-              <ArrowRight className="h-4.5 w-4.5" />
-            </Link>
-          </div>
-        </main>
-      </div>
-    );
-  }
+    router.replace(`/verify-email?email=${encodeURIComponent(email)}&role=${encodeURIComponent(selectedRole)}`);
+  };
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f8faef_0%,#eff5e4_100%)] text-[#202733]">
@@ -403,6 +405,28 @@ function RegisterPageContent() {
                   </label>
 
                   {error ? <div className="rounded-[14px] border border-[#f2c6c2] bg-[#fff2f0] px-4 py-3 text-sm text-[#bf4b42]">{error}</div> : null}
+                  {existingAccount ? (
+                    <div className="rounded-[18px] border border-[#d8e6d3] bg-[#f6fbf3] px-4 py-4 text-sm text-[#34513a]">
+                      <p className="font-semibold text-[#1f2937]">This email is already registered.</p>
+                      <p className="mt-1 leading-7">
+                        Sign in with <span className="font-semibold">{existingAccount.email}</span>, or reset your password if you&apos;re having trouble logging in.
+                      </p>
+                      <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                        <Link
+                          href={`/login?email=${encodeURIComponent(existingAccount.email)}&registered=1`}
+                          className="inline-flex h-[48px] items-center justify-center rounded-[12px] bg-[#066c12] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#045b0e]"
+                        >
+                          Sign in instead
+                        </Link>
+                        <Link
+                          href={`/forgot-password?email=${encodeURIComponent(existingAccount.email)}`}
+                          className="inline-flex h-[48px] items-center justify-center rounded-[12px] border border-[#d7e2cf] bg-white px-5 text-sm font-semibold text-[#25303a] transition-colors hover:bg-[#f3f7ef]"
+                        >
+                          Forgot password
+                        </Link>
+                      </div>
+                    </div>
+                  ) : null}
 
                   <button
                     type="submit"

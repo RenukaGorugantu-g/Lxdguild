@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { ArrowRight, BarChart3, Eye, EyeOff, LockKeyhole, Mail, Users } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 const featureCards = [
   {
@@ -24,7 +24,12 @@ const featureCards = [
 ];
 
 export default function LoginForm() {
-  const [email, setEmail] = useState("");
+  const searchParams = useSearchParams();
+  const registeredEmail = searchParams.get("email")?.trim() || "";
+  const registeredNotice = searchParams.get("registered") === "1";
+  const resetNotice = searchParams.get("reset") === "1";
+  const verifiedNotice = searchParams.get("verified") === "1";
+  const [email, setEmail] = useState(registeredEmail);
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [keepSignedIn, setKeepSignedIn] = useState(false);
@@ -32,6 +37,11 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [supabase] = useState(() => createClient());
   const router = useRouter();
+
+  const forgotPasswordHref = useMemo(() => {
+    const nextEmail = email.trim() || registeredEmail;
+    return nextEmail ? `/forgot-password?email=${encodeURIComponent(nextEmail)}` : "/forgot-password";
+  }, [email, registeredEmail]);
 
   const getDashboardHref = async () => {
     const {
@@ -139,6 +149,21 @@ export default function LoginForm() {
             </div>
 
             <form onSubmit={handleLogin} className="mt-8 space-y-4">
+              {registeredNotice ? (
+                <div className="rounded-[16px] border border-[#d8e6d3] bg-[#f6fbf3] px-4 py-4 text-sm leading-7 text-[#34513a]">
+                  This email is already registered. Sign in below, or use forgot password if you&apos;re having trouble getting back in.
+                </div>
+              ) : null}
+              {resetNotice ? (
+                <div className="rounded-[16px] border border-[#d8e6d3] bg-[#f6fbf3] px-4 py-4 text-sm leading-7 text-[#34513a]">
+                  Your password was updated. Sign in with your new password.
+                </div>
+              ) : null}
+              {verifiedNotice ? (
+                <div className="rounded-[16px] border border-[#d8e6d3] bg-[#f6fbf3] px-4 py-4 text-sm leading-7 text-[#34513a]">
+                  Your email is verified. Log in below to continue on this device.
+                </div>
+              ) : null}
               <div>
                 <label htmlFor="email" className="mb-2 block text-[13px] font-bold uppercase tracking-[0.08em] text-[#434a57]">
                   Work Email
@@ -162,7 +187,7 @@ export default function LoginForm() {
                   <label htmlFor="password" className="block text-[13px] font-bold uppercase tracking-[0.08em] text-[#434a57]">
                     Password
                   </label>
-                  <Link href="#" className="text-[13px] font-semibold text-[#3a7f32] transition-colors hover:text-[#215820]">
+                  <Link href={forgotPasswordHref} className="text-[13px] font-semibold text-[#3a7f32] transition-colors hover:text-[#215820]">
                     Forgot?
                   </Link>
                 </div>

@@ -227,6 +227,44 @@ function buildContent({
               : [],
       };
 
+    case "email_verification_reminder":
+      return {
+        ...defaults,
+        preheader: "Verify your email to see your matched L&D jobs.",
+        heading: "You're almost in",
+        kicker: "One quick step left",
+        heroNote: "Your free applications are ready. Email verification is the last unlock.",
+        layoutVariant: "support",
+        intro: `Verify ${data.email || "your email address"} to open your LXD Guild dashboard and start exploring matched learning and development roles right away.`,
+        status: "Verification pending",
+        summary:
+          "You already have free application access waiting for you. Open the verification page, resend the email if needed, and check your spam folder if the first message is missing.",
+        checklist: [
+          "Open the verification page.",
+          "Tap resend if you do not see the first message.",
+          "Check spam, promotions, or updates folders.",
+        ],
+        spotlight: [
+          {
+            icon: "JOB",
+            title: "Matched roles are waiting",
+            copy: "As soon as you verify, we can take you straight into the dashboard experience with your first job matches ready to browse.",
+          },
+          {
+            icon: "FREE",
+            title: "Start before assessment",
+            copy: "You can use your free job applications first, then choose verification later to unlock stronger visibility and premium roles.",
+          },
+        ],
+        resources: [
+          {
+            title: "Need another email?",
+            copy: "Open the verification page to resend the confirmation message to the same inbox.",
+            href: data.verify_page_url || `${getSiteUrl()}/verify-email`,
+          },
+        ],
+      };
+
     case "exam_result":
       return {
         ...defaults,
@@ -1054,6 +1092,10 @@ function getPrimaryCta(type: string, data: Record<string, string>, audience: Not
 
   if (type === "user_registered") {
     return { label: "Open Dashboard", href: data.dashboard_url || `${getSiteUrl()}/dashboard` };
+  }
+
+  if (type === "email_verification_reminder") {
+    return { label: "Verify email and see my matched jobs →", href: data.verify_page_url || `${getSiteUrl()}/verify-email` };
   }
 
   if (type === "exam_result") {
