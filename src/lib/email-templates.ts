@@ -516,32 +516,32 @@ function buildContent({
           data.status === "shortlisted"
             ? "You moved to the next hiring step."
             : data.status === "on_hold"
-              ? "Your application is still in consideration."
+              ? "We want to keep sending you stronger-fit opportunities."
               : "Your job application has been updated.",
         heading:
           data.status === "shortlisted"
             ? "You Moved Forward"
             : data.status === "on_hold"
-              ? "Still In Consideration"
+              ? "We’re Matching You Forward"
               : "Application Update",
         kicker:
           data.status === "shortlisted"
             ? "Momentum is building"
             : data.status === "on_hold"
-              ? "Stay visible for the next fit"
+              ? "Your profile still has momentum"
               : "Keep your momentum anyway",
         heroNote:
           data.status === "shortlisted"
             ? "This employer wants to continue the conversation with you."
             : data.status === "on_hold"
-              ? "This role is paused for now, but your profile can still be matched to stronger-fit openings across the Guild."
+              ? "This role needs a different fit right now, but your profile stands out and we want to keep bringing you tailored openings across the Guild."
               : "One no should not interrupt your larger opportunity path.",
         layoutVariant: data.status === "shortlisted" ? "celebration" : "support",
         intro:
           data.status === "shortlisted"
             ? `Your application for ${data.title || "the role"} at ${data.company || "the company"} has been accepted for the next hiring step.`
             : data.status === "on_hold"
-              ? `Your application for ${data.title || "the role"} at ${data.company || "the company"} is on hold while the hiring team looks for a different fit for this position right now.`
+              ? `Your application for ${data.title || "the role"} at ${data.company || "the company"} is on hold because the team is searching for a different fit for this position right now. That said, your profile is strong, and we would love to keep sharing new opportunities tailored for you.`
               : `Your application for ${data.title || "the role"} at ${data.company || "the company"} was not selected for the next stage.`,
         status:
           data.status === "shortlisted"
@@ -553,7 +553,7 @@ function buildContent({
           data.status === "shortlisted"
             ? "Keep an eye on your inbox and dashboard for the employer's follow-up."
             : data.status === "on_hold"
-              ? `We are still working to keep you engaged with better-fit opportunities${data.target_role ? ` for ${data.target_role}` : ""}. Keep your profile current and explore the matched roles below while this position stays paused.`
+              ? `We will keep looking for better-fit opportunities${data.target_role ? ` for ${data.target_role}` : ""} and send you openings that feel more tailored to your profile, strengths, and direction. Keep your profile current and explore the matched roles below while this position stays paused.`
               : "Your profile remains active for future opportunities, and you can continue exploring similar jobs from the dashboard.",
         checklist:
           data.status === "on_hold"
