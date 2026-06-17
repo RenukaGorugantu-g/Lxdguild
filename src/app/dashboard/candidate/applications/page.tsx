@@ -76,7 +76,7 @@ export default async function CandidateApplicationsPage({
   if (!user) redirect("/login");
 
   const { status } = await searchParams;
-  const validStatuses = ["applied", "screening", "shortlisted", "interview_scheduled", "rejected"];
+  const validStatuses = ["applied", "screening", "on_hold", "shortlisted", "interview_scheduled", "rejected"];
   const statusFilter = validStatuses.includes(status || "") ? status : "all";
 
   let query = supabase
@@ -297,6 +297,7 @@ export default async function CandidateApplicationsPage({
 function getStatusPillClasses(status: string) {
   if (status === "shortlisted") return "bg-green-50 text-green-700 border-green-200";
   if (status === "interview_scheduled") return "bg-sky-50 text-sky-700 border-sky-200";
+  if (status === "on_hold") return "bg-amber-50 text-amber-800 border-amber-200";
   if (status === "screening") return "bg-blue-50 text-blue-700 border-blue-200";
   if (status === "rejected") return "bg-red-50 text-red-700 border-red-200";
   return "bg-amber-50 text-amber-700 border-amber-200";

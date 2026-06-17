@@ -26,13 +26,13 @@ export default function ApplicationReviewActions({
   } | null;
   canReviewCandidates?: boolean;
 }) {
-  const [loadingAction, setLoadingAction] = useState<"shortlisted" | "rejected" | null>(null);
+  const [loadingAction, setLoadingAction] = useState<"shortlisted" | "rejected" | "on_hold" | null>(null);
   const [status, setStatus] = useState(currentStatus);
   const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
   const router = useRouter();
   const isRejected = status === "rejected";
 
-  const reviewApplication = async (action: "shortlisted" | "rejected") => {
+  const reviewApplication = async (action: "shortlisted" | "rejected" | "on_hold") => {
     setLoadingAction(action);
     try {
       const response = await fetch("/api/notifications/job-application-review", {
@@ -82,6 +82,14 @@ export default function ApplicationReviewActions({
           className="text-xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 hover:bg-emerald-200 disabled:opacity-60"
         >
           {loadingAction === "shortlisted" ? "Accepting..." : status === "shortlisted" || status === "interview_scheduled" ? "Accepted" : "Accept Candidate"}
+        </button>
+        <button
+          type="button"
+          onClick={() => reviewApplication("on_hold")}
+          disabled={!!loadingAction || status === "interview_scheduled"}
+          className="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 hover:bg-amber-200 disabled:opacity-60"
+        >
+          {loadingAction === "on_hold" ? "Placing on hold..." : status === "on_hold" ? "On Hold" : "Put On Hold"}
         </button>
         <button
           type="button"

@@ -5,6 +5,7 @@ import { notifyUser, notifyAdmins } from '@/lib/notifications'
 import { isInternalApplyValue, normalizeExternalApplyUrl } from '@/lib/job-apply'
 import { ensureUserProfile } from '@/lib/ensure-user-profile'
 import { getSiteUrl } from '@/lib/site-url'
+import { selectMatchedJobs, type CandidateMatchJob } from '@/lib/candidate-job-matches'
 import { downloadResumeBuffer, decideApplicationStatus } from '@/lib/resume-analysis'
 import { extractKeywords, extractSkills, parseResumeFile, scoreCandidate } from '../../../../../ats-module'
 
@@ -398,7 +399,7 @@ export async function POST(req: Request) {
   const jobUrl = `${getSiteUrl()}/dashboard/jobs/${jobId}`
   const { data: applicantProfile } = await supabase
     .from('profiles')
-    .select('name')
+    .select('name, role, candidate_target_role, candidate_designation')
     .eq('id', user.id)
     .single()
 
@@ -457,6 +458,41 @@ export async function POST(req: Request) {
 
   const isInternalApply = !job.apply_url || isInternalApplyValue(job.apply_url)
   const externalApplyUrl = normalizeExternalApplyUrl(job.apply_url)
+  const isVerifiedCandidate = applicantProfile?.role === 'candidate_mvp'
+  const isCandidateOnHold = applicantProfile?.role === 'candidate_onhold'
+  const candidateDashboardUrl = `${getSiteUrl()}/dashboard/candidate`
+  const assessmentUrl = `${getSiteUrl()}/dashboard/candidate/exam`
+  const membershipUrl = `${getSiteUrl()}/membership`
+  const academyCoursesUrl = 'https://lxdguildacademy.com'
+  let matchedJobData: Record<string, string> = {}
+
+  if (isVerifiedCandidate) {
+    const jobsQuery = await supabase
+      .from('jobs')
+      .select('id, title, description, company, location, work_mode, employment_type, featured_rank, external_posted_at, imported_at, created_at, is_active, source, user_id')
+      .eq('is_active', true)
+      .neq('id', jobId)
+      .limit(40)
+
+    if (!jobsQuery.error) {
+      const matchedJobs = selectMatchedJobs(
+        (jobsQuery.data || []) as CandidateMatchJob[],
+        applicantProfile?.candidate_target_role || null,
+        applicantProfile?.candidate_designation || null,
+        3
+      )
+
+      matchedJobData = matchedJobs.reduce<Record<string, string>>((acc, matchedJob, index) => {
+        const position = index + 1
+        acc[`matched_job_${position}_title`] = matchedJob.title || 'Matched role'
+        acc[`matched_job_${position}_company`] = matchedJob.company || 'LXD Guild employer'
+        acc[`matched_job_${position}_location`] = matchedJob.location || 'India'
+        acc[`matched_job_${position}_url`] = `${getSiteUrl()}/dashboard/jobs/${matchedJob.id}`
+        return acc
+      }, {})
+    }
+  }
+
   const candidateMessage = isInternalApply
     ? `Your application for ${job.title} at ${job.company} was submitted inside LXD Guild. The employer can now review your profile here.`
     : `We saved your application intent for ${job.title} at ${job.company}. Complete the application on the employer's official page to finish applying.`
@@ -470,6 +506,22 @@ export async function POST(req: Request) {
       application_mode: isInternalApply ? 'internal' : 'external',
       recipient_email: user.email || '',
       recipient_name: typeof applicantProfile?.name === 'string' ? applicantProfile.name : '',
+      candidate_role: applicantProfile?.role || '',
+      target_role: applicantProfile?.candidate_target_role || '',
+      designation_bucket: applicantProfile?.candidate_designation || '',
+      matched_jobs_url: candidateDashboardUrl,
+      assessment_url: assessmentUrl,
+      membership_url: membershipUrl,
+      academy_courses_url: academyCoursesUrl,
+      free_access_remaining: String(
+        isFreeAccessCandidate && insertResult.error?.code !== '23505'
+          ? Math.max(0, freeApplicationsRemaining - 1)
+          : freeApplicationsRemaining
+      ),
+      should_push_assessment: String(isCandidateOnHold),
+      should_push_membership: String(isCandidateOnHold),
+      should_push_courses: String(isCandidateOnHold),
+      ...matchedJobData,
     }),
     ...(job.user_id
       ? [

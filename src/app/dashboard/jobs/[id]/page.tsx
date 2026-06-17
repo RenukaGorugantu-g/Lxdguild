@@ -696,6 +696,8 @@ export default async function JobDetailPage({
   if (!job) notFound();
 
   const isJobOwner = Boolean(user?.id) && user?.id === job.user_id;
+  const isAdminViewer = isAdminRole(profile?.role);
+  const canReviewApplicantPipeline = isJobOwner || isAdminViewer;
   let canApplyToJobs = false;
   let featuredJobsOnly = false;
   let isFreeAccessCandidate = false;
@@ -767,7 +769,7 @@ export default async function JobDetailPage({
     : { data: null, error: null };
   const followedRole = followedRoleQuery.error?.code === "42P01" ? null : followedRoleQuery.data;
 
-  const { data: applicants } = isJobOwner
+  const { data: applicants } = canReviewApplicantPipeline
     ? await getApplicantsForJob(supabase, id)
     : { data: null };
   const liveAtsByApplicationId = new Map<string, LiveAtsResult>();
@@ -780,7 +782,7 @@ export default async function JobDetailPage({
     serviceRoleKey && supabaseUrl
       ? createSupabaseClient(supabaseUrl, serviceRoleKey)
       : null;
-  const profileReader = isJobOwner && adminSupabase ? adminSupabase : supabase;
+  const profileReader = canReviewApplicantPipeline && adminSupabase ? adminSupabase : supabase;
   let applicantProfiles: ApplicantProfile[] = [];
   if (applicantUserIds.length) {
     const fullProfileQuery = await profileReader
@@ -801,7 +803,7 @@ export default async function JobDetailPage({
   }
 
   const applicantProfilesById = new Map(applicantProfiles.map((p) => [p.id, p]));
-  if (isJobOwner && applicantUserIds.length && adminSupabase) {
+  if (canReviewApplicantPipeline && applicantUserIds.length && adminSupabase) {
     const interviewNotificationsQuery = await adminSupabase
       .from("notifications")
       .select("id, user_id, type, data, created_at")
@@ -834,7 +836,7 @@ export default async function JobDetailPage({
     }
   }
 
-  if (isJobOwner && applicants?.length) {
+  if (canReviewApplicantPipeline && applicants?.length) {
     const liveAtsEntries = await Promise.all(
       (applicants as ApplicantRow[]).map(async (applicant) => {
         if (toNumericScore(applicant.ats_score) !== null || applicant.ats_summary || applicant.ats_auto_decision) {
@@ -853,11 +855,11 @@ export default async function JobDetailPage({
     }
   }
   const visibleApplicantRows =
-    isJobOwner && !isPaidEmployer
+    canReviewApplicantPipeline && !isPaidEmployer
       ? (((applicants as ApplicantRow[] | null) || []).slice(0, 5))
       : (((applicants as ApplicantRow[] | null) || []));
   const hiddenApplicantCount =
-    isJobOwner && !isPaidEmployer && applicants?.length
+    canReviewApplicantPipeline && !isPaidEmployer && applicants?.length
       ? Math.max((applicants.length || 0) - visibleApplicantRows.length, 0)
       : 0;
   const recommendationQuery = supabase
@@ -1115,7 +1117,7 @@ export default async function JobDetailPage({
                </div>
             </div>
 
-            {isJobOwner && (
+            {canReviewApplicantPipeline && (
               <section className="mt-12 space-y-6 rounded-[2rem] border border-zinc-200 bg-[#fbfdfc] p-6 shadow-[0_18px_50px_rgba(15,23,42,0.05)]">
                 <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
                   <div>
@@ -1185,6 +1187,7 @@ export default async function JobDetailPage({
 
 function getStatusPillClasses(status: string) {
   if (status === "accepted" || status === "shortlisted") return "bg-green-50 text-green-700 border-green-200";
+  if (status === "on_hold") return "bg-amber-50 text-amber-800 border-amber-200";
   if (status === "rejected") return "bg-red-50 text-red-700 border-red-200";
   return "bg-amber-50 text-amber-700 border-amber-200";
 }

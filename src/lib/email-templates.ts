@@ -342,12 +342,91 @@ function buildContent({
       };
 
     case "job_application":
+      const isVerifiedCandidate = data.candidate_role === "candidate_mvp";
+      const isCandidateOnHold = data.candidate_role === "candidate_onhold";
+      const matchedJobResources = getMatchedJobResources(data);
+      const roleSpecificChecklist = isCandidateOnHold
+        ? [
+            "Take your assessment to unlock stronger employer visibility and more complete access.",
+            "Explore Guild membership for deeper hiring support and premium opportunities.",
+            "Use Academy courses to sharpen the exact skills employers want to see next.",
+          ]
+        : [
+            "Watch your applications dashboard for shortlist or rejection updates.",
+            "Keep your resume, headline, and portfolio links current.",
+            "Be ready for a recruiter follow-up if the employer moves fast.",
+          ];
+      const roleSpecificSpotlight = isCandidateOnHold
+        ? [
+            {
+              icon: "TEST",
+              title: "Assessment unlock",
+              copy: "Completing your assessment helps us position you for stronger-fit roles and gives employers more confidence in your profile.",
+            },
+            {
+              icon: "PLUS",
+              title: "Membership and courses",
+              copy: "Membership and Academy learning paths keep you progressing instead of waiting passively for one application outcome.",
+            },
+          ]
+        : [
+            {
+              icon: "LIVE",
+              title: "You are in the review flow",
+              copy: "Your profile, resume, and match context are now available to the employer inside the LXD Guild hiring workflow.",
+            },
+            ...(isVerifiedCandidate
+              ? [
+                  {
+                    icon: "MATCH",
+                    title: "More roles for your profile",
+                    copy: "Because you are verified, we can keep surfacing stronger-fit roles that align with your target designation while this application moves.",
+                  },
+                ]
+              : []),
+          ];
+      const roleSpecificResources = isCandidateOnHold
+        ? [
+            {
+              title: "Take your assessment",
+              copy: "Move beyond candidate-on-hold status and unlock stronger role access.",
+              href: data.assessment_url || `${getSiteUrl()}/dashboard/candidate/exam`,
+            },
+            {
+              title: "Explore membership",
+              copy: "Membership helps you stay visible, supported, and ready for premium-fit opportunities.",
+              href: data.membership_url || `${getSiteUrl()}/membership`,
+            },
+            {
+              title: "Browse Academy courses",
+              copy: "Build the exact skills employers look for while you continue applying.",
+              href: data.academy_courses_url || ACADEMY_URL,
+            },
+          ]
+        : isVerifiedCandidate
+          ? [
+              {
+                title: "Track this application",
+                copy: "Open your applications dashboard to follow every employer update.",
+                href: `${getSiteUrl()}/dashboard/candidate/applications`,
+              },
+              ...matchedJobResources,
+            ]
+          : [
+              {
+                title: "Track this application",
+                copy: "Open your applications dashboard to follow every employer update.",
+                href: `${getSiteUrl()}/dashboard/candidate/applications`,
+              },
+            ];
       return {
         ...defaults,
         preheader:
           data.application_mode === "external"
             ? "Finish your application on the employer site."
-            : "Your application is now with the employer.",
+            : isCandidateOnHold
+              ? "Your application is in motion and your next growth step is ready."
+              : "Your application is now with the employer.",
         heading:
           data.application_mode === "external"
             ? "Finish Your Application"
@@ -355,11 +434,15 @@ function buildContent({
         kicker:
           data.application_mode === "external"
             ? "One more step to complete"
-            : "You are officially in motion",
+            : isCandidateOnHold
+              ? "Keep building your edge"
+              : "You are officially in motion",
         heroNote:
           data.application_mode === "external"
             ? "The employer still needs the final submission on their own site."
-            : "Your profile is now visible to the hiring team in their review flow.",
+            : isCandidateOnHold
+              ? "Use this momentum to complete your assessment, unlock stronger visibility, and open more premium-fit roles."
+              : "Your profile is now visible to the hiring team in their review flow.",
         layoutVariant: data.application_mode === "external" ? "urgent" : "celebration",
         intro:
           data.application_mode === "external"
@@ -368,19 +451,20 @@ function buildContent({
         summary:
           data.application_mode === "external"
             ? "We saved your application intent in LXD Guild so you can return and track your progress, but you still need to finish the employer form."
-            : "You are officially in the employer's pipeline. Keep your profile polished while they review your fit.",
+            : isCandidateOnHold
+              ? `You are officially in the employer's pipeline. While they review this application, we want to help you unlock more opportunities${data.free_access_remaining ? ` and make the most of your remaining ${data.free_access_remaining} free applications` : ""}.`
+              : isVerifiedCandidate
+                ? "You are officially in the employer's pipeline. We also pulled a few more roles that fit your verified profile so you can keep your momentum high."
+                : "You are officially in the employer's pipeline. Keep your profile polished while they review your fit.",
         checklist:
           data.application_mode === "external"
             ? [
                 "Open the employer application and complete every required field.",
                 "Use the same resume and contact details for consistency.",
                 "Return to LXD Guild later to track updates and next steps.",
+                ...roleSpecificChecklist,
               ]
-            : [
-                "Watch your applications dashboard for shortlist or rejection updates.",
-                "Keep your resume, headline, and portfolio links current.",
-                "Be ready for a recruiter follow-up if the employer moves fast.",
-              ],
+            : roleSpecificChecklist,
         spotlight:
           data.application_mode === "external"
             ? [
@@ -389,14 +473,9 @@ function buildContent({
                   title: "Important",
                   copy: "This role finishes on the employer's own site. Until that final form is submitted, the application may remain incomplete.",
                 },
+                ...roleSpecificSpotlight,
               ]
-            : [
-                {
-                  icon: "LIVE",
-                  title: "You are in the review flow",
-                  copy: "Your profile, resume, and match context are now available to the employer inside the LXD Guild hiring workflow.",
-                },
-              ],
+            : roleSpecificSpotlight,
         resources:
           data.application_mode === "external"
             ? [
@@ -405,14 +484,9 @@ function buildContent({
                   copy: "Double-check the job context before completing the employer's page.",
                   href: data.job_url || `${getSiteUrl()}/dashboard/jobs`,
                 },
+                ...roleSpecificResources,
               ]
-            : [
-                {
-                  title: "Track this application",
-                  copy: "Open your applications dashboard to follow every employer update.",
-                  href: `${getSiteUrl()}/dashboard/candidate/applications`,
-                },
-              ],
+            : roleSpecificResources,
       };
 
     case "job_application_received":
@@ -434,26 +508,61 @@ function buildContent({
         ],
       };
 
-    case "job_application_reviewed":
+    case "job_application_reviewed": {
+      const matchedResources = getMatchedJobResources(data);
       return {
         ...defaults,
-        preheader: data.status === "shortlisted" ? "You moved to the next hiring step." : "Your job application has been updated.",
-        heading: data.status === "shortlisted" ? "You Moved Forward" : "Application Update",
-        kicker: data.status === "shortlisted" ? "Momentum is building" : "Keep your momentum anyway",
+        preheader:
+          data.status === "shortlisted"
+            ? "You moved to the next hiring step."
+            : data.status === "on_hold"
+              ? "Your application is still in consideration."
+              : "Your job application has been updated.",
+        heading:
+          data.status === "shortlisted"
+            ? "You Moved Forward"
+            : data.status === "on_hold"
+              ? "Still In Consideration"
+              : "Application Update",
+        kicker:
+          data.status === "shortlisted"
+            ? "Momentum is building"
+            : data.status === "on_hold"
+              ? "Stay visible for the next fit"
+              : "Keep your momentum anyway",
         heroNote:
           data.status === "shortlisted"
             ? "This employer wants to continue the conversation with you."
-            : "One no should not interrupt your larger opportunity path.",
+            : data.status === "on_hold"
+              ? "This role is paused for now, but your profile can still be matched to stronger-fit openings across the Guild."
+              : "One no should not interrupt your larger opportunity path.",
         layoutVariant: data.status === "shortlisted" ? "celebration" : "support",
         intro:
           data.status === "shortlisted"
             ? `Your application for ${data.title || "the role"} at ${data.company || "the company"} has been accepted for the next hiring step.`
-            : `Your application for ${data.title || "the role"} at ${data.company || "the company"} was not selected for the next stage.`,
-        status: data.status === "shortlisted" ? "Accepted for next stage" : "Not selected",
+            : data.status === "on_hold"
+              ? `Your application for ${data.title || "the role"} at ${data.company || "the company"} is on hold while the hiring team looks for a different fit for this position right now.`
+              : `Your application for ${data.title || "the role"} at ${data.company || "the company"} was not selected for the next stage.`,
+        status:
+          data.status === "shortlisted"
+            ? "Accepted for next stage"
+            : data.status === "on_hold"
+              ? "On hold"
+              : "Not selected",
         summary:
           data.status === "shortlisted"
             ? "Keep an eye on your inbox and dashboard for the employer's follow-up."
-            : "Your profile remains active for future opportunities, and you can continue exploring similar jobs from the dashboard.",
+            : data.status === "on_hold"
+              ? `We are still working to keep you engaged with better-fit opportunities${data.target_role ? ` for ${data.target_role}` : ""}. Keep your profile current and explore the matched roles below while this position stays paused.`
+              : "Your profile remains active for future opportunities, and you can continue exploring similar jobs from the dashboard.",
+        checklist:
+          data.status === "on_hold"
+            ? [
+                "Open your candidate dashboard and review the latest matched jobs.",
+                "Refresh your profile headline, resume, and portfolio so employers see your strongest fit.",
+                "Watch your inbox for new Guild updates and better-matched openings.",
+              ]
+            : defaults.checklist,
         resources:
           data.status === "shortlisted"
             ? [
@@ -463,8 +572,11 @@ function buildContent({
                   href: data.job_url || `${getSiteUrl()}/dashboard/jobs`,
                 },
               ]
-            : [],
+            : data.status === "on_hold"
+              ? matchedResources
+              : [],
       };
+    }
 
     case "certificate_uploaded":
       return {
@@ -1107,13 +1219,33 @@ function getPrimaryCta(type: string, data: Record<string, string>, audience: Not
   }
 
   if (type === "job_application_reviewed") {
-    return { label: "View Job", href: data.job_url || `${getSiteUrl()}/dashboard/jobs` };
+    return {
+      label: data.status === "on_hold" ? "Browse matched jobs" : "View Job",
+      href:
+        data.status === "on_hold"
+          ? data.matched_jobs_url || `${getSiteUrl()}/dashboard/candidate`
+          : data.job_url || `${getSiteUrl()}/dashboard/jobs`,
+    };
   }
 
   if (type === "job_application") {
     return {
-      label: data.application_mode === "external" && data.apply_url ? "Complete on Employer Site" : "View Application",
-      href: data.application_mode === "external" && data.apply_url ? data.apply_url : data.job_url || `${getSiteUrl()}/dashboard/candidate/applications`,
+      label:
+        data.application_mode === "external" && data.apply_url
+          ? "Complete on Employer Site"
+          : data.candidate_role === "candidate_onhold"
+            ? "Take Assessment"
+            : data.candidate_role === "candidate_mvp"
+              ? "Browse Matched Jobs"
+              : "View Application",
+      href:
+        data.application_mode === "external" && data.apply_url
+          ? data.apply_url
+          : data.candidate_role === "candidate_onhold"
+            ? data.assessment_url || `${getSiteUrl()}/dashboard/candidate/exam`
+            : data.candidate_role === "candidate_mvp"
+              ? data.matched_jobs_url || `${getSiteUrl()}/dashboard/candidate`
+              : data.job_url || `${getSiteUrl()}/dashboard/candidate/applications`,
     };
   }
 
@@ -1193,6 +1325,7 @@ function getTheme(audience: NotificationAudience, type: string): EmailTheme {
 
 function beautifyStatus(value: string) {
   if (value === "shortlisted") return "Accepted for next stage";
+  if (value === "on_hold") return "On hold";
   if (value === "registry_code") return "Registry code";
   if (value === "design_similarity") return "Design similarity";
   return value.replaceAll("_", " ");
@@ -1222,6 +1355,33 @@ function buildResource(title?: string, href?: string, copy?: string) {
     href: href || null,
     copy: copy || "Continue learning through this recommended next step.",
   };
+}
+
+function getMatchedJobResources(data: Record<string, string>) {
+  const resources: Array<{ title: string; href: string | null; copy: string }> = [];
+
+  for (let index = 1; index <= 3; index += 1) {
+    const title = data[`matched_job_${index}_title`];
+    if (!title) continue;
+
+    const company = data[`matched_job_${index}_company`];
+    const location = data[`matched_job_${index}_location`];
+    resources.push({
+      title,
+      href: data[`matched_job_${index}_url`] || data.matched_jobs_url || `${getSiteUrl()}/dashboard/candidate`,
+      copy: [company, location].filter(Boolean).join(" • ") || "A role selected to stay aligned with your profile.",
+    });
+  }
+
+  if (resources.length === 0) {
+    resources.push({
+      title: "See your latest matched jobs",
+      href: data.matched_jobs_url || `${getSiteUrl()}/dashboard/candidate`,
+      copy: "We are continuing to surface fresh opportunities that better match your role direction and designation.",
+    });
+  }
+
+  return resources;
 }
 
 function compactResources(

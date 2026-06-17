@@ -35,6 +35,7 @@ type PipelineApplicant = {
 
 type PipelineColumnKey =
   | "applied"
+  | "on_hold"
   | "shortlisted"
   | "interview_round_1"
   | "interview_round_2_plus"
@@ -51,6 +52,13 @@ const PIPELINE_COLUMNS: Array<{
     key: "applied",
     title: "Applied",
     caption: "All submitted applications",
+    accent: "border-amber-200 bg-amber-50 text-amber-900",
+    iconTone: "bg-amber-100 text-amber-700",
+  },
+  {
+    key: "on_hold",
+    title: "On Hold",
+    caption: "Paused while fit is reviewed",
     accent: "border-amber-200 bg-amber-50 text-amber-900",
     iconTone: "bg-amber-100 text-amber-700",
   },
@@ -89,6 +97,7 @@ function toPipelineColumn(
   interviewSchedule?: InterviewScheduleSummary | null
 ): PipelineColumnKey {
   if (status === "rejected") return "rejected";
+  if (status === "on_hold") return "on_hold";
 
   if (status === "interview_scheduled") {
     const roundLabel = (interviewSchedule?.roundLabel || "").toLowerCase();
@@ -113,6 +122,7 @@ function toPipelineColumn(
 function getStatusPillClasses(status: string) {
   if (status === "rejected") return "border-rose-200 bg-rose-50 text-rose-700";
   if (status === "interview_scheduled") return "border-violet-200 bg-violet-50 text-violet-700";
+  if (status === "on_hold") return "border-amber-200 bg-amber-50 text-amber-800";
   if (status === "shortlisted" || status === "accepted") return "border-emerald-200 bg-emerald-50 text-emerald-700";
   return "border-amber-200 bg-amber-50 text-amber-700";
 }
@@ -201,7 +211,7 @@ export default function EmployerPipelineBoard({
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#6a7786]">Hiring Pipeline</p>
           <h3 className="mt-2 text-2xl font-bold tracking-tight text-[#11203b]">Review candidates by stage, not by clutter.</h3>
           <p className="mt-2 text-sm leading-6 text-[#5f6876]">
-            Use the steps above to move between applied, shortlisted, interview, and rejected candidates, then review each stage from one focused panel.
+            Use the steps above to move between applied, on-hold, shortlisted, interview, and rejected candidates, then review each stage from one focused panel.
           </p>
           {!isPaidEmployer ? (
             <p className="mt-3 text-sm leading-6 text-[#138d1a]">
@@ -235,7 +245,7 @@ export default function EmployerPipelineBoard({
               Click a step to review candidates
             </span>
           </div>
-          <div className="mt-5 grid gap-4 xl:grid-cols-5">
+          <div className="mt-5 grid gap-4 xl:grid-cols-6">
             {groupedApplicants.map((column, index, items) => {
               const isActive = column.key === activeColumn;
               return (
