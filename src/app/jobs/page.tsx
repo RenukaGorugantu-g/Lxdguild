@@ -244,34 +244,36 @@ function PublicJobCard({ job, featured = false }: { job: PublicJobRecord; featur
       }`}
     >
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-[#111827]">{job.title}</h2>
+        <div className="min-w-0 space-y-3">
+          <div className="space-y-3">
+            <h2 className="break-words text-xl leading-tight font-bold text-[#111827]">{job.title}</h2>
             {featured ? (
-              <span className="rounded-full bg-[#e9f8e3] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#179720]">
-                Featured
-              </span>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-[#e9f8e3] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#179720]">
+                  Featured
+                </span>
+              </div>
             ) : null}
           </div>
-          <div className="flex flex-wrap items-center gap-4 text-sm text-[#5b6757]">
-            <div className="flex items-center gap-1.5">
-              <Building className="h-4 w-4" />
+          <div className="flex flex-wrap items-start gap-4 text-sm text-[#5b6757]">
+            <div className="flex items-start gap-1.5">
+              <Building className="mt-0.5 h-4 w-4 shrink-0" />
               {job.company || "Verified employer"}
             </div>
-            <div className="flex items-center gap-1.5">
-              <MapPin className="h-4 w-4" />
+            <div className="flex items-start gap-1.5">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
               {getWorkModeLabel(job.work_mode, job.location)}
             </div>
             <div className="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-semibold text-zinc-700">
               {getEmploymentTypeLabel(job.employment_type)}
             </div>
-            <div className="flex items-center gap-1.5">
-              <Clock3 className="h-4 w-4" />
+            <div className="flex items-start gap-1.5">
+              <Clock3 className="mt-0.5 h-4 w-4 shrink-0" />
               Posted {postedDate}
             </div>
             {expiryDate ? (
-              <div className="flex items-center gap-1.5 text-amber-700">
-                <Clock3 className="h-4 w-4" />
+              <div className="flex items-start gap-1.5 text-amber-700">
+                <Clock3 className="mt-0.5 h-4 w-4 shrink-0" />
                 Expires {expiryDate}
               </div>
             ) : null}

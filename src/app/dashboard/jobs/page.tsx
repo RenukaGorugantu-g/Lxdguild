@@ -899,44 +899,48 @@ function JobCard({
       }`}
     >
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <h2 className={`${compact ? "text-base" : "text-xl"} font-bold text-[#111827]`}>{job.title}</h2>
-            {featured && (
-              <span className="rounded-full bg-[#e9f8e3] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#179720]">
-                Featured
-              </span>
-            )}
-            {job.featured_rank != null && (
-              <span className="rounded-full bg-[#eef8e8] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#138d1a]">
-                Verified candidates preferred
-              </span>
-            )}
-            {job.job_kind === "freelance" && (
-              <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-800">
-                Freelance
-              </span>
-            )}
+        <div className="min-w-0 space-y-3">
+          <div className="space-y-3">
+            <h2 className={`${compact ? "text-base" : "text-xl"} break-words leading-tight font-bold text-[#111827]`}>
+              {job.title}
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {featured && (
+                <span className="rounded-full bg-[#e9f8e3] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#179720]">
+                  Featured
+                </span>
+              )}
+              {job.featured_rank != null && (
+                <span className="rounded-full bg-[#eef8e8] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#138d1a]">
+                  Verified candidates preferred
+                </span>
+              )}
+              {job.job_kind === "freelance" && (
+                <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-800">
+                  Freelance
+                </span>
+              )}
+            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-4 text-sm text-[#5b6757]">
-            <div className="flex items-center gap-1.5">
-              <Building className="h-4 w-4" />
+          <div className="flex flex-wrap items-start gap-4 text-sm text-[#5b6757]">
+            <div className="flex items-start gap-1.5">
+              <Building className="mt-0.5 h-4 w-4 shrink-0" />
               {job.company}
             </div>
-            <div className="flex items-center gap-1.5">
-              <MapPin className="h-4 w-4" />
+            <div className="flex items-start gap-1.5">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
               {job.location}
             </div>
             {job.work_mode === "remote" && <div className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700">Remote</div>}
             {job.employment_type === "full_time" && <div className="rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-semibold text-zinc-700">Full-time</div>}
             {job.employment_type === "part_time" && <div className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">Part-time</div>}
-            <div className="flex items-center gap-1.5">
-              <Clock3 className="h-4 w-4" />
+            <div className="flex items-start gap-1.5">
+              <Clock3 className="mt-0.5 h-4 w-4 shrink-0" />
               Posted {freshnessDate}
             </div>
             {expiryDate && (
-              <div className="flex items-center gap-1.5 text-amber-700">
-                <Clock3 className="h-4 w-4" />
+              <div className="flex items-start gap-1.5 text-amber-700">
+                <Clock3 className="mt-0.5 h-4 w-4 shrink-0" />
                 Expires {expiryDate}
               </div>
             )}
