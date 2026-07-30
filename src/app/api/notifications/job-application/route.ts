@@ -371,14 +371,25 @@ export async function POST(req: Request) {
 
   await ensureUserProfile(user)
 
-  const isMapleEmployer =
-    (user.email || '').toLowerCase() === 'info@maplelearningsolutions.com'
+  const { data: job, error: jobError } = await supabase
+    .from('jobs')
+    .select('id, title, company, description, location, apply_url, user_id, featured_rank')
+    .eq('id', jobId)
+    .single()
+
+  if (jobError || !job) {
+    return NextResponse.json({ error: 'Job not found' }, { status: 404 })
+  }
+
+  const isMapleJob =
+    (job.company || '').toLowerCase().includes('maple') ||
+    (job.title || '').toLowerCase().includes('maple')
 
   const { canApplyToJobs, isFreeAccessCandidate, freeApplicationsRemaining, lockReason } = await getJobBoardAccessForUser(
     supabase,
     user.id
   )
-  if (!canApplyToJobs && !isMapleEmployer) {
+  if (!canApplyToJobs && !isMapleJob) {
     return NextResponse.json(
       {
         error:
@@ -389,7 +400,6 @@ export async function POST(req: Request) {
     )
   }
 
-  const { data: job, error: jobError } = await supabase
     .from('jobs')
     .select('id, title, company, description, location, apply_url, user_id, featured_rank')
     .eq('id', jobId)
