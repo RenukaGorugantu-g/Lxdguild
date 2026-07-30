@@ -11,7 +11,6 @@ import { buildPublicJobHref, buildPublicJobUrl } from "@/lib/public-jobs";
 import { decideApplicationStatus, downloadResumeBuffer } from "@/lib/resume-analysis";
 import { getSiteUrl } from "@/lib/site-url";
 import { toJsonLdScriptProps } from "@/lib/seo";
-import { extractKeywords, extractSkills, parseResumeFile, scoreCandidate } from "../../../../../ats-module";
 import { notFound, redirect } from "next/navigation";
 import { MapPin, Building, Calendar, ArrowLeft, CheckCircle, Clock3 } from "lucide-react";
 import Link from "next/link";
@@ -56,43 +55,48 @@ const LIVE_ATS_CACHE_TTL_MS = 10 * 60 * 1000;
 const liveAtsCache = new Map<string, CachedLiveAtsResult>();
 
 const getSeoJobRecord = cache(async (id: string) => {
-  const supabase = await createClient();
-  const adminSupabaseClient = createAdminClient();
-  const jobsReader = adminSupabaseClient ?? supabase;
+  try {
+    const supabase = await createClient();
+    const adminSupabaseClient = createAdminClient();
+    const jobsReader = adminSupabaseClient ?? supabase;
 
-  const primaryQuery = await jobsReader
-    .from("jobs")
-    .select("id, title, description, company, location, external_posted_at, imported_at, created_at, expires_at, is_active, deleted_at")
-    .eq("id", id)
-    .single();
-
-  if (!primaryQuery.error) {
-    return primaryQuery.data as Pick<
-      JobDetailRecord,
-      "id" | "title" | "description" | "company" | "location" | "external_posted_at" | "imported_at" | "created_at" | "expires_at" | "is_active" | "deleted_at"
-    > | null;
-  }
-
-  if (primaryQuery.error.code === "42703") {
-    const fallbackQuery = await jobsReader
+    const primaryQuery = await jobsReader
       .from("jobs")
-      .select("id, title, description, company, location, created_at")
+      .select("id, title, description, company, location, external_posted_at, imported_at, created_at, expires_at, is_active, deleted_at")
       .eq("id", id)
       .single();
 
-    return fallbackQuery.data
-      ? {
-          ...fallbackQuery.data,
-          external_posted_at: null,
-          imported_at: fallbackQuery.data.created_at,
-          expires_at: null,
-          is_active: true,
-          deleted_at: null,
-        }
-      : null;
-  }
+    if (!primaryQuery.error) {
+      return primaryQuery.data as Pick<
+        JobDetailRecord,
+        "id" | "title" | "description" | "company" | "location" | "external_posted_at" | "imported_at" | "created_at" | "expires_at" | "is_active" | "deleted_at"
+      > | null;
+    }
 
-  return null;
+    if (primaryQuery.error.code === "42703") {
+      const fallbackQuery = await jobsReader
+        .from("jobs")
+        .select("id, title, description, company, location, created_at")
+        .eq("id", id)
+        .single();
+
+      return fallbackQuery.data
+        ? {
+            ...fallbackQuery.data,
+            external_posted_at: null,
+            imported_at: fallbackQuery.data.created_at,
+            expires_at: null,
+            is_active: true,
+            deleted_at: null,
+          }
+        : null;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("[job-detail] failed to resolve SEO job record", error);
+    return null;
+  }
 });
 
 export async function generateMetadata({
@@ -100,64 +104,76 @@ export async function generateMetadata({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
-  const job = await getSeoJobRecord(id);
+  try {
+    const { id } = await params;
+    const job = await getSeoJobRecord(id);
 
-  if (!job) {
+    if (!job) {
+      return {
+        title: "Job Not Found",
+        robots: {
+          index: false,
+          follow: false,
+        },
+      };
+    }
+
+    const siteUrl = getSiteUrl();
+    const title = `${job.title} at ${job.company || "LXD Guild Employer"} | L&D Jobs India`;
+    const descriptionSource = stripHtml(job.description);
+    const description = descriptionSource
+      ? descriptionSource.length > 160
+        ? `${descriptionSource.slice(0, 157).trim()}...`
+        : descriptionSource
+      : `Apply for ${job.title} at ${job.company || "a verified employer"} on LXD Guild Marketplace.`;
+    const publicCanonical = buildPublicJobHref(job);
+
     return {
-      title: "Job Not Found",
+      title,
+      description,
+      alternates: {
+        canonical: publicCanonical,
+      },
+      robots: {
+        index: false,
+        follow: true,
+        googleBot: {
+          index: false,
+          follow: true,
+          "max-image-preview": "large",
+          "max-snippet": -1,
+        },
+      },
+      openGraph: {
+        title,
+        description,
+        url: publicCanonical,
+        type: "article",
+        images: [
+          {
+            url: `${siteUrl}/opengraph-image`,
+            alt: `${job.title} on LXD Guild Marketplace`,
+          },
+        ],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [`${siteUrl}/twitter-image`],
+      },
+    };
+  } catch (error) {
+    console.error("[job-detail] failed to generate metadata", error);
+    return {
+      title: "Job preview unavailable",
+      description: "This job preview is temporarily unavailable.",
       robots: {
         index: false,
         follow: false,
       },
     };
   }
-
-  const siteUrl = getSiteUrl();
-  const title = `${job.title} at ${job.company || "LXD Guild Employer"} | L&D Jobs India`;
-  const descriptionSource = stripHtml(job.description);
-  const description = descriptionSource
-    ? descriptionSource.length > 160
-      ? `${descriptionSource.slice(0, 157).trim()}...`
-      : descriptionSource
-    : `Apply for ${job.title} at ${job.company || "a verified employer"} on LXD Guild Marketplace.`;
-  const publicCanonical = buildPublicJobHref(job);
-
-  return {
-    title,
-    description,
-    alternates: {
-      canonical: publicCanonical,
-    },
-    robots: {
-      index: false,
-      follow: true,
-      googleBot: {
-        index: false,
-        follow: true,
-        "max-image-preview": "large",
-        "max-snippet": -1,
-      },
-    },
-    openGraph: {
-      title,
-      description,
-      url: publicCanonical,
-      type: "article",
-      images: [
-        {
-          url: `${siteUrl}/opengraph-image`,
-          alt: `${job.title} on LXD Guild Marketplace`,
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [`${siteUrl}/twitter-image`],
-    },
-  };
 }
 
 function toNumericScore(value: number | string | null | undefined) {
@@ -485,7 +501,13 @@ async function computeLiveAtsResultForApplicant({
     return null;
   }
 
+  if (typeof window === "undefined") {
+    return null;
+  }
+
   try {
+    const atsModule = await import("../../../../../ats-module");
+    const { extractKeywords, extractSkills, parseResumeFile, scoreCandidate } = atsModule;
     const jobDescription = stripHtml(job.description);
     const scoringSource = `${job.title} ${jobDescription}`.trim();
     const requiredSkills = extractSkills(scoringSource);
