@@ -7,6 +7,7 @@ import { ensureUserProfile } from '@/lib/ensure-user-profile'
 import { getSiteUrl } from '@/lib/site-url'
 import { selectMatchedJobs, type CandidateMatchJob } from '@/lib/candidate-job-matches'
 import { downloadResumeBuffer, decideApplicationStatus } from '@/lib/resume-analysis'
+import { syncMapleApplicationToGoogleSheet } from '@/lib/maple-google-sheet'
 import { extractKeywords, extractSkills, parseResumeFile, scoreCandidate } from '../../../../../ats-module'
 
 export const runtime = 'nodejs'
@@ -370,11 +371,14 @@ export async function POST(req: Request) {
 
   await ensureUserProfile(user)
 
+  const isMapleEmployer =
+    (user.email || '').toLowerCase() === 'info@maplelearningsolutions.com'
+
   const { canApplyToJobs, isFreeAccessCandidate, freeApplicationsRemaining, lockReason } = await getJobBoardAccessForUser(
     supabase,
     user.id
   )
-  if (!canApplyToJobs) {
+  if (!canApplyToJobs && !isMapleEmployer) {
     return NextResponse.json(
       {
         error:
@@ -566,6 +570,42 @@ export async function POST(req: Request) {
         index,
         reason: result.reason instanceof Error ? result.reason.message : String(result.reason),
       })),
+    })
+  }
+
+  const isMapleApplication =
+    (job.company || '').toLowerCase().includes('maple') ||
+    (user.email || '').toLowerCase() === 'info@maplelearningsolutions.com'
+
+  if (isMapleApplication && (!insertResult.error || insertResult.error.code === '23505')) {
+    if (job.featured_rank == null) {
+      const featuredUpdateResult = await supabase
+        .from('jobs')
+        .update({ featured_rank: 1 })
+        .eq('id', jobId)
+        .is('featured_rank', null)
+
+      if (featuredUpdateResult.error) {
+        console.error('[job-application] maple featured job update failed', {
+          jobId,
+          error: featuredUpdateResult.error.message,
+        })
+      }
+    }
+
+    void syncMapleApplicationToGoogleSheet({
+      applicationId: existingApplication?.id || insertResult.data?.id || '',
+      appliedDate: new Date().toISOString(),
+      name: typeof applicantProfile?.name === 'string' ? applicantProfile.name : '',
+      email: user.email || '',
+      phone: '',
+      job: job.title || '',
+      company: job.company || '',
+      resume: normalizedResumeUrl || '',
+      linkedin: '',
+      portfolio: '',
+      experience: applicantProfile?.candidate_target_role || applicantProfile?.candidate_designation || '',
+      location: job.location || '',
     })
   }
 
