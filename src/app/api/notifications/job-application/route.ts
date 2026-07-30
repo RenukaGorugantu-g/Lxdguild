@@ -400,15 +400,6 @@ export async function POST(req: Request) {
     )
   }
 
-    .from('jobs')
-    .select('id, title, company, description, location, apply_url, user_id, featured_rank')
-    .eq('id', jobId)
-    .single()
-
-  if (jobError || !job) {
-    return NextResponse.json({ error: 'Job not found' }, { status: 404 })
-  }
-
   const normalizedResumeUrl = resumeUrl || null
   const jobUrl = `${getSiteUrl()}/dashboard/jobs/${jobId}`
   const { data: applicantProfile } = await supabase
