@@ -391,7 +391,7 @@ export async function POST(req: Request) {
 
   const { data: job, error: jobError } = await supabase
     .from('jobs')
-    .select('id, title, company, description, location, apply_url, user_id')
+    .select('id, title, company, description, location, apply_url, user_id, featured_rank')
     .eq('id', jobId)
     .single()
 
