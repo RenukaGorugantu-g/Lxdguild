@@ -190,19 +190,45 @@ export default function ApplyModal({
         throw new Error(uploadError.message || "Resume upload failed.");
       }
 
-      const { data: publicUrlData } = supabase.storage.from("resumes").getPublicUrl(filePath);
-      const { data: resumeData, error: insertError } = await supabase
-        .from("resumes")
-        .insert({
-          user_id: (await supabase.auth.getUser()).data.user?.id,
-          file_url: publicUrlData.publicUrl,
-          file_name: file.name,
-          file_path: filePath,
-          mime_type: file.type || null,
-        })
-        .select("id, file_url, file_name")
-        .single();
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      if (!userId) {
+        throw new Error("User session not found.");
+      }
 
+      const { data: publicUrlData } = supabase.storage.from("resumes").getPublicUrl(filePath);
+
+      const insertResumeRecord = async () => {
+        const baseInsert = await supabase
+          .from("resumes")
+          .insert({
+            user_id: userId,
+            file_url: publicUrlData.publicUrl,
+            file_name: file.name,
+            mime_type: file.type || null,
+          })
+          .select("id, file_url, file_name")
+          .single();
+
+        if (!baseInsert.error) return baseInsert;
+
+        if (baseInsert.error.code !== "42703" && !(baseInsert.error.message || "").includes("Could not find")) {
+          return baseInsert;
+        }
+
+        return supabase
+          .from("resumes")
+          .insert({
+            user_id: userId,
+            file_url: publicUrlData.publicUrl,
+            file_name: file.name,
+            file_path: filePath,
+            mime_type: file.type || null,
+          })
+          .select("id, file_url, file_name")
+          .single();
+      };
+
+      const { data: resumeData, error: insertError } = await insertResumeRecord();
       if (insertError) {
         throw new Error(insertError.message || "Resume could not be saved.");
       }
