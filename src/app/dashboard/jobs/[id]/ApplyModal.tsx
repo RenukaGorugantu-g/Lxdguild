@@ -55,6 +55,71 @@ type AtsResult = {
   summary?: string | null;
 };
 
+function isMissingColumnError(message?: string | null) {
+  if (!message) return false;
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("could not find the 'file_path' column") ||
+    normalized.includes("could not find the \"file_path\" column") ||
+    normalized.includes("column file_path does not exist") ||
+    normalized.includes("schema cache")
+  );
+}
+
+async function insertResumeRecord(
+  supabase: ReturnType<typeof createClient>,
+  payload: {
+    user_id: string;
+    file_url: string;
+    file_name: string;
+    file_path: string;
+    mime_type: string | null;
+  }
+) {
+  const fullInsert = await supabase
+    .from("resumes")
+    .insert(payload)
+    .select("id, file_url, file_name")
+    .single();
+
+  if (!fullInsert.error) {
+    return fullInsert;
+  }
+
+  if (fullInsert.error.code !== "42703" && !isMissingColumnError(fullInsert.error.message)) {
+    return fullInsert;
+  }
+
+  const mediumInsert = await supabase
+    .from("resumes")
+    .insert({
+      user_id: payload.user_id,
+      file_url: payload.file_url,
+      file_name: payload.file_name,
+      mime_type: payload.mime_type,
+    })
+    .select("id, file_url, file_name")
+    .single();
+
+  if (!mediumInsert.error) {
+    return mediumInsert;
+  }
+
+  if (mediumInsert.error.code !== "42703" && !isMissingColumnError(mediumInsert.error.message)) {
+    return mediumInsert;
+  }
+
+  return supabase
+    .from("resumes")
+    .insert({
+      user_id: payload.user_id,
+      file_url: payload.file_url,
+      file_name: payload.file_name,
+    })
+    .select("id, file_url, file_name")
+    .single();
+}
+
 export default function ApplyModal({
   job,
   profile,
@@ -197,38 +262,13 @@ export default function ApplyModal({
 
       const { data: publicUrlData } = supabase.storage.from("resumes").getPublicUrl(filePath);
 
-      const insertResumeRecord = async () => {
-        const baseInsert = await supabase
-          .from("resumes")
-          .insert({
-            user_id: userId,
-            file_url: publicUrlData.publicUrl,
-            file_name: file.name,
-            mime_type: file.type || null,
-          })
-          .select("id, file_url, file_name")
-          .single();
-
-        if (!baseInsert.error) return baseInsert;
-
-        if (baseInsert.error.code !== "42703" && !(baseInsert.error.message || "").includes("Could not find")) {
-          return baseInsert;
-        }
-
-        return supabase
-          .from("resumes")
-          .insert({
-            user_id: userId,
-            file_url: publicUrlData.publicUrl,
-            file_name: file.name,
-            file_path: filePath,
-            mime_type: file.type || null,
-          })
-          .select("id, file_url, file_name")
-          .single();
-      };
-
-      const { data: resumeData, error: insertError } = await insertResumeRecord();
+      const { data: resumeData, error: insertError } = await insertResumeRecord(supabase, {
+        user_id: userId,
+        file_url: publicUrlData.publicUrl,
+        file_name: file.name,
+        file_path: filePath,
+        mime_type: file.type || null,
+      });
       if (insertError) {
         throw new Error(insertError.message || "Resume could not be saved.");
       }
