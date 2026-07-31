@@ -89,6 +89,7 @@ export default function ApplyModal({
   const [resumeOptions, setResumeOptions] = useState(resumes);
   const [selectedResumeId, setSelectedResumeId] = useState(resumes[0]?.id || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingResume, setIsUploadingResume] = useState(false);
   const [launchedApplyUrl, setLaunchedApplyUrl] = useState<string | null>(initialApplyUrl);
   const [quotaMessage, setQuotaMessage] = useState<string | null>(null);
   const [atsResult, setAtsResult] = useState<AtsResult | null>(null);
@@ -167,6 +168,58 @@ export default function ApplyModal({
       alert(message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResumeUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingResume(true);
+    try {
+      const fileExt = file.name.split(".").pop() || "pdf";
+      const filePath = `${crypto.randomUUID()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from("resumes")
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError) {
+        throw new Error(uploadError.message || "Resume upload failed.");
+      }
+
+      const { data: publicUrlData } = supabase.storage.from("resumes").getPublicUrl(filePath);
+      const { data: resumeData, error: insertError } = await supabase
+        .from("resumes")
+        .insert({
+          user_id: (await supabase.auth.getUser()).data.user?.id,
+          file_url: publicUrlData.publicUrl,
+          file_name: file.name,
+          file_path: filePath,
+          mime_type: file.type || null,
+        })
+        .select("id, file_url, file_name")
+        .single();
+
+      if (insertError) {
+        throw new Error(insertError.message || "Resume could not be saved.");
+      }
+
+      setResumeOptions((current) => {
+        const next = [...current, resumeData];
+        if (!selectedResumeId) setSelectedResumeId(resumeData.id);
+        return next;
+      });
+      setSelectedResumeId(resumeData.id);
+      alert("Resume uploaded successfully.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      alert("Unable to upload resume: " + message);
+    } finally {
+      setIsUploadingResume(false);
+      event.target.value = "";
     }
   };
 
@@ -381,15 +434,31 @@ export default function ApplyModal({
                   ) : (
                     <div className="rounded-3xl border-2 border-dashed p-8 text-center">
                       <p className="mb-4 text-sm text-zinc-500">No resumes found in your profile.</p>
-                      <button
-                        onClick={() => router.push("/dashboard/candidate/profile")}
-                        className="text-xs font-bold uppercase tracking-widest text-brand-600 hover:underline"
-                      >
-                        Update profile to upload
-                      </button>
+                      <div className="flex flex-col items-center gap-3">
+                        <label className="inline-flex cursor-pointer items-center justify-center rounded-2xl bg-brand-600 px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-brand-700">
+                          <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleResumeUpload} />
+                          {isUploadingResume ? "Uploading..." : "Upload a resume now"}
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => router.push("/dashboard/candidate/profile")}
+                          className="text-xs font-bold uppercase tracking-widest text-brand-600 hover:underline"
+                        >
+                          Or update profile
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
+
+                {resumeOptions.length > 0 && (
+                  <div className="mt-4 flex justify-center">
+                    <label className="inline-flex cursor-pointer items-center justify-center rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100">
+                      <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleResumeUpload} />
+                      {isUploadingResume ? "Uploading resume..." : "Upload another resume"}
+                    </label>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4">

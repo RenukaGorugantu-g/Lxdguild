@@ -1,4 +1,4 @@
-const DEFAULT_MAPLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGDChcd1yll1WHFyJA5iYoUGl5qfRkhHbJ7-udM784iKq7a45sNphJuhGypAH7P17_/exec'
+const DEFAULT_MAPLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzneGOHENQgPhxyILvYH-oqg7BgEfZJT9oxf6BLq3UM0SaRE2NOSOv4YST3ZsgxlEBZ6w/exec'
 
 type MapleApplicationSyncPayload = {
   applicationId: string
@@ -27,8 +27,8 @@ export async function syncMapleApplicationToGoogleSheet(payload: MapleApplicatio
     job: payload.job || '',
     company: payload.company || '',
     resume: payload.resume || '',
-    linkedin: payload.linkedin || '',
     portfolio: payload.portfolio || '',
+    linkedin: payload.linkedin || '',
     experience: payload.experience || '',
     location: payload.location || '',
   }

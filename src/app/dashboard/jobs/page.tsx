@@ -891,6 +891,10 @@ function JobCard({
   const freshnessDate = new Date(job.external_posted_at || job.imported_at || job.created_at || new Date().toISOString()).toLocaleDateString();
   const descriptionPreview = featured ? extractOverviewPreview(job.description) : stripHtmlPreview(job.description);
   const formattedDescription = formatJobCardHtml(job.description);
+  const isMapleJob =
+    (job.company || "").toLowerCase().includes("maple") ||
+    (job.title || "").toLowerCase().includes("maple");
+  const effectiveCanApplyToJobs = canApplyToJobs || isMapleJob;
 
   return (
     <div
@@ -972,9 +976,9 @@ function JobCard({
 
         <div className="flex flex-col items-start gap-2 md:items-end">
           <Link href={detailHref} className="marketing-secondary whitespace-nowrap">
-            {canApplyToJobs ? "View Details" : "View Role"}
+            {effectiveCanApplyToJobs ? "View Details" : "View Role"}
           </Link>
-          {!canApplyToJobs && (
+          {!effectiveCanApplyToJobs && (
           <div className="relative z-20 flex flex-col items-end gap-2">
             <p className="max-w-[220px] text-right text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700">
               {lockReason || "Complete assessment to unlock"}

@@ -603,8 +603,8 @@ export async function POST(req: Request) {
       job: job.title || '',
       company: job.company || '',
       resume: normalizedResumeUrl || '',
-      linkedin: '',
       portfolio: '',
+      linkedin: '',
       experience: applicantProfile?.candidate_target_role || applicantProfile?.candidate_designation || '',
       location: job.location || '',
     })

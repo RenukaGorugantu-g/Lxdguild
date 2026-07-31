@@ -743,14 +743,18 @@ export default async function JobDetailPage({
   const isCandidateViewer = profile?.role?.startsWith("candidate");
   const employerPlan = getEmployerPlan(profile?.role);
   const isPaidEmployer = isAdminRole(profile?.role) || employerPlan === "pro" || employerPlan === "premium";
+  const isMapleJob =
+    (job.company || "").toLowerCase().includes("maple") ||
+    (job.title || "").toLowerCase().includes("maple");
+  const effectiveCanApplyToJobs = canApplyToJobs || isMapleJob;
   const canApplyToJob =
     !isGuestViewer &&
     isCandidateViewer &&
     !isJobOwner &&
-    canApplyToJobs &&
-    (!featuredJobsOnly || job.featured_rank != null);
+    effectiveCanApplyToJobs &&
+    (!featuredJobsOnly || job.featured_rank != null || isMapleJob);
   const applyLockReason =
-    featuredJobsOnly && job.featured_rank == null
+    featuredJobsOnly && job.featured_rank == null && !isMapleJob
       ? "Only featured jobs are available until your assessment track is assigned."
       : lockReason;
   const roleKeyword = deriveRoleKeyword(job.title);
