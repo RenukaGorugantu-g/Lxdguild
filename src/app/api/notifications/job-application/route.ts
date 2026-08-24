@@ -527,7 +527,7 @@ export async function POST(req: Request) {
       experience: '',
       location: job.location || '',
     }).then((result) => {
-      if (!result.ok && !result.skipped) {
+      if (!result.ok) {
         console.error('[job-application] google sheets sync failed', result)
       }
     })
