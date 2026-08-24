@@ -155,7 +155,6 @@ export default async function EmployerLandingPage() {
     offers: {
       "@type": "Offer",
       availability: "https://schema.org/InStock",
-      url: "https://lxdmarketplace.lxdguild.com/employer",
       url: `${siteUrl}/employer`,
     },
   };

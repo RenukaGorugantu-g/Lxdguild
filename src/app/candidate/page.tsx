@@ -167,8 +167,7 @@ export default async function CandidateLandingPage() {
     name: "Candidate Career Growth Platform",
     description:
       "AI-powered career development platform for Learning & Development professionals featuring resume analysis, skill validation, and intelligent job matching.",
-    url: "https://lxdmarketplace.lxdguild.com/candidate",
-      url: `${siteUrl}/candidate`,
+    url: `${siteUrl}/candidate`,
     mainEntity: {
       "@type": "Service",
       serviceType: "Career Development Platform",
@@ -190,15 +189,13 @@ export default async function CandidateLandingPage() {
           "@type": "ListItem",
           position: 1,
           name: "Home",
-          item: "https://lxdmarketplace.lxdguild.com/",
-                  item: `${siteUrl}/`,
+            item: `${siteUrl}/`,
         },
         {
           "@type": "ListItem",
           position: 2,
           name: "For Candidates",
-          item: "https://lxdmarketplace.lxdguild.com/candidate",
-                  item: `${siteUrl}/candidate`,
+            item: `${siteUrl}/candidate`,
         },
       ],
     },

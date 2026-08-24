@@ -312,7 +312,6 @@ export default async function LandingPage() {
     name: "LXD Guild Marketplace",
     alternateName: "LXD Marketplace",
     url: `${siteUrl}/`,
-      url: "https://lxdmarketplace.lxdguild.com/",
     description:
       "India's verified marketplace for Learning & Development professionals. Skill-validated instructional designers, eLearning developers, and L&D talent.",
     publisher: {
