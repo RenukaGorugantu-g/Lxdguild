@@ -42,13 +42,11 @@ const footerLinks = {
     { label: "Candidate", href: "/candidate" },
     { label: "Employer", href: "/employer" },
     { label: "Job Board", href: "/jobs" },
-    { label: "Candidate Dashboard", href: "/dashboard/candidate" },
-    { label: "Professional Profile", href: "/dashboard/candidate/profile" },
+    { label: "Create your L&D professional profile", href: "/candidate" },
   ],
   Membership: [
     { label: "Membership Benefits", href: "/membership" },
-    { label: "Resources", href: "/dashboard/resources" },
-    { label: "Membership", href: "/dashboard/membership" },
+    { label: "L&D resources", href: "/membership" },
   ],
   Company: [
     { label: "Community", href: "https://lxdguild.com", external: true },

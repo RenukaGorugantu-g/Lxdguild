@@ -341,6 +341,36 @@ function buildContent({
             : [],
       };
 
+    case "job_posted_maple":
+      return {
+        ...defaults,
+        preheader: "Your Maple role is now live and ready for applicants.",
+        heading: "Maple Job Posted Successfully",
+        kicker: "Maple hiring flow enabled",
+        heroNote: "Applications will trigger an employer email with the assessment link and role details.",
+        layoutVariant: "celebration",
+        intro: `Your Maple posting for ${data.title || "the role"} at ${data.company || "your company"} is now live on LXD Guild.`,
+        summary:
+          "As soon as a candidate applies, we will send you a tailored email with the application details, candidate context, and the assessment link for your next step.",
+        checklist: [
+          "Review the live job listing in your employer dashboard.",
+          "Expect a candidate email notification as soon as an application is received.",
+          "Use the assessment link in the applicant email to keep the hiring flow moving.",
+        ],
+        spotlight: [
+          {
+            icon: "MAP",
+            title: "Maple-specific automation",
+            copy: "This workflow is enabled only for Maple job posts so other marketplace employers keep their standard experience.",
+          },
+          {
+            icon: "LINK",
+            title: "Assessment link included",
+            copy: "Every new Maple candidate application email will carry a direct assessment link and the role details you need.",
+          },
+        ],
+      };
+
     case "job_application":
       const isVerifiedCandidate = data.candidate_role === "candidate_mvp";
       const isCandidateOnHold = data.candidate_role === "candidate_onhold";
@@ -504,6 +534,35 @@ function buildContent({
             icon: "FLOW",
             title: "Designed for employer flow",
             copy: "You can move from application to accept or reject without losing the trail of notifications or status changes.",
+          },
+        ],
+      };
+
+    case "job_application_received_maple":
+      return {
+        ...defaults,
+        preheader: "A Maple candidate has applied to your role.",
+        heading: "New Maple Candidate Application",
+        kicker: "Assessment link ready",
+        heroNote: "The candidate has entered your hiring flow and the next step is ready to move forward.",
+        layoutVariant: "urgent",
+        intro: `${data.candidate_name || data.candidate_email || "A candidate"} has applied for ${data.title || "your role"} at ${data.company || "your company"}.`,
+        summary: "This Maple email includes the role details, candidate context, and a direct assessment link so the hiring team can continue the process without delays.",
+        checklist: [
+          "Review the applicant profile and resume.",
+          "Use the assessment link to continue the evaluation flow.",
+          "Keep the candidate updated with your next hiring step.",
+        ],
+        spotlight: [
+          {
+            icon: "MAP",
+            title: "Maple-only workflow",
+            copy: "This email is tailored for Maple postings only, so it stands apart from the standard marketplace employer notification.",
+          },
+          {
+            icon: "LINK",
+            title: "Assessment link included",
+            copy: "The assessment link is embedded so your team can move straight from application review to candidate evaluation.",
           },
         ],
       };
@@ -1172,6 +1231,7 @@ function buildDetailRows(type: string, data: Record<string, string>, audience: N
   if (data.email && audience === "admin") rows.push({ label: "Recipient", value: data.email });
   if (data.company) rows.push({ label: "Company", value: data.company });
   if (data.title) rows.push({ label: "Role", value: data.title });
+  if (data.job_id) rows.push({ label: "Job ID", value: data.job_id });
   if (data.target_role) rows.push({ label: "Target role", value: data.target_role });
   if (data.designation_bucket) rows.push({ label: "Track", value: data.designation_bucket });
   if (data.score) rows.push({ label: "Score", value: `${data.score}%` });
@@ -1187,8 +1247,12 @@ function buildDetailRows(type: string, data: Record<string, string>, audience: N
   if (data.subject) rows.push({ label: "Subject", value: data.subject });
   if (data.message) rows.push({ label: "Message", value: data.message });
 
-  if (type === "job_posted" && data.job_url) {
+  if ((type === "job_posted" || type === "job_posted_maple") && data.job_url) {
     rows.push({ label: "Listing", value: data.job_url });
+  }
+
+  if ((type === "job_application_received_maple" || type === "job_posted_maple") && data.assessment_url) {
+    rows.push({ label: "Assessment link", value: data.assessment_url });
   }
 
   return rows;
@@ -1249,8 +1313,12 @@ function getPrimaryCta(type: string, data: Record<string, string>, audience: Not
     };
   }
 
-  if (type === "job_posted") {
+  if (type === "job_posted" || type === "job_posted_maple") {
     return { label: "Open Job Posting", href: data.employer_job_url || data.job_url || `${getSiteUrl()}/dashboard/employer` };
+  }
+
+  if (type === "job_application_received_maple") {
+    return { label: "Open Assessment Link", href: data.assessment_url || `${getSiteUrl()}/dashboard/candidate/exam` };
   }
 
   if (type === "certificate_uploaded" || type === "certificate_reviewed") {
@@ -1298,7 +1366,7 @@ function getTheme(audience: NotificationAudience, type: string): EmailTheme {
     };
   }
 
-  if (type === "job_application_received" || type === "job_posted" || type.startsWith("job_delete_")) {
+  if (type === "job_application_received" || type === "job_application_received_maple" || type === "job_posted" || type === "job_posted_maple" || type.startsWith("job_delete_")) {
     return {
       eyebrow: "LXDGUILD Employer Update",
       accent: "#15991f",

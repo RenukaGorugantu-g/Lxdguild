@@ -8,6 +8,8 @@ import { getSiteUrl } from '@/lib/site-url'
 import { selectMatchedJobs, type CandidateMatchJob } from '@/lib/candidate-job-matches'
 import { downloadResumeBuffer, decideApplicationStatus } from '@/lib/resume-analysis'
 import { extractKeywords, extractSkills, parseResumeFile, scoreCandidate } from '../../../../../ats-module'
+import { shouldSendMapleEmployerEmail } from '@/lib/maple'
+import { syncApplicationToGoogleSheet } from '@/lib/google-sheets'
 
 export const runtime = 'nodejs'
 
@@ -403,6 +405,12 @@ export async function POST(req: Request) {
     .eq('id', user.id)
     .single()
 
+  const { data: employerProfile } = await supabase
+    .from('profiles')
+    .select('company_name, email')
+    .eq('id', job.user_id)
+    .maybeSingle()
+
   const applicationStatus = 'applied'
   let atsAnalysis: AtsAnalysisResult | null = null
 
@@ -496,6 +504,35 @@ export async function POST(req: Request) {
   const candidateMessage = isInternalApply
     ? `Your application for ${job.title} at ${job.company} was submitted inside LXD Guild. The employer can now review your profile here.`
     : `We saved your application intent for ${job.title} at ${job.company}. Complete the application on the employer's official page to finish applying.`
+  const isMapleEmployer = shouldSendMapleEmployerEmail(job.company, employerProfile?.company_name || null)
+  const employerEmailType = isMapleEmployer ? 'job_application_received_maple' : 'job_application_received'
+  const employerEmail = typeof employerProfile?.email === 'string' ? employerProfile.email.toLowerCase() : ''
+  const isMapleEmployerTarget = isMapleEmployer || employerEmail === 'info@maplelearningsolutions.com'
+  const employerEmailTitle = isMapleEmployer ? 'New Maple candidate application' : 'New candidate applied'
+  const employerEmailMessage = isMapleEmployer
+    ? `A candidate has applied for ${job.title} at ${job.company}. We have prepared the assessment link and application details for the next step.`
+    : `A candidate has applied for ${job.title} at ${job.company}.`
+  if (isMapleEmployerTarget) {
+    void syncApplicationToGoogleSheet({
+      applicationId: existingApplication?.id || insertResult.data?.id || jobId,
+      appliedDate: new Date().toISOString(),
+      name: typeof applicantProfile?.name === 'string' ? applicantProfile.name : '',
+      email: user.email || '',
+      phone: '',
+      job: job.title || '',
+      company: 'Maple Learning Solutions',
+      resume: normalizedResumeUrl || '',
+      linkedin: '',
+      portfolio: '',
+      experience: '',
+      location: job.location || '',
+    }).then((result) => {
+      if (!result.ok && !result.skipped) {
+        console.error('[job-application] google sheets sync failed', result)
+      }
+    })
+  }
+
   const notificationResults = await Promise.allSettled([
     notifyUser(user.id, 'job_application', 'Application submitted', candidateMessage, {
       job_id: jobId,
@@ -525,7 +562,7 @@ export async function POST(req: Request) {
     }),
     ...(job.user_id
       ? [
-          notifyUser(job.user_id, 'job_application_received', 'New candidate applied', `A candidate has applied for ${job.title} at ${job.company}.`, {
+          notifyUser(job.user_id, employerEmailType, employerEmailTitle, employerEmailMessage, {
             job_id: jobId,
             applicant_id: user.id,
             candidate_name: typeof applicantProfile?.name === 'string' ? applicantProfile.name : '',
@@ -534,6 +571,9 @@ export async function POST(req: Request) {
             title: job.title,
             job_url: jobUrl,
             employer_job_url: jobUrl,
+            assessment_url: `${getSiteUrl()}/dashboard/candidate/exam`,
+            applicant_dashboard_url: candidateDashboardUrl,
+            maple_enabled: String(isMapleEmployer),
           }),
         ]
       : []),

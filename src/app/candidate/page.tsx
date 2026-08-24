@@ -5,6 +5,7 @@ import { ArrowRight, BadgeCheck, BookOpen, BriefcaseBusiness, Sparkles, Target }
 import { createClient } from "@/utils/supabase/server";
 import { getBaseRole } from "@/lib/profile-role";
 import { buildFaqJsonLd, toJsonLdScriptProps } from "@/lib/seo";
+import { getSiteUrl } from "@/lib/site-url";
 
 export const metadata: Metadata = {
   title: "Instructional Designer Career Growth | AI Tools & Job Matching",
@@ -159,6 +160,7 @@ export default async function CandidateLandingPage() {
   const isSignedInCandidate = baseRole === "candidate";
   const primaryHref = isSignedInCandidate ? "/dashboard/candidate" : "/register?role=candidate";
   const secondaryHref = isSignedInCandidate ? "/dashboard/candidate/exam" : "/candidate";
+  const siteUrl = getSiteUrl();
   const candidateJsonLd = {
     "@context": "https://schema.org",
     "@type": "WebPage",
@@ -166,6 +168,7 @@ export default async function CandidateLandingPage() {
     description:
       "AI-powered career development platform for Learning & Development professionals featuring resume analysis, skill validation, and intelligent job matching.",
     url: "https://lxdmarketplace.lxdguild.com/candidate",
+      url: `${siteUrl}/candidate`,
     mainEntity: {
       "@type": "Service",
       serviceType: "Career Development Platform",
@@ -188,12 +191,14 @@ export default async function CandidateLandingPage() {
           position: 1,
           name: "Home",
           item: "https://lxdmarketplace.lxdguild.com/",
+                  item: `${siteUrl}/`,
         },
         {
           "@type": "ListItem",
           position: 2,
           name: "For Candidates",
           item: "https://lxdmarketplace.lxdguild.com/candidate",
+                  item: `${siteUrl}/candidate`,
         },
       ],
     },
@@ -218,10 +223,16 @@ export default async function CandidateLandingPage() {
                     : "Accelerate your instructional design career with AI-powered tools."}
                 </h1>
                 <p className="marketing-copy max-w-2xl text-base leading-8">
+                                    Create your L&amp;D professional profile, position yourself as a Learning Experience Designer or
+                                    Learning Designer, and discover L&amp;D jobs, Instructional Design careers, LXD careers, and eLearning careers.
                   Build instructional designer career growth with resume analysis, ATS optimization, skill validation,
                   and job matching designed for L&amp;D professionals and eLearning developers.
                 </p>
                 <div className="flex flex-wrap gap-3 text-sm">
+                                  <div className="flex flex-wrap gap-3 text-sm font-semibold">
+                                    <Link href="/jobs" className="text-[#138d1a] hover:text-[#0b7f14]">Browse L&amp;D jobs</Link>
+                                    <Link href="/membership" className="text-[#138d1a] hover:text-[#0b7f14]">Explore L&amp;D membership</Link>
+                                  </div>
                   <span className="rounded-full border border-[#dbe6d6] bg-white/90 px-4 py-2 text-[#51604d] shadow-[0_10px_24px_rgba(87,108,67,0.06)]">
                     Resume analyzer
                   </span>

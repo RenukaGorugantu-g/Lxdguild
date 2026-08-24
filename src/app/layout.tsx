@@ -6,9 +6,10 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import GlobalEnhancements from "@/components/GlobalEnhancements";
 import { toJsonLdScriptProps } from "@/lib/seo";
+import { getSiteUrl } from "@/lib/site-url";
 
 const GOOGLE_ANALYTICS_ID = "G-0Z52K8S4R4";
-const SITE_URL = "https://lxdmarketplace.lxdguild.com";
+const SITE_URL = getSiteUrl();
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -25,18 +26,30 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "LXD Guild Marketplace | L&D Jobs and Talent",
+    default: "LXD Marketplace | Learning Experience Design Jobs & Talent",
     template: "%s | LXD Guild Marketplace",
   },
   description:
-    "L&D job marketplace for verified learning professionals, instructional designers, and employers hiring across India.",
+    "LXD Marketplace for verified learning experience designers, instructional designers, eLearning developers, and employers hiring across India.",
   applicationName: "LXD Guild Marketplace",
   keywords: [
+    "LXD Marketplace",
+    "Learning Experience Design Marketplace",
+    "Learning Experience Design",
+    "Learning Experience Designer",
+    "LXD professionals",
     "L&D jobs",
     "Learning and development jobs",
+    "Learning and Development professionals",
+    "Instructional Design Marketplace",
+    "Instructional Design",
+    "Instructional Designer",
     "Instructional designer jobs",
+    "eLearning Marketplace",
+    "eLearning professionals",
+    "eLearning Developer",
     "eLearning developer jobs",
-    "Learning experience designer",
+    "Learning Designer jobs",
     "L&D talent marketplace",
     "Instructional design careers",
     "Hire L&D professionals",
@@ -67,9 +80,9 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   openGraph: {
-    title: "LXD Guild Marketplace | L&D Jobs and Talent",
+    title: "LXD Marketplace | Learning Experience Design Jobs & Talent",
     description:
-      "Find L&D jobs, verified talent, and hiring tools built for learning teams in India.",
+      "Find L&D jobs, verified learning talent, and hiring tools built for learning teams in India.",
     siteName: "LXD Guild",
     type: "website",
     url: "/",
@@ -83,9 +96,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "LXD Guild Marketplace | L&D Jobs and Talent",
+    title: "LXD Marketplace | Learning Experience Design Jobs & Talent",
     description:
-      "Find L&D jobs, verified talent, and hiring tools built for learning teams in India.",
+      "Find L&D jobs, verified learning talent, and hiring tools built for learning teams in India.",
     images: ["/twitter-image"],
   },
 };

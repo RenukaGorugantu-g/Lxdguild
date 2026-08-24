@@ -13,6 +13,7 @@ import {
 import { createClient } from "@/utils/supabase/server";
 import { MEMBER_ANNUAL_PRICE_INR } from "@/lib/membership";
 import { buildFaqJsonLd, toJsonLdScriptProps } from "@/lib/seo";
+import { getSiteUrl } from "@/lib/site-url";
 
 export const metadata: Metadata = {
   title: "L&D Membership: AI Tools & 180+ Premium Resources | ₹499/Year",
@@ -116,6 +117,7 @@ export default async function PublicMembershipPage() {
   const primaryHref = user ? "/dashboard/membership" : "/register";
   const secondaryHref = "/dashboard/resources";
   const freeResourcesHref = "/dashboard/resources";
+  const siteUrl = getSiteUrl();
   const membershipJsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -132,7 +134,7 @@ export default async function PublicMembershipPage() {
       priceCurrency: "INR",
       priceValidUntil: "2027-12-31",
       availability: "https://schema.org/InStock",
-      url: "https://lxdmarketplace.lxdguild.com/membership",
+      url: `${siteUrl}/membership`,
     },
     category: "Professional Membership",
   };
@@ -154,6 +156,8 @@ export default async function PublicMembershipPage() {
                   Premium L&amp;D Membership: AI Tools, Resources &amp; Networking
                 </h1>
                 <p className="marketing-copy max-w-2xl text-base leading-8">
+                                    Join the LXD Marketplace membership for an L&amp;D professional network, Learning Experience Design
+                                    community, Instructional Design community, LXD resources, and practical L&amp;D resources.
                   Access L&amp;D membership benefits built for instructional designers, eLearning developers, and
                   learning professionals who want premium resources, AI career tools, networking, and stronger market visibility.
                 </p>

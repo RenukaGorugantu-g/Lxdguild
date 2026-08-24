@@ -28,6 +28,20 @@ const publicCategories = [
   "Curriculum Developer",
 ] as const;
 
+const seoJobLinks = [
+  ["Instructional Design jobs", "Instructional Designer"],
+  ["Instructional Designer jobs", "Instructional Designer"],
+  ["Learning Experience Design jobs", "Learning Experience Designer"],
+  ["LXD jobs", "Learning Experience Designer"],
+  ["eLearning jobs", "eLearning Developer"],
+  ["Learning Designer jobs", "Learning Designer"],
+  ["LMS jobs", "LMS"],
+  ["Learning Technology jobs", "Learning Technology"],
+  ["remote L&D jobs", "Remote"],
+  ["remote Instructional Design jobs", "Remote"],
+  ["remote eLearning jobs", "Remote"],
+] as const;
+
 export async function generateMetadata({
   searchParams,
 }: {
@@ -45,6 +59,28 @@ export async function generateMetadata({
   return {
     title,
     description,
+    keywords: category
+      ? [
+          `${category} jobs`,
+          `${category} jobs India`,
+          `remote ${category} jobs`,
+          "L&D jobs",
+          "Learning and Development jobs",
+        ]
+      : [
+          "Instructional Design jobs",
+          "Instructional Designer jobs",
+          "Learning Experience Design jobs",
+          "LXD jobs",
+          "eLearning jobs",
+          "eLearning Developer jobs",
+          "L&D jobs",
+          "Learning Designer jobs",
+          "remote Instructional Design jobs",
+          "remote eLearning jobs",
+          "remote L&D jobs",
+          "Learning Technology jobs",
+        ],
     alternates: {
       canonical: "/jobs",
     },
@@ -152,6 +188,20 @@ export default async function PublicJobsPage({
                     </Link>
                   ))}
                 </div>
+                <nav aria-label="L&D job categories" className="mt-5 border-t border-[#dbe6d6] pt-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#6d7d68]">Explore L&amp;D job searches</p>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm font-semibold">
+                    {seoJobLinks.map(([label, category]) => (
+                      <Link
+                        key={label}
+                        href={`/jobs?category=${encodeURIComponent(category)}`}
+                        className="text-[#138d1a] hover:text-[#0b7f14]"
+                      >
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
+                </nav>
               </div>
             </div>
 
@@ -162,7 +212,7 @@ export default async function PublicJobsPage({
                   Featured L&amp;D Roles
                 </div>
                 <p className="mt-2 text-sm text-[#5b6757]">
-                  Priority openings curated for the marketplace and visible to candidates searching for high-intent L&amp;D roles.
+                  Priority openings curated for the marketplace and visible to candidates searching for high-intent L&amp;D, instructional design, and eLearning roles.
                 </p>
                 <div className="mt-4 grid gap-3">
                   {featuredJobs.slice(0, 6).map((job) => (

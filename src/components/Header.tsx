@@ -89,6 +89,7 @@ export default function Header() {
   const offerMenuCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pathname = usePathname();
   const [supabase] = useState(() => createClient());
+  const hasSupabaseClient = Boolean(supabase);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 12);
@@ -97,6 +98,12 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
+    if (!hasSupabaseClient || !supabase) {
+      setUser(null);
+      setProfile(null);
+      return;
+    }
+
     const fetchUser = async () => {
       const {
         data: { user },
@@ -178,7 +185,7 @@ export default function Header() {
     return () => {
       subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [hasSupabaseClient, supabase]);
 
   useEffect(() => {
     const fetchNotifications = async () => {

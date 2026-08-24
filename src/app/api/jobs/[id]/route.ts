@@ -4,6 +4,7 @@ import { createAdminClient } from "@/utils/supabase/admin";
 import { buildInternalApplyValue, isInternalApplyValue } from "@/lib/job-apply";
 import { notifyAdmins, notifyUser } from "@/lib/notifications";
 import { isAdminRole, isEmployerRole } from "@/lib/profile-role";
+import { shouldSendMapleEmployerEmail } from "@/lib/maple";
 
 type JobRow = {
   id: string;
@@ -237,11 +238,13 @@ export async function PUT(
       return NextResponse.json({ error: "Forbidden." }, { status: 403 });
     }
 
-    const featuredRank = isAdminRole(profile.role)
+    const isMapleEmployerPost = shouldSendMapleEmployerEmail(normalizedCompany);
+    const shouldFeatureJob = isAdminRole(profile.role)
       ? featured === true
-        ? job.featured_rank ?? await getNextFeaturedRank(supabase)
-        : null
-      : job.featured_rank ?? null;
+      : isMapleEmployerPost;
+    const featuredRank = shouldFeatureJob
+      ? job.featured_rank ?? await getNextFeaturedRank(supabase)
+      : null;
     const featuredPayload =
       isAdminRole(profile.role) || job.featured_rank != null ? { featured_rank: featuredRank } : {};
 

@@ -6,10 +6,12 @@ import {
   getJobPostedDate,
   getPublicJobs,
   getWorkModeLabel,
+  buildPublicJobHref,
   type PublicJobRecord,
 } from "@/lib/public-jobs";
 import { createClient } from "@/utils/supabase/server";
 import { toJsonLdScriptProps } from "@/lib/seo";
+import { getSiteUrl } from "@/lib/site-url";
 import {
   ArrowRight,
   BriefcaseBusiness,
@@ -22,16 +24,27 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "L&D Jobs in India",
+  title: "LXD Marketplace | L&D Jobs and Talent in India",
   description:
-    "AI-powered L&D marketplace for instructional designers, eLearning developers, and employers hiring across India.",
+    "LXD Marketplace for instructional designers, learning experience designers, eLearning developers, and employers hiring L&D talent across India.",
   keywords: [
+    "LXD Marketplace",
+    "Learning Experience Design Marketplace",
+    "Learning Experience Designer",
+    "Learning Experience Design",
+    "LXD professionals",
     "L&D job marketplace India",
     "Learning and development jobs India",
+    "L&D professionals India",
     "Instructional designer jobs marketplace",
+    "Instructional Design Marketplace",
+    "Hire Instructional Designer",
+    "Hire Learning Experience Designer",
+    "Hire eLearning Developer",
     "eLearning developer platform",
+    "eLearning Marketplace",
     "Verified L&D professionals",
-    "Learning experience designer careers",
+    "Learning Designer jobs",
     "L&D talent marketplace",
     "Skill-validated instructional designers",
     "AI-powered L&D job board",
@@ -46,15 +59,15 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
-    title: "L&D Jobs in India",
+    title: "LXD Marketplace | L&D Jobs and Talent in India",
     description:
-      "AI-powered L&D marketplace for instructional designers, eLearning developers, and employers hiring across India.",
+      "Find instructional designers, learning experience designers, eLearning developers, and L&D jobs across India.",
     url: "/",
   },
   twitter: {
-    title: "L&D Jobs in India",
+    title: "LXD Marketplace | L&D Jobs and Talent in India",
     description:
-      "AI-powered L&D marketplace for instructional designers, eLearning developers, and employers hiring across India.",
+      "Find instructional designers, learning experience designers, eLearning developers, and L&D jobs across India.",
   },
 };
 
@@ -292,21 +305,23 @@ export default async function LandingPage() {
   const secondaryHref = user ? "/dashboard/employer" : "/employer";
   const jobsCtaHref = user ? "/dashboard/jobs" : "/jobs";
   const liveJobs = selectHomepageHeroJobs(await getPublicJobs());
+  const siteUrl = getSiteUrl();
   const homeJsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: "LXD Guild Marketplace",
     alternateName: "LXD Marketplace",
-    url: "https://lxdmarketplace.lxdguild.com/",
+    url: `${siteUrl}/`,
+      url: "https://lxdmarketplace.lxdguild.com/",
     description:
       "India's verified marketplace for Learning & Development professionals. Skill-validated instructional designers, eLearning developers, and L&D talent.",
     publisher: {
       "@type": "Organization",
       name: "LXD Guild",
-      url: "https://lxdmarketplace.lxdguild.com",
+      url: siteUrl,
       logo: {
         "@type": "ImageObject",
-        url: "https://lxdmarketplace.lxdguild.com/icon.png",
+        url: `${siteUrl}/icon.png`,
       },
       sameAs: [
         "https://in.linkedin.com/company/lxd-guild",
@@ -318,7 +333,7 @@ export default async function LandingPage() {
     },
     potentialAction: {
       "@type": "SearchAction",
-      target: "https://lxdmarketplace.lxdguild.com/jobs?q={search_term_string}",
+      target: `${siteUrl}/jobs?q={search_term_string}`,
       "query-input": "required name=search_term_string",
     },
   };
@@ -337,7 +352,7 @@ export default async function LandingPage() {
                 </div>
                 <div className="space-y-5">
                   <h1 className="marketing-title max-w-3xl text-[3.2rem] leading-[0.95] sm:text-[4.25rem]">
-                    Find your next L&amp;D job - or your next hire.
+                    LXD Marketplace for your next L&amp;D job or hire.
                   </h1>
                   <p className="max-w-2xl text-base leading-8 text-[#5b6757] sm:text-lg">
                     India&apos;s only verified marketplace for instructional designers, eLearning developers, and learning professionals.
@@ -414,7 +429,7 @@ export default async function LandingPage() {
                 </p>
                 <div className="grid gap-4 lg:grid-cols-3">
                   {liveJobs.map((job) => {
-                    const href = user ? `/dashboard/jobs/${job.id}` : "/register";
+                    const href = buildPublicJobHref(job);
                     const postedDate = new Date(getJobPostedDate(job)).toLocaleDateString();
 
                     return (

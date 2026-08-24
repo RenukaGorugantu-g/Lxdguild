@@ -4,6 +4,7 @@ import { buildInternalApplyValue } from "@/lib/job-apply";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { isAdminRole, isEmployerRole } from "@/lib/profile-role";
 import { getSiteUrl } from "@/lib/site-url";
+import { shouldSendMapleEmployerEmail } from "@/lib/maple";
 
 function hasMissingColumn(message: string, column: string) {
   return (
@@ -45,16 +46,32 @@ function normalizeEmploymentType(value: unknown) {
 function notifyJobPosted(userId: string, title: string, company?: string | null, jobId?: string | null) {
   const companyLabel = company?.trim() || "Confidential employer";
   const jobUrl = jobId ? `${getSiteUrl()}/dashboard/jobs/${jobId}` : `${getSiteUrl()}/dashboard/employer`;
+  const isMaple = shouldSendMapleEmployerEmail(company);
+  const emailType = isMaple ? "job_posted_maple" : "job_posted";
+  const emailTitle = isMaple ? "Maple job posted successfully" : "Job posted successfully";
+  const emailMessage = isMaple
+    ? `Your Maple job posting for ${title} is live. We will notify you automatically when a candidate applies and share the assessment link details with the applicant flow.`
+    : `Your job posting for ${title} at ${companyLabel} is live. Candidates will be notified when they apply.`;
+
   queueMicrotask(() => {
     void import("@/lib/notifications")
       .then(({ notifyUser, notifyAdmins }) =>
         Promise.allSettled([
           notifyUser(
             userId,
-            "job_posted",
-            "Job posted successfully",
-            `Your job posting for ${title} at ${companyLabel} is live. Candidates will be notified when they apply.`,
-            { job_id: jobId, title, company: companyLabel, job_url: jobUrl, employer_job_url: jobUrl }
+            emailType,
+            emailTitle,
+            emailMessage,
+            {
+              job_id: jobId,
+              title,
+              company: companyLabel,
+              job_url: jobUrl,
+              employer_job_url: jobUrl,
+              assessment_url: `${getSiteUrl()}/dashboard/candidate/exam`,
+              company_name: companyLabel,
+              maple_enabled: String(isMaple),
+            }
           ),
           notifyAdmins(
             "job_posted_admin",
@@ -154,8 +171,11 @@ export async function POST(req: Request) {
       }
     }
 
-    const featuredRank =
-      isAdminRole(profile.role) && featured === true ? await getNextFeaturedRank(supabase) : null;
+    const isMapleEmployerPost = shouldSendMapleEmployerEmail(normalizedCompany);
+    const shouldFeatureJob = isAdminRole(profile.role)
+      ? featured === true
+      : isMapleEmployerPost;
+    const featuredRank = shouldFeatureJob ? await getNextFeaturedRank(supabase) : null;
 
     const fullPayload = {
       title,

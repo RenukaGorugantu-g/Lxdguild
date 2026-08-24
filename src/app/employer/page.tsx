@@ -13,6 +13,7 @@ import {
 import { createClient } from "@/utils/supabase/server";
 import { getBaseRole } from "@/lib/profile-role";
 import { buildFaqJsonLd, toJsonLdScriptProps } from "@/lib/seo";
+import { getSiteUrl } from "@/lib/site-url";
 
 export const metadata: Metadata = {
   title: "Hire Verified Instructional Designers & L&D Talent | India",
@@ -130,6 +131,7 @@ export default async function EmployerLandingPage() {
   const isSignedInEmployer = baseRole === "employer";
   const primaryHref = isSignedInEmployer ? "/dashboard/employer" : "/register?role=employer";
   const secondaryHref = isSignedInEmployer ? "/dashboard/employer/post-job" : "/dashboard/employer/upgrade";
+  const siteUrl = getSiteUrl();
   const employerJsonLd = {
     "@context": "https://schema.org",
     "@type": "Service",
@@ -154,6 +156,7 @@ export default async function EmployerLandingPage() {
       "@type": "Offer",
       availability: "https://schema.org/InStock",
       url: "https://lxdmarketplace.lxdguild.com/employer",
+      url: `${siteUrl}/employer`,
     },
   };
   const employerFaqJsonLd = buildFaqJsonLd(employerFaqs);
@@ -176,10 +179,16 @@ export default async function EmployerLandingPage() {
                     : "Hire verified instructional designers and L&D professionals in India."}
                 </h1>
                 <p className="marketing-copy max-w-2xl text-base leading-8">
+                                    Hire an Instructional Designer, Learning Experience Designer, eLearning Developer, or Learning
+                                    Designer, and find L&amp;D talent with clearer proof across an Instructional Design talent and eLearning talent marketplace.
                   Recruit L&amp;D professionals, find eLearning developers, and hire learning experience designers
                   through an AI-powered recruitment platform built specifically for modern learning teams.
                 </p>
                 <div className="flex flex-col gap-4 sm:flex-row">
+                                  <div className="flex flex-wrap gap-3 text-sm font-semibold">
+                                    <Link href="/jobs" className="text-[#138d1a] hover:text-[#0b7f14]">Review L&amp;D jobs</Link>
+                                    <Link href="/candidate" className="text-[#138d1a] hover:text-[#0b7f14]">See the professional profile journey</Link>
+                                  </div>
                   <Link href={primaryHref} className="marketing-primary rounded-full px-6">
                     {isSignedInEmployer ? "Open employer hub" : "Hire talent"}
                     <ArrowRight className="h-4 w-4" />
