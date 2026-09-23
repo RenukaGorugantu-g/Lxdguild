@@ -1,18 +1,9 @@
 import { createBrowserClient } from '@supabase/ssr'
-
-function hasSupabaseConfig() {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  )
-}
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './constants'
 
 export function createClient() {
-  if (!hasSupabaseConfig()) {
-    return null as unknown as ReturnType<typeof createBrowserClient>
-  }
-
   return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
   )
 }

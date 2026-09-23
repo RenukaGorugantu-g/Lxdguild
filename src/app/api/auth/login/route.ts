@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { NextRequest } from "next/server";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/utils/supabase/constants";
 
 export async function POST(request: NextRequest) {
   const { email, password } = (await request.json()) as {
@@ -15,8 +16,8 @@ export async function POST(request: NextRequest) {
   let response = NextResponse.json({ success: true });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
