@@ -70,8 +70,8 @@ export function stripJobHtml(value: string | null | undefined) {
   return (value || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
-export function slugifyJobSegment(value: string) {
-  return value
+export function slugifyJobSegment(value?: string | null) {
+  return (value || "job")
     .toLowerCase()
     .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, "-")

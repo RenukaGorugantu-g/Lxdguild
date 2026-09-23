@@ -7,17 +7,14 @@ import { deriveRoleKeyword, scoreSimilarJob } from "@/lib/job-preferences";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { loadProfile } from "@/lib/load-profile";
 import { getEmployerPlan, isAdminRole } from "@/lib/profile-role";
-import { buildPublicJobHref, buildPublicJobUrl } from "@/lib/public-jobs";
+import { buildPublicJobHref, buildPublicJobUrl, getPublicJobById } from "@/lib/public-jobs";
 import { decideApplicationStatus, downloadResumeBuffer } from "@/lib/resume-analysis";
 import { getSiteUrl } from "@/lib/site-url";
 import { toJsonLdScriptProps } from "@/lib/seo";
-import { extractKeywords, extractSkills, parseResumeFile, scoreCandidate } from "../../../../../ats-module";
 import { notFound, redirect } from "next/navigation";
 import { MapPin, Building, Calendar, ArrowLeft, CheckCircle, Clock3 } from "lucide-react";
 import Link from "next/link";
 import ApplyButtonWithModal from "./ApplyButtonWithModal";
-import ApplicationReviewActions from "./ApplicationReviewActions";
-import ApplicationInterviewScheduleCard from "./ApplicationInterviewScheduleCard";
 import EmployerPipelineBoard from "./EmployerPipelineBoard";
 import { cache } from "react";
 
@@ -56,40 +53,63 @@ const LIVE_ATS_CACHE_TTL_MS = 10 * 60 * 1000;
 const liveAtsCache = new Map<string, CachedLiveAtsResult>();
 
 const getSeoJobRecord = cache(async (id: string) => {
-  const supabase = await createClient();
-  const adminSupabaseClient = createAdminClient();
-  const jobsReader = adminSupabaseClient ?? supabase;
+  try {
+    const adminSupabaseClient = createAdminClient();
+    const supabase = adminSupabaseClient ? null : await createClient().catch(() => null);
+    const jobsReader = adminSupabaseClient ?? supabase;
 
-  const primaryQuery = await jobsReader
-    .from("jobs")
-    .select("id, title, description, company, location, external_posted_at, imported_at, created_at, expires_at, is_active, deleted_at")
-    .eq("id", id)
-    .single();
+    if (jobsReader) {
+      const primaryQuery = await jobsReader
+        .from("jobs")
+        .select("id, title, description, company, location, external_posted_at, imported_at, created_at, expires_at, is_active, deleted_at")
+        .eq("id", id)
+        .maybeSingle();
 
-  if (!primaryQuery.error) {
-    return primaryQuery.data as Pick<
-      JobDetailRecord,
-      "id" | "title" | "description" | "company" | "location" | "external_posted_at" | "imported_at" | "created_at" | "expires_at" | "is_active" | "deleted_at"
-    > | null;
-  }
+      if (primaryQuery.data) {
+        return primaryQuery.data as Pick<
+          JobDetailRecord,
+          "id" | "title" | "description" | "company" | "location" | "external_posted_at" | "imported_at" | "created_at" | "expires_at" | "is_active" | "deleted_at"
+        >;
+      }
 
-  if (primaryQuery.error.code === "42703") {
-    const fallbackQuery = await jobsReader
-      .from("jobs")
-      .select("id, title, description, company, location, created_at")
-      .eq("id", id)
-      .single();
+      if (primaryQuery.error?.code === "42703") {
+        const fallbackQuery = await jobsReader
+          .from("jobs")
+          .select("id, title, description, company, location, created_at")
+          .eq("id", id)
+          .maybeSingle();
 
-    return fallbackQuery.data
-      ? {
-          ...fallbackQuery.data,
-          external_posted_at: null,
-          imported_at: fallbackQuery.data.created_at,
-          expires_at: null,
-          is_active: true,
-          deleted_at: null,
+        if (fallbackQuery.data) {
+          return {
+            ...fallbackQuery.data,
+            external_posted_at: null,
+            imported_at: fallbackQuery.data.created_at,
+            expires_at: null,
+            is_active: true,
+            deleted_at: null,
+          };
         }
-      : null;
+      }
+    }
+
+    const publicJob = await getPublicJobById(id).catch(() => null);
+    if (publicJob) {
+      return {
+        id: publicJob.id,
+        title: publicJob.title,
+        description: publicJob.description,
+        company: publicJob.company,
+        location: publicJob.location,
+        external_posted_at: publicJob.external_posted_at,
+        imported_at: publicJob.imported_at,
+        created_at: publicJob.created_at,
+        expires_at: publicJob.expires_at,
+        is_active: publicJob.is_active,
+        deleted_at: publicJob.deleted_at,
+      };
+    }
+  } catch (error) {
+    console.error("[getSeoJobRecord] error fetching SEO record:", error);
   }
 
   return null;
@@ -100,64 +120,85 @@ export async function generateMetadata({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
-  const job = await getSeoJobRecord(id);
+  try {
+    const { id } = await params;
+    if (!id) {
+      return {
+        title: "Job Not Found",
+        robots: {
+          index: false,
+          follow: false,
+        },
+      };
+    }
 
-  if (!job) {
+    const job = await getSeoJobRecord(id);
+
+    if (!job) {
+      return {
+        title: "Job Not Found | LXD Guild Marketplace",
+        robots: {
+          index: false,
+          follow: false,
+        },
+      };
+    }
+
+    const siteUrl = getSiteUrl();
+    const title = `${job.title} at ${job.company || "LXD Guild Employer"} | L&D Jobs India`;
+    const descriptionSource = stripHtml(job.description);
+    const description = descriptionSource
+      ? descriptionSource.length > 160
+        ? `${descriptionSource.slice(0, 157).trim()}...`
+        : descriptionSource
+      : `Apply for ${job.title} at ${job.company || "a verified employer"} on LXD Guild Marketplace.`;
+    const publicCanonical = buildPublicJobHref(job);
+
     return {
-      title: "Job Not Found",
+      title,
+      description,
+      alternates: {
+        canonical: publicCanonical,
+      },
+      robots: {
+        index: false,
+        follow: true,
+        googleBot: {
+          index: false,
+          follow: true,
+          "max-image-preview": "large",
+          "max-snippet": -1,
+        },
+      },
+      openGraph: {
+        title,
+        description,
+        url: publicCanonical,
+        type: "article",
+        images: [
+          {
+            url: `${siteUrl}/opengraph-image`,
+            alt: `${job.title} on LXD Guild Marketplace`,
+          },
+        ],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [`${siteUrl}/twitter-image`],
+      },
+    };
+  } catch (error) {
+    console.error("[generateMetadata] failed:", error);
+    return {
+      title: "Job Details | LXD Guild Marketplace",
       robots: {
         index: false,
         follow: false,
       },
     };
   }
-
-  const siteUrl = getSiteUrl();
-  const title = `${job.title} at ${job.company || "LXD Guild Employer"} | L&D Jobs India`;
-  const descriptionSource = stripHtml(job.description);
-  const description = descriptionSource
-    ? descriptionSource.length > 160
-      ? `${descriptionSource.slice(0, 157).trim()}...`
-      : descriptionSource
-    : `Apply for ${job.title} at ${job.company || "a verified employer"} on LXD Guild Marketplace.`;
-  const publicCanonical = buildPublicJobHref(job);
-
-  return {
-    title,
-    description,
-    alternates: {
-      canonical: publicCanonical,
-    },
-    robots: {
-      index: false,
-      follow: true,
-      googleBot: {
-        index: false,
-        follow: true,
-        "max-image-preview": "large",
-        "max-snippet": -1,
-      },
-    },
-    openGraph: {
-      title,
-      description,
-      url: publicCanonical,
-      type: "article",
-      images: [
-        {
-          url: `${siteUrl}/opengraph-image`,
-          alt: `${job.title} on LXD Guild Marketplace`,
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [`${siteUrl}/twitter-image`],
-    },
-  };
 }
 
 function toNumericScore(value: number | string | null | undefined) {
@@ -486,6 +527,10 @@ async function computeLiveAtsResultForApplicant({
   }
 
   try {
+    const { extractSkills, extractKeywords } = await import("../../../../../ats-module/parser/extract-signals");
+    const { parseResumeFile } = await import("../../../../../ats-module/parser/parse-resume-file");
+    const { scoreCandidate } = await import("../../../../../ats-module/scoring/score-candidate");
+
     const jobDescription = stripHtml(job.description);
     const scoringSource = `${job.title} ${jobDescription}`.trim();
     const requiredSkills = extractSkills(scoringSource);
@@ -638,27 +683,37 @@ export default async function JobDetailPage({
   const { id } = await params;
   const { category, view, remote, schedule, page, q } = await searchParams;
   
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const userRes = await supabase.auth.getUser();
+    user = userRes.data?.user || null;
+  } catch (err) {
+    console.error("[job-detail] getUser error", err);
+  }
   const isGuestViewer = !user;
 
   let profile: ViewerProfile | null = null;
 
   if (user) {
-    profile = await loadProfile<ViewerProfile>(
-      supabase,
-      user.id,
-      "id, role, name, headline, email, skills"
-    );
+    try {
+      profile = await loadProfile<ViewerProfile>(
+        supabase,
+        user.id,
+        "id, role, name, headline, email, skills"
+      );
 
-    if (!profile) {
-      const ensuredProfile = await ensureUserProfile(user);
-      if (ensuredProfile) {
-        profile = await loadProfile<ViewerProfile>(
-          supabase,
-          user.id,
-          "id, role, name, headline, email, skills"
-        );
+      if (!profile) {
+        const ensuredProfile = await ensureUserProfile(user);
+        if (ensuredProfile) {
+          profile = await loadProfile<ViewerProfile>(
+            supabase,
+            user.id,
+            "id, role, name, headline, email, skills"
+          );
+        }
       }
+    } catch (err) {
+      console.error("[job-detail] loadProfile error", err);
     }
 
     if (!profile) {
@@ -666,22 +721,26 @@ export default async function JobDetailPage({
     }
   }
 
-  const jobQuery = await jobsReader
-    .from("jobs")
-    .select("id, title, description, company, location, apply_url, user_id, external_posted_at, imported_at, created_at, expires_at, is_active, deletion_request_status, deleted_at, featured_rank")
-    .eq("id", id)
-    .single();
-  let job = jobQuery.data as JobDetailRecord | null;
+  let job: JobDetailRecord | null = null;
 
-  if (jobQuery.error?.code === "42703") {
-    const fallbackJobQuery = await jobsReader
+  try {
+    const jobQuery = await jobsReader
       .from("jobs")
-      .select("id, title, description, company, location, apply_url, user_id, created_at")
+      .select("id, title, description, company, location, apply_url, user_id, external_posted_at, imported_at, created_at, expires_at, is_active, deletion_request_status, deleted_at, featured_rank")
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
-    job = fallbackJobQuery.data
-      ? {
+    if (jobQuery.data) {
+      job = jobQuery.data as JobDetailRecord;
+    } else if (jobQuery.error?.code === "42703" || isMissingColumnError(jobQuery.error?.message)) {
+      const fallbackJobQuery = await jobsReader
+        .from("jobs")
+        .select("id, title, description, company, location, apply_url, user_id, created_at")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (fallbackJobQuery.data) {
+        job = {
           ...fallbackJobQuery.data,
           external_posted_at: null,
           imported_at: fallbackJobQuery.data.created_at,
@@ -689,8 +748,74 @@ export default async function JobDetailPage({
           is_active: true,
           deletion_request_status: "none",
           deleted_at: null,
+        } as JobDetailRecord;
+      }
+    }
+  } catch (err) {
+    console.error("[job-detail] jobsReader query error", err);
+  }
+
+  // Tier 2: If adminSupabaseClient was used and failed, try anon supabase client
+  if (!job && adminSupabaseClient) {
+    try {
+      const anonJobQuery = await supabase
+        .from("jobs")
+        .select("id, title, description, company, location, apply_url, user_id, external_posted_at, imported_at, created_at, expires_at, is_active, deletion_request_status, deleted_at, featured_rank")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (anonJobQuery.data) {
+        job = anonJobQuery.data as JobDetailRecord;
+      } else if (anonJobQuery.error?.code === "42703" || isMissingColumnError(anonJobQuery.error?.message)) {
+        const anonFallback = await supabase
+          .from("jobs")
+          .select("id, title, description, company, location, apply_url, user_id, created_at")
+          .eq("id", id)
+          .maybeSingle();
+
+        if (anonFallback.data) {
+          job = {
+            ...anonFallback.data,
+            external_posted_at: null,
+            imported_at: anonFallback.data.created_at,
+            expires_at: null,
+            is_active: true,
+            deletion_request_status: "none",
+            deleted_at: null,
+          } as JobDetailRecord;
         }
-      : null;
+      }
+    } catch (err) {
+      console.error("[job-detail] anon query fallback error", err);
+    }
+  }
+
+  // Tier 3: If still not found, try getPublicJobById
+  if (!job) {
+    try {
+      const publicJob = await getPublicJobById(id);
+      if (publicJob) {
+        job = {
+          id: publicJob.id,
+          title: publicJob.title,
+          description: publicJob.description,
+          company: publicJob.company,
+          location: publicJob.location,
+          apply_url: null,
+          user_id: publicJob.user_id || null,
+          external_posted_at: publicJob.external_posted_at,
+          imported_at: publicJob.imported_at,
+          created_at: publicJob.created_at,
+          expires_at: publicJob.expires_at,
+          is_active: publicJob.is_active,
+          deletion_request_status: "none",
+          deleted_at: publicJob.deleted_at,
+          featured_rank: publicJob.featured_rank,
+        };
+      }
+    } catch (err) {
+      console.error("[job-detail] getPublicJobById fallback error", err);
+    }
   }
 
   if (!job) notFound();
@@ -705,12 +830,16 @@ export default async function JobDetailPage({
   let lockReason = "Sign in to apply and unlock the full job board.";
 
   if (user && profile) {
-    const access = await getJobBoardAccessForUser(supabase, user.id, profile);
-    canApplyToJobs = access.canApplyToJobs;
-    featuredJobsOnly = access.featuredJobsOnly;
-    isFreeAccessCandidate = access.isFreeAccessCandidate;
-    freeApplicationsRemaining = access.freeApplicationsRemaining;
-    lockReason = access.lockReason || lockReason;
+    try {
+      const access = await getJobBoardAccessForUser(supabase, user.id, profile);
+      canApplyToJobs = access.canApplyToJobs;
+      featuredJobsOnly = access.featuredJobsOnly;
+      isFreeAccessCandidate = access.isFreeAccessCandidate;
+      freeApplicationsRemaining = access.freeApplicationsRemaining;
+      lockReason = access.lockReason || lockReason;
+    } catch (err) {
+      console.error("[job-detail] access check error", err);
+    }
   }
 
   if (job.deleted_at && profile?.role !== "admin" && !isJobOwner) {
@@ -733,45 +862,79 @@ export default async function JobDetailPage({
       : lockReason;
   const roleKeyword = deriveRoleKeyword(job.title);
 
-  const resumes = user
-    ? (await supabase
+  let resumes: Array<{ id: string; file_url?: string | null; file_name?: string | null }> = [];
+  if (user) {
+    try {
+      const res = await supabase
         .from("resumes")
         .select("id, file_url, file_name")
-        .eq("user_id", user.id)).data
-    : [];
+        .eq("user_id", user.id);
+      resumes = res.data || [];
+    } catch (err) {
+      console.error("[job-detail] resumes query error", err);
+    }
+  }
 
-  const application = user
-    ? (await supabase
+  let application: { id: string } | null = null;
+  if (user) {
+    try {
+      const appQuery = await supabase
         .from("job_applications")
         .select("id")
         .eq("job_id", id)
         .eq("user_id", user.id)
-        .maybeSingle()).data
-    : null;
+        .maybeSingle();
+      application = appQuery.data || null;
+    } catch (err) {
+      console.error("[job-detail] application query error", err);
+    }
+  }
 
-  const savedCompanyQuery = user && !isJobOwner && job.company
-    ? await supabase
+  let savedCompany: { id: string } | null = null;
+  if (user && !isJobOwner && job.company) {
+    try {
+      const savedCompanyQuery = await supabase
         .from("saved_companies")
         .select("id")
         .eq("user_id", user.id)
         .eq("company_name", job.company)
-        .maybeSingle()
-    : { data: null, error: null };
-  const savedCompany = savedCompanyQuery.error?.code === "42P01" ? null : savedCompanyQuery.data;
+        .maybeSingle();
+      if (!savedCompanyQuery.error && savedCompanyQuery.data) {
+        savedCompany = savedCompanyQuery.data;
+      }
+    } catch (err) {
+      console.error("[job-detail] savedCompany query error", err);
+    }
+  }
 
-  const followedRoleQuery = user && !isJobOwner
-    ? await supabase
+  let followedRole: { id: string } | null = null;
+  if (user && !isJobOwner) {
+    try {
+      const followedRoleQuery = await supabase
         .from("followed_job_roles")
         .select("id")
         .eq("user_id", user.id)
         .eq("keyword", roleKeyword)
-        .maybeSingle()
-    : { data: null, error: null };
-  const followedRole = followedRoleQuery.error?.code === "42P01" ? null : followedRoleQuery.data;
+        .maybeSingle();
+      if (!followedRoleQuery.error && followedRoleQuery.data) {
+        followedRole = followedRoleQuery.data;
+      }
+    } catch (err) {
+      console.error("[job-detail] followedRole query error", err);
+    }
+  }
 
-  const { data: applicants } = canReviewApplicantPipeline
-    ? await getApplicantsForJob(supabase, id)
-    : { data: null };
+  let applicants: ApplicantRow[] | null = null;
+  if (canReviewApplicantPipeline) {
+    try {
+      const appResult = await getApplicantsForJob(supabase, id);
+      applicants = (appResult.data || []) as ApplicantRow[];
+    } catch (err) {
+      console.error("[job-detail] getApplicantsForJob error", err);
+      applicants = [];
+    }
+  }
+
   const liveAtsByApplicationId = new Map<string, LiveAtsResult>();
   const interviewSchedulesByApplicationId = new Map<string, InterviewScheduleSummary>();
 
@@ -785,54 +948,62 @@ export default async function JobDetailPage({
   const profileReader = canReviewApplicantPipeline && adminSupabase ? adminSupabase : supabase;
   let applicantProfiles: ApplicantProfile[] = [];
   if (applicantUserIds.length) {
-    const fullProfileQuery = await profileReader
-      .from("profiles")
-      .select("id, name, headline, email, role, portfolio_url")
-      .in("id", applicantUserIds);
-
-    if (!fullProfileQuery.error) {
-      applicantProfiles = (fullProfileQuery.data || []) as ApplicantProfile[];
-    } else if (fullProfileQuery.error.code === "42703" || isMissingColumnError(fullProfileQuery.error.message)) {
-      const fallbackProfileQuery = await profileReader
+    try {
+      const fullProfileQuery = await profileReader
         .from("profiles")
-        .select("id, name, headline, email, role")
+        .select("id, name, headline, email, role, portfolio_url")
         .in("id", applicantUserIds);
 
-      applicantProfiles = (fallbackProfileQuery.data || []) as ApplicantProfile[];
+      if (!fullProfileQuery.error) {
+        applicantProfiles = (fullProfileQuery.data || []) as ApplicantProfile[];
+      } else if (fullProfileQuery.error.code === "42703" || isMissingColumnError(fullProfileQuery.error.message)) {
+        const fallbackProfileQuery = await profileReader
+          .from("profiles")
+          .select("id, name, headline, email, role")
+          .in("id", applicantUserIds);
+
+        applicantProfiles = (fallbackProfileQuery.data || []) as ApplicantProfile[];
+      }
+    } catch (err) {
+      console.error("[job-detail] applicant profiles query error", err);
     }
   }
 
   const applicantProfilesById = new Map(applicantProfiles.map((p) => [p.id, p]));
   if (canReviewApplicantPipeline && applicantUserIds.length && adminSupabase) {
-    const interviewNotificationsQuery = await adminSupabase
-      .from("notifications")
-      .select("id, user_id, type, data, created_at")
-      .in("user_id", applicantUserIds)
-      .eq("type", "job_interview_scheduled")
-      .order("created_at", { ascending: false })
-      .limit(200);
+    try {
+      const interviewNotificationsQuery = await adminSupabase
+        .from("notifications")
+        .select("id, user_id, type, data, created_at")
+        .in("user_id", applicantUserIds)
+        .eq("type", "job_interview_scheduled")
+        .order("created_at", { ascending: false })
+        .limit(200);
 
-    for (const notification of interviewNotificationsQuery.data || []) {
-      const data = notification.data as Record<string, unknown> | null;
-      const applicationId = typeof data?.application_id === "string" ? data.application_id : null;
+      for (const notification of interviewNotificationsQuery.data || []) {
+        const data = notification.data as Record<string, unknown> | null;
+        const applicationId = typeof data?.application_id === "string" ? data.application_id : null;
 
-      if (!applicationId || interviewSchedulesByApplicationId.has(applicationId)) {
-        continue;
+        if (!applicationId || interviewSchedulesByApplicationId.has(applicationId)) {
+          continue;
+        }
+
+        interviewSchedulesByApplicationId.set(applicationId, {
+          roundLabel: typeof data?.round_label === "string" ? data.round_label : null,
+          startAt: typeof data?.start_at === "string" ? data.start_at : null,
+          durationMinutes:
+            typeof data?.duration_minutes === "number"
+              ? data.duration_minutes
+              : typeof data?.duration_minutes === "string"
+                ? Number(data.duration_minutes)
+                : null,
+          meetingProvider: typeof data?.meeting_provider === "string" ? data.meeting_provider : null,
+          schedulingUrl: typeof data?.scheduling_url === "string" ? data.scheduling_url : null,
+          notes: typeof data?.notes === "string" ? data.notes : null,
+        });
       }
-
-      interviewSchedulesByApplicationId.set(applicationId, {
-        roundLabel: typeof data?.round_label === "string" ? data.round_label : null,
-        startAt: typeof data?.start_at === "string" ? data.start_at : null,
-        durationMinutes:
-          typeof data?.duration_minutes === "number"
-            ? data.duration_minutes
-            : typeof data?.duration_minutes === "string"
-              ? Number(data.duration_minutes)
-              : null,
-        meetingProvider: typeof data?.meeting_provider === "string" ? data.meeting_provider : null,
-        schedulingUrl: typeof data?.scheduling_url === "string" ? data.scheduling_url : null,
-        notes: typeof data?.notes === "string" ? data.notes : null,
-      });
+    } catch (err) {
+      console.error("[job-detail] interview notifications query error", err);
     }
   }
 
@@ -862,31 +1033,22 @@ export default async function JobDetailPage({
     canReviewApplicantPipeline && !isPaidEmployer && applicants?.length
       ? Math.max((applicants.length || 0) - visibleApplicantRows.length, 0)
       : 0;
-  const recommendationQuery = supabase
-    .from("jobs")
-    .select("id, title, company, location, expires_at, created_at, is_active")
-    .eq("is_active", true)
-    .gt("expires_at", new Date().toISOString())
-    .neq("id", id)
-    .order("external_posted_at", { ascending: false, nullsFirst: false })
-    .order("imported_at", { ascending: false })
-    .limit(40);
-  const recommendationResult = await recommendationQuery;
-  let recommendationPool: SuggestedJob[] | null = recommendationResult.data as SuggestedJob[] | null;
-  const recommendationError = recommendationResult.error;
 
-  if (recommendationError?.code === "42703") {
-    const fallbackRecommendations = await supabase
+  let recommendationPool: SuggestedJob[] = [];
+  try {
+    const recommendationResult = await supabase
       .from("jobs")
-      .select("id, title, company, location, created_at")
+      .select("id, title, company, location, expires_at, created_at, is_active")
+      .eq("is_active", true)
       .neq("id", id)
       .order("created_at", { ascending: false })
       .limit(40);
 
-    recommendationPool = (fallbackRecommendations.data || []).map((item) => ({
-      ...item,
-      expires_at: null,
-    })) as SuggestedJob[];
+    if (recommendationResult.data) {
+      recommendationPool = recommendationResult.data as SuggestedJob[];
+    }
+  } catch (err) {
+    console.error("[job-detail] recommendation query error", err);
   }
 
   const similarJobs = (recommendationPool || [])
