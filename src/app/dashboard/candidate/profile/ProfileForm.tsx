@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { User, Briefcase, MapPin, AlignLeft, Award, FileText, Upload, Save, Loader2, Link as LinkIcon, Trash2, Sparkles, Wand2, Compass, Mail, CheckCircle2, X, AlertTriangle, CheckCircle } from "lucide-react";
 import SkillAutocomplete from "@/components/SkillAutocomplete";
+import ResumeJobMatchAnalyzer from "./ResumeJobMatchAnalyzer";
 import { useRouter } from "next/navigation";
 
 type ProfileRecord = {
@@ -1022,6 +1023,10 @@ export default function ProfileForm({
                       </button>
                     ))}
                   </div>
+                  <ResumeJobMatchAnalyzer
+                    resumeId={resume.id}
+                    resumeName={resume.file_name || "this resume"}
+                  />
                 </div>
               ))}
 

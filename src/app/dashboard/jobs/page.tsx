@@ -8,6 +8,9 @@ import { buildVisibleJobDedupKey } from "@/lib/job-dedupe";
 import { isAdminRole } from "@/lib/profile-role";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { formatCount, getMarketplaceSeoCounts, toJsonLdScriptProps } from "@/lib/seo";
+import { buildPublicJobHref } from "@/lib/public-jobs";
+import { formatDate } from "@/lib/date-format";
+import { getSiteUrl } from "@/lib/site-url";
 import { redirect } from "next/navigation";
 import {
   BriefcaseBusiness,
@@ -179,17 +182,6 @@ function extractOverviewPreview(value: string | null | undefined) {
   return summaryText.length > 165 ? `${summaryText.slice(0, 162).trim()}...` : summaryText;
 }
 
-function dedupeFeaturedJobs(jobs: JobListItem[]) {
-  const seen = new Set<string>();
-
-  return jobs.filter((job) => {
-    const key = `${job.title}|${job.company}|${job.location}`.trim().toLowerCase();
-    if (!key || seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
 function dedupeJobListings(jobs: JobListItem[]) {
   const seen = new Set<string>();
 
@@ -227,6 +219,10 @@ function normalizeJobText(...values: Array<string | null | undefined>) {
   return values.filter(Boolean).join(" ").toLowerCase();
 }
 
+function isJobCurrent(job: JobListItem) {
+  return !job.expires_at || Date.parse(job.expires_at) > Date.now();
+}
+
 function matchesRemoteFilter(job: JobListItem, remote?: string) {
   if (remote !== "remote") return true;
   if (job.work_mode) return job.work_mode === "remote";
@@ -262,6 +258,7 @@ function applyJobFilters(query: FilterableJobQuery, filters: JobSearchFilters) {
     );
   }
   if (filters.view === "freelance" || filters.view === "standard") nextQuery = nextQuery.eq("job_kind", filters.view);
+  if (filters.view === "featured") nextQuery = nextQuery.not("featured_rank", "is", null);
   if (filters.remote === "remote") nextQuery = nextQuery.eq("work_mode", "remote");
   if (filters.schedule === "full-time") nextQuery = nextQuery.eq("employment_type", "full_time");
   if (filters.schedule === "part-time") nextQuery = nextQuery.eq("employment_type", "part_time");
@@ -305,14 +302,18 @@ async function fetchJobsPage(
   const primaryResult = await primaryQuery;
 
   if (primaryResult.error?.code !== "42703") {
+    const currentJobs = (primaryResult.data || []).filter((job: JobListItem) => job.is_active !== false && isJobCurrent(job));
     return {
-      data: filterMarketplaceRelevantJobs(
-        (primaryResult.data || []).filter((job: JobListItem) => job.is_active !== false),
-        { adminUserIds }
-      ),
+      data: filters.view === "featured"
+        ? currentJobs
+        : filterMarketplaceRelevantJobs(currentJobs, { adminUserIds }),
       count: primaryResult.count || 0,
       error: primaryResult.error,
     };
+  }
+
+  if (filters.view === "featured") {
+    return { data: [] as JobListItem[], count: 0, error: null };
   }
 
   const fallbackQuery = applyJobFilters(
@@ -327,7 +328,7 @@ async function fetchJobsPage(
 
   return {
     data: filterMarketplaceRelevantJobs(
-      (fallbackResult.data || []).filter((job: JobListItem) => job.is_active !== false),
+      (fallbackResult.data || []).filter((job: JobListItem) => job.is_active !== false && isJobCurrent(job)),
       { adminUserIds }
     ),
     count: fallbackResult.count || 0,
@@ -359,7 +360,7 @@ async function fetchFeaturedFreelanceJobs(
 
   if (primaryResult.error?.code !== "42703") {
     return filterMarketplaceRelevantJobs(
-      (primaryResult.data || []).filter((job: JobListItem) => job.is_active !== false),
+      (primaryResult.data || []).filter((job: JobListItem) => job.is_active !== false && isJobCurrent(job)),
       { adminUserIds }
     );
   }
@@ -374,12 +375,12 @@ async function fetchFeaturedFreelanceJobs(
 
   const fallbackResult = await fallbackQuery;
   return filterMarketplaceRelevantJobs(
-    (fallbackResult.data || []).filter((job: JobListItem) => job.is_active !== false),
+    (fallbackResult.data || []).filter((job: JobListItem) => job.is_active !== false && isJobCurrent(job)),
     { adminUserIds }
   );
 }
 
-async function fetchFeaturedJobs(jobsReader: any, adminUserIds: ReadonlySet<string>): Promise<JobListItem[]> {
+async function fetchFeaturedJobs(jobsReader: any): Promise<JobListItem[]> {
   const primaryQuery = await jobsReader
     .from("jobs")
     .select(JOB_SELECT)
@@ -387,16 +388,10 @@ async function fetchFeaturedJobs(jobsReader: any, adminUserIds: ReadonlySet<stri
     .not("featured_rank", "is", null)
     .order("featured_rank", { ascending: true })
     .order("external_posted_at", { ascending: false, nullsFirst: false })
-    .order("imported_at", { ascending: false })
-    .limit(6);
+    .order("imported_at", { ascending: false });
 
   if (primaryQuery.error?.code !== "42703") {
-    return dedupeFeaturedJobs(
-      filterMarketplaceRelevantJobs(
-        (primaryQuery.data || []).filter((job: JobListItem) => job.is_active !== false),
-        { adminUserIds }
-      )
-    ).slice(0, 6);
+    return (primaryQuery.data || []).filter((job: JobListItem) => job.is_active !== false && isJobCurrent(job));
   }
 
   return [] as JobListItem[];
@@ -465,7 +460,7 @@ export default async function JobsDashboard({
   const requestedPage = Number.isFinite(parsedPage) ? Math.max(1, Math.trunc(parsedPage)) : 1;
   const filters: JobSearchFilters = { category, view, remote, schedule, normalizedQuery };
 
-  const shouldSplitFeaturedJobs = view !== "freelance";
+  const shouldSplitFeaturedJobs = view !== "freelance" && view !== "featured";
   let jobsPageResult = await fetchJobsPage(jobsReader, adminUserIds, filters, requestedPage, pageSize, shouldSplitFeaturedJobs);
 
   if ((jobsPageResult.count === 0 || jobsPageResult.data.length === 0) && !jobsPageResult.error) {
@@ -473,14 +468,19 @@ export default async function JobsDashboard({
     jobsPageResult = await fetchJobsPage(jobsReader, adminUserIds, filters, requestedPage, pageSize, shouldSplitFeaturedJobs);
   }
 
-  let jobsList: JobListItem[] = dedupeJobListings((jobsPageResult.data as JobListItem[])
-    .filter((job: JobListItem) => shouldSurfaceMarketplaceJob(job, { adminUserIds }))
-    .filter((job: JobListItem) => matchesRemoteFilter(job, remote)));
+  const filteredPageJobs = (jobsPageResult.data as JobListItem[])
+    .filter((job: JobListItem) => view === "featured" || shouldSurfaceMarketplaceJob(job, { adminUserIds }))
+    .filter((job: JobListItem) => matchesRemoteFilter(job, remote));
+  let jobsList: JobListItem[] = view === "featured" ? filteredPageJobs : dedupeJobListings(filteredPageJobs);
   jobsList = jobsList.filter((job: JobListItem) => matchesScheduleFilter(job, schedule));
 
   const categories = ["Instructional Designer", "eLearning Developer", "Learning Experience Designer", "L&D Manager", "Curriculum Developer"];
-  const featuredJobs: JobListItem[] = view === "freelance" ? [] : dedupeJobListings(await fetchFeaturedJobs(jobsReader, adminUserIds));
-  const freelanceJobs: JobListItem[] = view === "freelance" ? [] : dedupeJobListings(await fetchFeaturedFreelanceJobs(jobsReader, adminUserIds, filters));
+  const featuredJobs: JobListItem[] = view === "freelance" || view === "featured"
+    ? []
+    : await fetchFeaturedJobs(jobsReader);
+  const freelanceJobs: JobListItem[] = view === "freelance" || view === "featured"
+    ? []
+    : dedupeJobListings(await fetchFeaturedFreelanceJobs(jobsReader, adminUserIds, filters));
   const featuredFreelanceIds = new Set(freelanceJobs.map((job: JobListItem) => job.id));
   const totalJobs = jobsPageResult.count;
   const totalPages = Math.max(1, Math.ceil(totalJobs / pageSize));
@@ -488,13 +488,16 @@ export default async function JobsDashboard({
 
   if (requestedPage !== currentPage && totalJobs > 0) {
     jobsPageResult = await fetchJobsPage(jobsReader, adminUserIds, filters, currentPage, pageSize, shouldSplitFeaturedJobs);
-    jobsList = dedupeJobListings((jobsPageResult.data as JobListItem[])
-      .filter((job: JobListItem) => shouldSurfaceMarketplaceJob(job, { adminUserIds }))
-      .filter((job: JobListItem) => matchesRemoteFilter(job, remote)));
+    const refreshedPageJobs = (jobsPageResult.data as JobListItem[])
+      .filter((job: JobListItem) => view === "featured" || shouldSurfaceMarketplaceJob(job, { adminUserIds }))
+      .filter((job: JobListItem) => matchesRemoteFilter(job, remote));
+    jobsList = view === "featured" ? refreshedPageJobs : dedupeJobListings(refreshedPageJobs);
     jobsList = jobsList.filter((job: JobListItem) => matchesScheduleFilter(job, schedule));
   }
 
-  const jobsToRender = view === "freelance" ? jobsList : dedupeJobListings(jobsList.filter((job: JobListItem) => !featuredFreelanceIds.has(job.id)));
+  const jobsToRender = view === "freelance" || view === "featured"
+    ? jobsList
+    : dedupeJobListings(jobsList.filter((job: JobListItem) => !featuredFreelanceIds.has(job.id)));
   const paginatedJobs = jobsToRender;
   const formattedTotalJobs = formatCount(totalJobs);
   const topCompanies = Array.from(
@@ -504,16 +507,19 @@ export default async function JobsDashboard({
         .filter((company): company is string => Boolean(company))
     )
   ).slice(0, 6);
-  const schemaLeadJob = featuredJobs[0] || paginatedJobs[0] || freelanceJobs[0] || null;
   const pageTitle =
     view === "freelance"
       ? "Remote & Freelance eLearning Developer Jobs"
+      : view === "featured"
+        ? "Featured L&D Jobs"
       : view === "standard"
         ? "Full-Time L&D Jobs in India"
         : `Browse ${formattedTotalJobs}+ Instructional Designer & L&D Jobs in India`;
   const pageDescription =
     view === "freelance"
       ? "Discover freelance eLearning developer work, contract instructional design roles, and remote L&D projects."
+      : view === "featured"
+        ? "Explore priority L&D, instructional design, and eLearning roles curated by the LXD Guild team."
       : isGuestViewer
         ? "Browse instructional designer jobs in India, remote eLearning developer roles, and curated L&D opportunities before you sign in."
         : "Browse verified instructional design, eLearning development, and L&D jobs across India with full application access.";
@@ -549,30 +555,12 @@ export default async function JobsDashboard({
     mainEntity: {
       "@type": "ItemList",
       numberOfItems: totalJobs,
-      itemListElement: schemaLeadJob
-        ? [
-            {
-              "@type": "JobPosting",
-              title: schemaLeadJob.title,
-              hiringOrganization: {
-                "@type": "Organization",
-                name: schemaLeadJob.company || "LXD Guild employer",
-              },
-              jobLocation: {
-                "@type": "Place",
-                address: {
-                  "@type": "PostalAddress",
-                  addressLocality: schemaLeadJob.location || "India",
-                  addressCountry: "IN",
-                },
-              },
-              datePosted: schemaLeadJob.external_posted_at || schemaLeadJob.imported_at || schemaLeadJob.created_at || undefined,
-              validThrough: schemaLeadJob.expires_at || undefined,
-              employmentType: schemaLeadJob.employment_type?.toUpperCase() || "FULL_TIME",
-              description: stripHtmlPreview(schemaLeadJob.description),
-            },
-          ]
-        : [],
+      itemListElement: paginatedJobs.slice(0, 10).map((job: JobListItem, index: number) => ({
+        "@type": "ListItem",
+        position: (currentPage - 1) * pageSize + index + 1,
+        url: `${getSiteUrl()}${buildPublicJobHref(job)}`,
+        name: job.title,
+      })),
     },
   };
 
@@ -704,7 +692,7 @@ export default async function JobsDashboard({
             </div>
 
             <div className="flex-1 space-y-4">
-              {view !== "freelance" && featuredJobs.length > 0 && (
+              {view !== "freelance" && view !== "featured" && featuredJobs.length > 0 && (
                 <div className="marketing-grid-card border-[#d7ead2] bg-[linear-gradient(180deg,#fbfff8_0%,#f3fbef_100%)] p-5">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -718,7 +706,7 @@ export default async function JobsDashboard({
                     </div>
                   </div>
                   <div className="mt-4 grid gap-3">
-                    {(isGuestViewer ? featuredJobs.slice(0, 2) : featuredJobs).map((job: JobListItem) => (
+                    {featuredJobs.map((job: JobListItem) => (
                       <JobCard
                         key={job.id}
                         job={job}
@@ -732,7 +720,7 @@ export default async function JobsDashboard({
                 </div>
               )}
 
-              {view !== "freelance" && freelanceJobs.length > 0 && (
+              {view !== "freelance" && view !== "featured" && freelanceJobs.length > 0 && (
                 <div className="marketing-grid-card p-5">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -887,8 +875,8 @@ function JobCard({
   detailHref: string;
   featured?: boolean;
 }) {
-  const expiryDate = job.expires_at ? new Date(job.expires_at).toLocaleDateString() : null;
-  const freshnessDate = new Date(job.external_posted_at || job.imported_at || job.created_at || new Date().toISOString()).toLocaleDateString();
+  const expiryDate = job.expires_at ? formatDate(job.expires_at) : null;
+  const freshnessDate = formatDate(job.external_posted_at || job.imported_at || job.created_at || new Date().toISOString());
   const descriptionPreview = featured ? extractOverviewPreview(job.description) : stripHtmlPreview(job.description);
   const formattedDescription = formatJobCardHtml(job.description);
 

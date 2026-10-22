@@ -13,6 +13,7 @@ import {
 } from "@/lib/public-jobs";
 import { formatCount, getMarketplaceVisibilityCounts, toJsonLdScriptProps } from "@/lib/seo";
 import { getSiteUrl } from "@/lib/site-url";
+import { formatDate } from "@/lib/date-format";
 
 type JobsSearchParams = {
   category?: string;
@@ -29,17 +30,12 @@ const publicCategories = [
 ] as const;
 
 const seoJobLinks = [
-  ["Instructional Design jobs", "Instructional Designer"],
-  ["Instructional Designer jobs", "Instructional Designer"],
-  ["Learning Experience Design jobs", "Learning Experience Designer"],
-  ["LXD jobs", "Learning Experience Designer"],
-  ["eLearning jobs", "eLearning Developer"],
-  ["Learning Designer jobs", "Learning Designer"],
-  ["LMS jobs", "LMS"],
-  ["Learning Technology jobs", "Learning Technology"],
-  ["remote L&D jobs", "Remote"],
-  ["remote Instructional Design jobs", "Remote"],
-  ["remote eLearning jobs", "Remote"],
+  ["Instructional Design jobs", "/jobs/instructional-designer"],
+  ["Learning Experience Design jobs", "/jobs/learning-experience-designer"],
+  ["eLearning jobs", "/jobs/elearning-developer"],
+  ["Learning Designer jobs", "/jobs/learning-designer"],
+  ["LMS jobs", "/jobs/lms-administrator"],
+  ["remote L&D jobs", "/jobs/remote-ld"],
 ] as const;
 
 export async function generateMetadata({
@@ -148,81 +144,92 @@ export default async function PublicJobsPage({
       <main className="pt-22 sm:pt-24">
         <script type="application/ld+json" dangerouslySetInnerHTML={toJsonLdScriptProps(jobsJsonLd)} />
         <section className="marketing-section pb-10 pt-3">
-          <div className="marketing-container space-y-8">
-            <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
-              <div>
+          <div className="marketing-container space-y-7">
+            <div className="grid gap-6 rounded-[1.75rem] border border-[#dce8d7] bg-white/80 p-5 shadow-[0_18px_50px_rgba(80,102,65,0.07)] sm:p-7 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+              <header>
                 <div className="marketing-kicker">
                   <Sparkles className="h-3.5 w-3.5" />
                   Public job board
                 </div>
-                <h1 className="marketing-title mt-4 max-w-3xl text-5xl">
-                  L&amp;D jobs in India for instructional designers, eLearning developers, and learning teams.
+                <h1 className="marketing-title mt-3 max-w-2xl text-4xl">
+                  L&amp;D jobs in India
                 </h1>
-                <p className="marketing-copy mt-4 max-w-3xl text-base leading-8">
-                  Explore verified learning and development roles, from instructional design and learning experience design
-                  to eLearning development and corporate training.
+                <p className="marketing-copy mt-3 max-w-xl text-sm leading-6 sm:text-base">
+                  Find current roles in instructional design, eLearning, and learning experience design.
                 </p>
-              </div>
+              </header>
 
-              <div className="marketing-panel p-5">
-                <div className="rounded-[1.35rem] border border-[#dbe6d6] bg-[#f8fbf5] p-4">
-                  <p className="text-sm font-semibold text-[#111827]">
-                    Showing {visibleJobCountLabel} L&amp;D roles - register free to unlock full access
-                  </p>
-                  <p className="mt-2 text-sm leading-7 text-[#5b6757]">
-                    {unlockedJobCountLabel} active roles are currently available across the marketplace, while this page shows the public L&amp;D selection.
-                  </p>
-                </div>
-                <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                  <StatCard label="Featured roles" value={formatCount(featuredJobs.length)} />
-                  <StatCard label="Focus" value="India" />
-                </div>
-                <div className="mt-4 flex flex-wrap gap-3">
-                  {publicCategories.map((item) => (
-                    <Link
-                      key={item}
-                      href={`/jobs?category=${encodeURIComponent(item)}`}
-                      className="rounded-full border border-[#dbe6d6] bg-[#f8fbf5] px-4 py-2 text-sm font-medium text-[#2c3d29] transition hover:border-[#179720] hover:text-[#179720]"
-                    >
-                      {item}
-                    </Link>
-                  ))}
-                </div>
-                <nav aria-label="L&D job categories" className="mt-5 border-t border-[#dbe6d6] pt-4">
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#6d7d68]">Explore L&amp;D job searches</p>
-                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm font-semibold">
-                    {seoJobLinks.map(([label, category]) => (
-                      <Link
-                        key={label}
-                        href={`/jobs?category=${encodeURIComponent(category)}`}
-                        className="text-[#138d1a] hover:text-[#0b7f14]"
-                      >
-                        {label}
-                      </Link>
-                    ))}
-                  </div>
-                </nav>
-              </div>
+              <form action="/jobs" method="get" className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(11rem,0.65fr)_auto]">
+                <label className="sr-only" htmlFor="job-search">Search jobs</label>
+                <input
+                  id="job-search"
+                  name="q"
+                  type="search"
+                  defaultValue={q || ""}
+                  placeholder="Role, skill, or location"
+                  className="min-h-12 min-w-0 rounded-xl border border-[#d5e1d0] bg-white px-4 text-sm text-[#172116] outline-none transition placeholder:text-[#74816f] focus:border-[#179720] focus:ring-2 focus:ring-[#179720]/15"
+                />
+                <label className="sr-only" htmlFor="job-category">Filter by role</label>
+                <select
+                  id="job-category"
+                  name="category"
+                  defaultValue={category || ""}
+                  className="min-h-12 min-w-0 rounded-xl border border-[#d5e1d0] bg-white px-4 text-sm text-[#2c3d29] outline-none focus:border-[#179720] focus:ring-2 focus:ring-[#179720]/15"
+                >
+                  <option value="">All L&amp;D roles</option>
+                  {publicCategories.map((item) => <option key={item} value={item}>{item}</option>)}
+                </select>
+                <button type="submit" className="marketing-primary min-h-12 rounded-xl px-5">
+                  <Search className="h-4 w-4" />
+                  Search
+                </button>
+                <p className="text-xs text-[#6d7d68] sm:col-span-3">
+                  {visibleJobCountLabel} public roles · {unlockedJobCountLabel} active roles across the marketplace
+                </p>
+                {category || normalizedQuery ? (
+                  <Link href="/jobs" className="text-sm font-semibold text-[#138d1a] hover:underline sm:col-span-3">
+                    Clear search filters
+                  </Link>
+                ) : null}
+              </form>
             </div>
 
+            <nav aria-label="Browse job types" className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+              <span className="font-semibold text-[#445340]">Browse roles:</span>
+              {publicCategories.slice(0, 4).map((item) => (
+                <Link
+                  key={item}
+                  href={`/jobs?category=${encodeURIComponent(item)}`}
+                  className="text-[#138d1a] hover:underline"
+                >
+                  {item}
+                </Link>
+              ))}
+            </nav>
+
             {featuredJobs.length > 0 ? (
-              <section className="marketing-grid-card border-[#d7ead2] bg-[linear-gradient(180deg,#fbfff8_0%,#f3fbef_100%)] p-5">
+              <section className="marketing-grid-card mx-auto w-full max-w-5xl min-w-0 border-[#d7ead2] bg-[linear-gradient(180deg,#fbfff8_0%,#f3fbef_100%)] p-5">
                 <div className="flex items-center gap-2 text-sm font-semibold text-[#111827]">
                   <BriefcaseBusiness className="h-4 w-4 text-[#23b61f]" />
                   Featured L&amp;D Roles
                 </div>
                 <p className="mt-2 text-sm text-[#5b6757]">
-                  Priority openings curated for the marketplace and visible to candidates searching for high-intent L&amp;D, instructional design, and eLearning roles.
+                  Selected openings from L&amp;D employers.
                 </p>
                 <div className="mt-4 grid gap-3">
-                  {featuredJobs.slice(0, 6).map((job) => (
+                  {featuredJobs.slice(0, 5).map((job) => (
                     <PublicJobCard key={job.id} job={job} featured />
                   ))}
+                </div>
+                <div className="mt-4 text-right">
+                  <Link href="/featuredjobs" className="marketing-secondary">
+                    View more featured jobs
+                  </Link>
                 </div>
               </section>
             ) : null}
 
-            <section className="space-y-4">
+            <section className="mx-auto w-full max-w-5xl min-w-0 space-y-4">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="text-3xl font-semibold text-[#111827]">
                   {category ? `${category} jobs` : "Latest L&D job openings"}
@@ -234,7 +241,7 @@ export default async function PublicJobsPage({
                 )}
               </div>
 
-              <div className="grid gap-4">
+              <div className="grid min-w-0 gap-4">
                 {jobsToRender.map((job) => (
                   <PublicJobCard key={job.id} job={job} />
                 ))}
@@ -250,6 +257,17 @@ export default async function PublicJobsPage({
                 )}
               </div>
             </section>
+
+            <nav aria-label="More L&D job searches" className="border-t border-[#dce6d7] pt-5">
+              <p className="text-sm font-semibold text-[#445340]">Explore more job searches</p>
+              <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+                {seoJobLinks.map(([label, href]) => (
+                  <Link key={label} href={href} className="text-[#138d1a] hover:underline">
+                    {label}
+                  </Link>
+                ))}
+              </div>
+            </nav>
           </div>
         </section>
       </main>
@@ -260,7 +278,7 @@ export default async function PublicJobsPage({
 function matchesJob(job: PublicJobRecord, category?: string, query?: string) {
   const normalizedCategory = category?.trim().toLowerCase();
   const normalizedQuery = query?.trim().toLowerCase();
-  const haystack = `${job.title} ${job.company || ""} ${job.location || ""} ${stripJobHtml(job.description)}`.toLowerCase();
+  const haystack = `${job.title} ${job.company || ""} ${job.location || ""} ${job.work_mode || ""} ${job.employment_type || ""} ${stripJobHtml(job.description)}`.toLowerCase();
 
   if (normalizedCategory && !haystack.includes(normalizedCategory)) {
     return false;
@@ -273,27 +291,18 @@ function matchesJob(job: PublicJobRecord, category?: string, query?: string) {
   return true;
 }
 
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="marketing-soft-card p-4">
-      <p className="text-xs uppercase tracking-[0.16em] text-[#6d7d68]">{label}</p>
-      <p className="mt-3 text-4xl font-bold text-[#111827]">{value}</p>
-    </div>
-  );
-}
-
 function PublicJobCard({ job, featured = false }: { job: PublicJobRecord; featured?: boolean }) {
-  const postedDate = new Date(getJobPostedDate(job)).toLocaleDateString();
-  const expiryDate = job.expires_at ? new Date(job.expires_at).toLocaleDateString() : null;
+  const postedDate = formatDate(getJobPostedDate(job));
+  const expiryDate = job.expires_at ? formatDate(job.expires_at) : null;
   const preview = stripJobHtml(job.description);
 
   return (
     <article
-      className={`marketing-grid-card p-6 transition-shadow hover:shadow-[0_18px_36px_rgba(15,23,42,0.08)] ${
+      className={`marketing-grid-card w-full max-w-full min-w-0 overflow-hidden p-5 transition-shadow sm:p-6 hover:shadow-[0_18px_36px_rgba(15,23,42,0.08)] ${
         featured ? "border-[#cfe6c8] bg-[linear-gradient(180deg,#ffffff_0%,#f7fcf4_100%)]" : ""
       }`}
     >
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+      <div className="flex w-full min-w-0 flex-col justify-between gap-4 md:flex-row md:items-start">
         <div className="min-w-0 space-y-3">
           <div className="space-y-3">
             <h2 className="break-words text-xl leading-tight font-bold text-[#111827]">{job.title}</h2>
@@ -333,9 +342,9 @@ function PublicJobCard({ job, featured = false }: { job: PublicJobRecord; featur
           </p>
         </div>
 
-        <div className="flex flex-col items-start gap-2 md:items-end">
-          <Link href={buildPublicJobHref(job)} className="marketing-secondary whitespace-nowrap">
-            View role
+        <div className="flex shrink-0 flex-col items-start gap-2 md:items-end">
+          <Link href={buildPublicJobHref(job)} className="marketing-secondary min-w-28 whitespace-nowrap">
+            View job
           </Link>
         </div>
       </div>

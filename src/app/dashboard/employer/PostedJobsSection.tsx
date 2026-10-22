@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { formatDate } from "@/lib/date-format";
 
 type PostedJob = {
   id: string;
@@ -101,7 +102,7 @@ export default function PostedJobsSection({ initialJobs }: { initialJobs: Posted
                   </div>
                   <p className="text-sm text-[#cde3e1]/72">{[job.company, job.location].filter(Boolean).join(" | ")}</p>
                   <p className="mt-2 text-xs text-[#cde3e1]/48">
-                    Posted on {new Date(job.created_at).toLocaleDateString()} | {job.applicant_count || 0} applicant{job.applicant_count === 1 ? "" : "s"}
+                    Posted on {formatDate(job.created_at)} | {job.applicant_count || 0} applicant{job.applicant_count === 1 ? "" : "s"}
                   </p>
                 </div>
                 <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center">

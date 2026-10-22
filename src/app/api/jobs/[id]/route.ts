@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { buildInternalApplyValue, isInternalApplyValue } from "@/lib/job-apply";
 import { notifyAdmins, notifyUser } from "@/lib/notifications";
 import { isAdminRole, isEmployerRole } from "@/lib/profile-role";
 import { shouldSendMapleEmployerEmail } from "@/lib/maple";
+import { isPublicJobExpired } from "@/lib/public-jobs";
 
 type JobRow = {
   id: string;
@@ -183,6 +185,104 @@ export async function DELETE(
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error.";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+
+export async function PATCH(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await context.params;
+    const body = (await req.json()) as { featured?: unknown };
+    if (typeof body.featured !== "boolean") {
+      return NextResponse.json({ error: "featured must be true or false." }, { status: 400 });
+    }
+
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+    if (!profile || !isAdminRole(profile.role)) {
+      return NextResponse.json({ error: "Only admins can manage featured jobs." }, { status: 403 });
+    }
+
+    const jobsAdmin = createAdminClient() ?? supabase;
+    let { data: job, error: jobError } = await jobsAdmin
+      .from("jobs")
+      .select("id, user_id, source, featured_rank, is_active, deleted_at, expires_at")
+      .eq("id", id)
+      .maybeSingle();
+    if (jobError && hasMissingColumn(jobError.message || "", "expires_at")) {
+      const fallbackJob = await jobsAdmin
+        .from("jobs")
+        .select("id, user_id, source, featured_rank, is_active, deleted_at")
+        .eq("id", id)
+        .maybeSingle();
+      job = fallbackJob.data ? { ...fallbackJob.data, expires_at: null } : null;
+      jobError = fallbackJob.error;
+    }
+    if (jobError) {
+      if (hasMissingColumn(jobError.message || "", "featured_rank")) {
+        return NextResponse.json(
+          { error: "Featured jobs are not configured in the database. Apply the featured-jobs migration first." },
+          { status: 409 }
+        );
+      }
+      return NextResponse.json({ error: jobError.message }, { status: 500 });
+    }
+    if (!job) {
+      return NextResponse.json({ error: "Job not found." }, { status: 404 });
+    }
+    if (job.source !== "employer" || job.user_id !== user.id) {
+      return NextResponse.json(
+        { error: "Only jobs posted from this admin account can be curated as featured jobs." },
+        { status: 403 }
+      );
+    }
+    if (body.featured && (job.is_active === false || job.deleted_at || isPublicJobExpired(job))) {
+      return NextResponse.json({ error: "Only active, non-expired jobs can be featured." }, { status: 400 });
+    }
+
+    let featuredRank: number | null = null;
+    if (body.featured) {
+      const { data: rankedJobs, error: rankError } = await jobsAdmin
+        .from("jobs")
+        .select("featured_rank")
+        .not("featured_rank", "is", null)
+        .order("featured_rank", { ascending: false })
+        .limit(1);
+      if (rankError) {
+        return NextResponse.json({ error: rankError.message }, { status: 500 });
+      }
+      const currentRank = rankedJobs?.[0]?.featured_rank;
+      featuredRank = typeof currentRank === "number" ? currentRank + 1 : 1;
+    }
+
+    const { error: updateError } = await jobsAdmin
+      .from("jobs")
+      .update({ featured_rank: featuredRank })
+      .eq("id", id);
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
+
+    revalidatePath("/jobs");
+    revalidatePath("/featuredjobs");
+    revalidatePath("/");
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/dashboard/jobs");
+    return NextResponse.json({ success: true, featuredRank });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to update featured status.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

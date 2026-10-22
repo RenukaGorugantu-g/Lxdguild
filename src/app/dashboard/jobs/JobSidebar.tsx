@@ -273,6 +273,7 @@ function FilterPanel({
           { label: "All Jobs", value: "all" },
           { label: "Standard", value: "standard" },
           { label: "Freelance", value: "freelance" },
+          { label: "Featured", value: "featured" },
         ]}
         currentValue={currentView}
         onChange={setView}

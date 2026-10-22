@@ -23,7 +23,10 @@ export type ScoreBreakdown = {
   experienceMatch: number;
   keywordMatch: number;
   roleAlignment: number;
+  matchedSkills: string[];
   missingSkills: string[];
+  matchedKeywords: string[];
+  missingKeywords: string[];
   strengths: string[];
 };
 
@@ -38,7 +41,10 @@ export type ScoreCandidateJson = {
   experienceMatch: number;
   keywordMatch: number;
   roleAlignment: number;
+  matchedSkills: string[];
   missingSkills: string[];
+  matchedKeywords: string[];
+  missingKeywords: string[];
   strengths: string[];
 };
 

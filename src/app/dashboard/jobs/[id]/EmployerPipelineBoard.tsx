@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowDown, ExternalLink, FileText, FolderOpen, UserRound } from "lucide-react";
 import ApplicationInterviewScheduleCard from "./ApplicationInterviewScheduleCard";
 import ApplicationReviewActions from "./ApplicationReviewActions";
+import { formatDate } from "@/lib/date-format";
 
 type InterviewScheduleSummary = {
   roundLabel?: string | null;
@@ -326,7 +327,7 @@ export default function EmployerPipelineBoard({
                         />
                       </div>
                       <p className="mt-2 text-[11px] font-semibold text-[#516072]">
-                        Applied {new Date(applicant.appliedAt).toLocaleDateString()}
+                        Applied {formatDate(applicant.appliedAt)}
                       </p>
                     </div>
                   </summary>

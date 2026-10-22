@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Loader2, Trash2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { formatDate } from "@/lib/date-format";
 
 type DeletionRequest = {
   id: string;
@@ -56,7 +57,7 @@ export default function JobDeletionReviewList({ requests }: { requests: Deletion
               <p className="font-semibold text-sm text-zinc-900">{request.title}</p>
               <p className="text-xs text-zinc-500">{request.company || "Unknown company"}</p>
               <p className="mt-1 text-[11px] uppercase tracking-[0.16em] text-amber-700">
-                Requested {new Date(request.requested_at).toLocaleDateString()}
+                Requested {formatDate(request.requested_at)}
               </p>
             </div>
           </div>

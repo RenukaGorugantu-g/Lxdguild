@@ -105,9 +105,12 @@ async function getResumeRecord(
 }
 
 export async function POST(req: Request) {
-  const body = (await req.json()) as { resumeId?: string };
+  const body = (await req.json()) as { resumeId?: string; jobDescription?: string };
   if (!body.resumeId) {
     return NextResponse.json({ error: "Missing resumeId." }, { status: 400 });
+  }
+  if (body.jobDescription && body.jobDescription.length > 30000) {
+    return NextResponse.json({ error: "Job description must be 30,000 characters or fewer." }, { status: 413 });
   }
 
   const supabase = await createClient();
@@ -166,6 +169,7 @@ export async function POST(req: Request) {
       parsedResume,
       profile: profileQuery.data || {},
       recommendedSkills: suggestions.recommendedSkills,
+      jobDescription: body.jobDescription?.trim(),
       academyCourseRecommendations,
     });
     const projectedScore = projectOptimizedReadinessScore(

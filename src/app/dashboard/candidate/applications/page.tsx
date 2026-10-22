@@ -5,6 +5,7 @@ import { ArrowLeft, Briefcase, ExternalLink } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { normalizeExternalApplyUrl } from "@/lib/job-apply";
 import { buildNoIndexMetadata } from "@/lib/seo";
+import { formatDate, formatDateTime } from "@/lib/date-format";
 
 export const metadata: Metadata = buildNoIndexMetadata(
   "My Applications",
@@ -57,7 +58,7 @@ function formatInterviewDate(value?: string | null) {
   if (!value) return null;
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return null;
-  return parsed.toLocaleString();
+  return formatDateTime(parsed);
 }
 
 function getDisplayApplicationStatus(status: string, isExternal: boolean) {
@@ -194,7 +195,7 @@ export default async function CandidateApplicationsPage({
                           {[job?.company, job?.location].filter(Boolean).join(" | ") || "Company details unavailable"}
                         </p>
                         <p className="text-xs text-zinc-400">
-                          Applied on {new Date(application.created_at).toLocaleDateString()}
+                          Applied on {formatDate(application.created_at)}
                         </p>
                         {isJobDeactivated && (
                           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">

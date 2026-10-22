@@ -6,7 +6,9 @@ This document maps the existing public routes to one primary intent. Query-filte
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `/` | LXD Marketplace | Learning Experience Design, Learning Experience Designer, Instructional Designer, Instructional Design, L&D professionals, eLearning professionals, eLearning developers, L&D jobs | Marketplace discovery | Strong content and live jobs; reinforce the marketplace identity and role pathways | LXD Marketplace | LXD Marketplace for your next L&D job or hire | How the L&D marketplace works; Featured L&D roles; For instructional designers and eLearning developers; For employers hiring L&D talent |
 | `/jobs` | L&D jobs | Instructional Design jobs, Instructional Designer jobs, Learning Experience Design jobs, LXD jobs, eLearning jobs, Learning Designer jobs, LMS jobs, Learning Technology jobs, remote L&D jobs | Job search | Real job inventory supports this page; filtered URLs should stay consolidated | L&D Jobs in India \| Instructional Design, LXD & eLearning Roles | L&D jobs in India for instructional designers, eLearning developers, and learning teams | Explore L&D job searches; Featured L&D roles; Latest L&D job openings; How to get discovered |
-| `/jobs/[slug]` | Job-specific query | Job title, company, location, employment type, skills, L&D jobs | Apply or evaluate a role | Strong dynamic metadata and JobPosting schema; add skills only when real job data exists | `{job title} at {company} \| L&D Jobs India` | `{job title}` | Job description; Role snapshot; Why apply with LXD Guild; Related L&D opportunities |
+| `/jobs/{role}` | Role-specific job search | Instructional Designer, eLearning Developer, LXD, Learning Designer, L&D Manager, curriculum, LMS, remote L&D | Job search | Index only when at least three live, matching job listings exist | `{role} Jobs in India` | `{role} Jobs in India` | Current openings; role-specific search guidance; city searches; related roles |
+| `/jobs/{role}/{location}` | City + role job search | Hyderabad, Bengaluru, Pune, Mumbai, Delhi | Local job search | Curated role/city combinations are noindexed and excluded from the sitemap until at least three live matches exist | `{role} Jobs in {city}` | `{role} Jobs in {city}` | Current city openings; location context; related roles |
+| `/jobs/[slug]` | Job-specific query | Job title, company, location, employment type, skills, L&D jobs | Apply or evaluate a role | Canonical active-job pages carry matching JobPosting schema; expired listings remain useful but are noindexed and lose JobPosting schema | `{job title} at {company} \| {location}` | `{job title}` | Job description; Role snapshot; Why apply with LXD Guild; Related L&D opportunities |
 | `/candidate` | Learning Experience Designer | Instructional Designer, eLearning Developer, Learning Designer, L&D professional, LXD professional, L&D careers, Instructional Design careers, LXD careers, eLearning careers, L&D jobs | Career development and profile creation | Strong tools and FAQ content; connect profile creation directly to jobs and membership | Instructional Designer Career Growth \| AI Tools & Job Matching | Accelerate your instructional design career with AI-powered tools | Build your L&D professional profile; Validate instructional design skills; Discover L&D jobs; Learning design career paths |
 | `/employer` | Hire Instructional Designer | Hire Learning Experience Designer, hire eLearning Developer, hire Learning Designer, hire L&D professionals, find L&D talent, L&D talent marketplace, Instructional Design talent, eLearning talent | Commercial hiring | Strong hiring workflow; make role-specific hiring language and job discovery more prominent | Hire Verified Instructional Designers & L&D Talent \| India | Hire verified instructional designers and L&D professionals in India | Find L&D talent; Evaluate Instructional Design talent; Hire eLearning talent; Employer workflow |
 | `/membership` | LXD Marketplace membership | L&D professional membership, Learning Experience Design community, Instructional Design community, L&D resources, LXD resources, professional L&D network | Membership evaluation | Substantial benefits and resources exist; avoid promising indexable resource pages until public content exists | L&D Membership: AI Tools & 180+ Premium Resources \| INR 499/Year | Premium L&D Membership: AI Tools, Resources & Networking | L&D professional network; L&D resources; LXD resources; Community and career tools |
@@ -21,14 +23,18 @@ This document maps the existing public routes to one primary intent. Query-filte
 - Homepage live job cards now link to canonical public job detail pages for anonymous visitors; registration remains part of the application flow.
 - Added visible internal links between jobs, candidate, employer, and membership surfaces.
 - Removed anonymous footer links to dashboard-only destinations that were crawlable but not useful public landing pages.
-- Added visible job search links for L&D, Instructional Design, LXD, eLearning, LMS, Learning Technology, and remote searches. These remain consolidated query states.
+- Added visible job search links for L&D, Instructional Design, LXD, eLearning, LMS, Learning Technology, and remote searches. Curated role and remote links now lead to dedicated pages; filter-only states remain canonicalized and noindexed.
+- Added curated role and city/role landing pages, with a minimum of three active matching jobs before indexation and sitemap inclusion.
+- Limited `JobPosting` JSON-LD to active individual job pages; job search pages use `ItemList` links rather than embedding job postings.
+- Added job-page `BreadcrumbList` data, active-job expiry filtering, expired-job messaging, and related current-job links.
+- Added a root `WebSite` search action that points to the public job search.
 
 ### Verified or intentionally retained
 
-- Public job detail pages use dynamic titles, descriptions, canonical URLs, permanent redirects for stale slugs, `notFound()` for invalid jobs, and `JobPosting` JSON-LD.
+- Public job detail pages use dynamic titles, descriptions, canonical URLs, permanent redirects for stale slugs, `notFound()` for invalid jobs, and active-only `JobPosting` JSON-LD.
 - Filtered `/jobs` query URLs canonicalize to `/jobs` and use `noindex, follow`.
 - `public/robots.txt` allows public pages, blocks APIs and dashboard areas, and declares the production sitemap.
-- `src/app/sitemap.ts` includes the public static pages and real public job detail URLs.
+- `src/app/sitemap.ts` includes the public static pages, real current public job URLs, and only role/location landing pages that meet the live-job threshold.
 - Auth and dashboard routes are noindexed and are not candidate profile landing pages.
 - No public candidate profile route currently exists. Empty or private profiles are therefore not exposed to search engines.
 - Public image alt text is present on the inspected marketing pages. The homepage video wall would benefit from captions or a transcript for accessibility and content understanding.
@@ -38,7 +44,7 @@ This document maps the existing public routes to one primary intent. Query-filte
 - Run Search Console URL inspection after deployment to confirm canonical and sitemap host behavior in production.
 - Measure Core Web Vitals with field data. The homepage video wall and external video assets are the main performance risk; defer, compress, or provide lighter poster assets if LCP or INP is weak.
 - Audit external links and imported job descriptions periodically. Only real, active jobs should remain in the sitemap and JobPosting schema.
-- Add breadcrumbs to jobs, employer, membership, and contact JSON-LD only if the site benefits from that hierarchy; this is optional and not a substitute for useful page content.
+- Add breadcrumbs to employer, membership, and contact JSON-LD only if the site benefits from that hierarchy; this is optional and not a substitute for useful page content.
 
 ## Content gap recommendations
 

@@ -4,11 +4,11 @@ import LandingVideoWall from "@/components/LandingVideoWall";
 import {
   getEmploymentTypeLabel,
   getJobPostedDate,
-  getPublicJobs,
+  getPublicFeaturedJobs,
   getWorkModeLabel,
   buildPublicJobHref,
-  type PublicJobRecord,
 } from "@/lib/public-jobs";
+import { formatDate } from "@/lib/date-format";
 import { createClient } from "@/utils/supabase/server";
 import { toJsonLdScriptProps } from "@/lib/seo";
 import { getSiteUrl } from "@/lib/site-url";
@@ -217,86 +217,6 @@ const marketplaceHighlights = [
   },
 ] as const;
 
-const INDIA_LOCATION_SIGNALS = [
-  "india",
-  "bangalore",
-  "bengaluru",
-  "hyderabad",
-  "mumbai",
-  "navi mumbai",
-  "pune",
-  "delhi",
-  "new delhi",
-  "noida",
-  "gurgaon",
-  "gurugram",
-  "chennai",
-  "kolkata",
-  "ahmedabad",
-  "coimbatore",
-  "kochi",
-  "cochin",
-  "trivandrum",
-  "thiruvananthapuram",
-  "bhubaneswar",
-  "indore",
-  "jaipur",
-  "visakhapatnam",
-  "vizag",
-] as const;
-
-const HOMEPAGE_CURATED_COMPANIES = [
-  "accenture",
-  "maple learning solutions",
-  "maple learning solution",
-] as const;
-
-function normalizeHomepageJobText(...values: Array<string | null | undefined>) {
-  return values.filter(Boolean).join(" ").toLowerCase();
-}
-
-function isIndiaBasedHomepageJob(job: PublicJobRecord) {
-  const haystack = normalizeHomepageJobText(job.location, job.title, job.description, job.company);
-  return INDIA_LOCATION_SIGNALS.some((signal) => haystack.includes(signal));
-}
-
-function getWeeklyRotationSeed() {
-  return Math.floor(Date.now() / (1000 * 60 * 60 * 24 * 7));
-}
-
-function rotateJobsWeekly<T>(jobs: T[], count: number) {
-  if (jobs.length <= count) return jobs.slice(0, count);
-
-  const startIndex = getWeeklyRotationSeed() % jobs.length;
-  const rotated: T[] = [];
-
-  for (let index = 0; index < jobs.length; index += 1) {
-    rotated.push(jobs[(startIndex + index) % jobs.length]);
-  }
-
-  return rotated.slice(0, count);
-}
-
-function selectHomepageHeroJobs(jobs: PublicJobRecord[]) {
-  const indiaJobs = jobs.filter(isIndiaBasedHomepageJob);
-  const sorted = [...indiaJobs].sort((left, right) => {
-    const leftCompany = normalizeHomepageJobText(left.company);
-    const rightCompany = normalizeHomepageJobText(right.company);
-    const leftPriority = HOMEPAGE_CURATED_COMPANIES.findIndex((company) => leftCompany.includes(company));
-    const rightPriority = HOMEPAGE_CURATED_COMPANIES.findIndex((company) => rightCompany.includes(company));
-    const normalizedLeftPriority = leftPriority === -1 ? Number.POSITIVE_INFINITY : leftPriority;
-    const normalizedRightPriority = rightPriority === -1 ? Number.POSITIVE_INFINITY : rightPriority;
-
-    if (normalizedLeftPriority !== normalizedRightPriority) {
-      return normalizedLeftPriority - normalizedRightPriority;
-    }
-
-    return new Date(getJobPostedDate(right)).getTime() - new Date(getJobPostedDate(left)).getTime();
-  });
-
-  return rotateJobsWeekly(sorted, 3);
-}
-
 export default async function LandingPage() {
   const supabase = await createClient();
   const {
@@ -304,7 +224,8 @@ export default async function LandingPage() {
   } = await supabase.auth.getUser();
   const secondaryHref = user ? "/dashboard/employer" : "/employer";
   const jobsCtaHref = user ? "/dashboard/jobs" : "/jobs";
-  const liveJobs = selectHomepageHeroJobs(await getPublicJobs());
+  const allFeaturedJobs = await getPublicFeaturedJobs();
+  const liveJobs = allFeaturedJobs.slice(0, 5);
   const siteUrl = getSiteUrl();
   const homeJsonLd = {
     "@context": "https://schema.org",
@@ -419,17 +340,16 @@ export default async function LandingPage() {
             {liveJobs.length > 0 ? (
               <div className="mt-8 rounded-[2rem] border border-[#dbe6d6] bg-[linear-gradient(180deg,#f6f3ea_0%,#f3f1e7_100%)] p-5 shadow-[0_20px_50px_rgba(87,108,67,0.06)]">
                 <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.22em] text-[#7a7d70]">
-                  Live jobs from verified employers
+                  Curated featured jobs
                 </p>
                 <h2 className="text-3xl font-semibold text-[#111827]">Featured L&amp;D Roles Available Now</h2>
                 <p className="mt-2 max-w-3xl text-sm leading-7 text-[#5b6757]">
-                  Preview instructional designer jobs, eLearning developer openings, and learning experience designer
-                  roles now visible on the marketplace.
+                  Explore current roles selected by the L&amp;D Guild team.
                 </p>
                 <div className="grid gap-4 lg:grid-cols-3">
                   {liveJobs.map((job) => {
                     const href = buildPublicJobHref(job);
-                    const postedDate = new Date(getJobPostedDate(job)).toLocaleDateString();
+                    const postedDate = formatDate(getJobPostedDate(job));
 
                     return (
                       <Link
@@ -473,10 +393,10 @@ export default async function LandingPage() {
                 </div>
                 <div className="mt-5 flex flex-col gap-3 border-t border-[#e3e6db] pt-4 text-center lg:flex-row lg:items-center lg:justify-between lg:text-left">
                   <p className="text-sm text-[#4f5b4b]">
-                    Browse curated India-based L&amp;D roles, then open the full marketplace for more matches.
+                    Showing {liveJobs.length} of {allFeaturedJobs.length} featured role{allFeaturedJobs.length === 1 ? "" : "s"}.
                   </p>
-                  <Link href={jobsCtaHref} className="marketing-secondary rounded-full px-5">
-                    See all 1,000+ roles
+                  <Link href="/featuredjobs" className="marketing-secondary rounded-full px-5">
+                    View more featured jobs
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>

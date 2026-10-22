@@ -11,6 +11,7 @@ import { buildPublicJobHref, buildPublicJobUrl, getPublicJobById } from "@/lib/p
 import { decideApplicationStatus, downloadResumeBuffer } from "@/lib/resume-analysis";
 import { getSiteUrl } from "@/lib/site-url";
 import { toJsonLdScriptProps } from "@/lib/seo";
+import { formatDate } from "@/lib/date-format";
 import { notFound, redirect } from "next/navigation";
 import { MapPin, Building, Calendar, ArrowLeft, CheckCircle, Clock3 } from "lucide-react";
 import Link from "next/link";
@@ -1060,8 +1061,8 @@ export default async function JobDetailPage({
     .slice(0, 4);
 
   const postedDateSource = job.external_posted_at || job.imported_at || job.created_at || new Date().toISOString();
-  const postedDate = new Date(postedDateSource).toLocaleDateString();
-  const expiryDate = job.expires_at ? new Date(job.expires_at).toLocaleDateString() : null;
+  const postedDate = formatDate(postedDateSource);
+  const expiryDate = job.expires_at ? formatDate(job.expires_at) : null;
   const isDeactivated = job.is_active === false;
   const hasPendingDeletion = job.deletion_request_status === "pending";
   const siteUrl = getSiteUrl();

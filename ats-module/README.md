@@ -1,6 +1,6 @@
-# ATS Resume Scoring Module
+# ATS Resume Scoring
 
-This module is fully isolated and does not touch the current application routes, UI, or database.
+The scoring module parses PDF, DOCX, and TXT resumes, extracts resume and job signals, and returns an explainable match breakdown. The application uses the same scoring pipeline when candidates apply and when they analyze a saved resume against a target job.
 
 ## Folder Structure
 
@@ -12,6 +12,7 @@ ats-module/
     score-candidate-upload.ts
   parser/
     docx.ts
+    extract-job-input.ts
     extract-signals.ts
     parse-resume-file.ts
     pdf.ts
@@ -36,7 +37,7 @@ ats-module/
    - likely roles
    - keywords
 3. Scores candidate against a job description
-4. Returns strict JSON:
+4. Returns an explainable score and matched/missing skills and keywords:
 
 ```json
 {
@@ -44,69 +45,30 @@ ats-module/
   "skillMatch": 90,
   "experienceMatch": 75,
   "keywordMatch": 70,
+  "roleAlignment": 80,
+  "matchedSkills": ["instructional design", "storyboarding"],
   "missingSkills": ["scorm"],
-  "strengths": ["Matched required skills: instructional design, storyboarding."]
+  "matchedKeywords": ["storyboarding", "learner outcomes"],
+  "missingKeywords": ["scorm"]
 }
 ```
 
 ## Scoring Formula
 
 ```text
-Score =
-(0.5 * Skill Match) +
-(0.3 * Experience Match) +
-(0.2 * Keyword Relevance)
+Score = weighted average of the available job-specific signals:
+- Skills: 40% when the job description contains recognized skill requirements
+- Experience: 20% when an experience requirement is detected (10% neutral weight otherwise)
+- Keywords: 30%
+- Role alignment: 20%
 ```
 
-## Available API Handlers
+Weights are normalized to the sum of the signals that apply. This prevents a missing job requirement from being treated as a perfect match. Scores are estimates for candidate guidance, not a guarantee of how another employer's ATS will rank a resume.
 
-These are isolated handlers only. They are not mounted to your app.
+## Application Routes
 
-- `postScoreCandidate(request)`
-  - expects JSON body
-- `postScoreCandidateUpload(request)`
-  - expects `multipart/form-data`
-  - fields:
-    - `job`: JSON string
-    - `resume`: file
+- `POST /api/resume-score` analyzes a candidate-owned saved resume against `resumeId`, `jobTitle`, and `jobDescription`.
+- `POST /api/notifications/job-application` uses the same `buildJobInput` and scoring engine during application processing.
+- `POST /api/resumes/optimize` accepts an optional `jobDescription` so improvement suggestions can prioritize a target role without inventing candidate experience.
 
-## Manual Integration Later
-
-### Future route example
-
-Create a route later, for example `src/app/api/ats/score-candidate/route.ts`:
-
-```ts
-import { postScoreCandidateUpload } from "../../../../../ats-module";
-
-export async function POST(request: Request) {
-  return postScoreCandidateUpload(request);
-}
-```
-
-### Example multipart request
-
-Use a future client or backend to send:
-
-- `job`
-
-```json
-{
-  "title": "Senior Instructional Designer",
-  "description": "Need instructional design, storyboarding, articulate 360, and learning strategy experience.",
-  "requiredSkills": ["instructional design", "storyboarding", "articulate 360"],
-  "preferredSkills": ["learning strategy", "analytics"],
-  "minimumYearsOfExperience": 5,
-  "keywords": ["leadership development", "enterprise learning"]
-}
-```
-
-- `resume`
-  - PDF file
-  - DOCX file
-
-## Important Note About DOCX
-
-This repo already includes a working PDF parser through `pdfjs-dist`, so PDF parsing works in this module.
-
-DOCX parsing is scaffolded through `parser/docx.ts`, but it intentionally throws until you later install and wire a DOCX parser adapter such as `mammoth`. This keeps the current repo untouched and avoids modifying existing dependency files.
+The saved-resume route requires an authenticated user and verifies that the resume belongs to that user. Job descriptions are limited to 30,000 characters. Parsing supports PDF, DOCX, and TXT through the existing `pdfjs-dist` and `mammoth` dependencies.

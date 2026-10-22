@@ -29,11 +29,11 @@ export function parseResumeText({
 }
 
 export function extractSkills(normalizedText: string) {
-  return normalizeList(KNOWN_SKILLS.filter((skill) => normalizedText.includes(skill)));
+  return normalizeList(KNOWN_SKILLS.filter((skill) => containsTerm(normalizedText, skill)));
 }
 
 export function extractRoles(normalizedText: string) {
-  return normalizeList(KNOWN_ROLE_PATTERNS.filter((role) => normalizedText.includes(role)));
+  return normalizeList(KNOWN_ROLE_PATTERNS.filter((role) => containsTerm(normalizedText, role)));
 }
 
 export function extractYearsOfExperience(normalizedText: string) {
@@ -57,9 +57,18 @@ export function extractYearsOfExperience(normalizedText: string) {
 export function extractKeywords(normalizedText: string, knownSkills: string[]) {
   const tokens = collectWordTokens(normalizedText);
   const frequency = new Map<string, number>();
+  const stopWords = new Set([
+    "about", "across", "after", "also", "among", "and", "are", "around", "been", "being",
+    "both", "build", "business", "can", "candidate", "company", "create", "develop", "each",
+    "excellent", "experience", "for", "from", "good", "have", "help", "into", "including",
+    "individual", "looking", "must", "need", "needed", "opportunity", "our", "position", "role",
+    "responsibilities", "should", "skills", "strong", "team", "that", "their", "this", "through",
+    "tools", "using", "various", "what", "will", "with", "within", "work", "working", "years",
+    "your", "qualifications", "required", "preferred",
+  ]);
 
   for (const token of tokens) {
-    if (token.length < 5) {
+    if (token.length < 4 || stopWords.has(token)) {
       continue;
     }
 
@@ -68,10 +77,15 @@ export function extractKeywords(normalizedText: string, knownSkills: string[]) {
 
   const ranked = [...frequency.entries()]
     .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
-    .slice(0, 20)
+    .slice(0, 30)
     .map(([token]) => token);
 
   return normalizeList([...knownSkills, ...ranked]);
+}
+
+function containsTerm(text: string, term: string) {
+  const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^a-z0-9])${escapedTerm}([^a-z0-9]|$)`, "i").test(text);
 }
 
 export function summarizeResumeStrength(parsedResume: ParsedResume) {

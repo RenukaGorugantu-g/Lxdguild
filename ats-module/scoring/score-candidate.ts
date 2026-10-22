@@ -1,5 +1,11 @@
 import { summarizeResumeStrength } from "../parser/extract-signals";
-import { calculateExperienceMatch, calculateKeywordMatch, calculateRoleAlignment, calculateSkillMatch } from "./matchers";
+import {
+  calculateExperienceMatch,
+  calculateKeywordMatch,
+  calculateRoleAlignment,
+  calculateSkillMatch,
+  getKeywordCoverage,
+} from "./matchers";
 import { clampScore } from "../utils/text";
 import type { ScoreBreakdown, ScoreCandidateInput } from "../types";
 
@@ -8,16 +14,26 @@ export function scoreCandidate(input: ScoreCandidateInput): ScoreBreakdown {
   const experienceMatch = calculateExperienceMatch(input.job, input.resume);
   const keywordMatch = calculateKeywordMatch(input.job, input.resume);
   const roleAlignment = calculateRoleAlignment(input.job, input.resume);
-  const requiredCoverage = input.job.requiredSkills.length
-    ? skillResults.matchedRequired.length / input.job.requiredSkills.length
-    : 1;
+  const keywordCoverage = getKeywordCoverage(input.job, input.resume);
+  const hasSkillCriteria = input.job.requiredSkills.length > 0 || Boolean(input.job.preferredSkills?.length);
+  const hasExperienceCriteria = (input.job.minimumYearsOfExperience || 0) > 0;
+  const skillWeight = hasSkillCriteria ? 0.4 : 0;
+  const experienceWeight = hasExperienceCriteria ? 0.2 : 0.1;
+  const keywordWeight = 0.3;
+  const roleWeight = 0.2;
+  const totalWeight = skillWeight + experienceWeight + keywordWeight + roleWeight;
 
   let score = clampScore(
-    0.45 * skillResults.skillMatch +
-      0.2 * experienceMatch +
-      0.15 * keywordMatch +
-      0.2 * roleAlignment
+    (skillWeight * skillResults.skillMatch +
+      experienceWeight * experienceMatch +
+      keywordWeight * keywordMatch +
+      roleWeight * roleAlignment) /
+      totalWeight
   );
+  const requiredCoverage = input.job.requiredSkills.length
+    ? skillResults.matchedRequired.filter((skill) => input.job.requiredSkills.includes(skill)).length /
+      input.job.requiredSkills.length
+    : 1;
 
   // Hard cap resumes that miss too many of the actual core requirements.
   if (input.job.requiredSkills.length >= 3 && skillResults.matchedRequired.length === 0) {
@@ -47,7 +63,12 @@ export function scoreCandidate(input: ScoreCandidateInput): ScoreBreakdown {
     experienceMatch,
     keywordMatch,
     roleAlignment,
+    matchedSkills: [...skillResults.matchedRequired, ...skillResults.matchedPreferred],
     missingSkills: skillResults.missingSkills,
+    matchedKeywords: keywordCoverage.matched,
+    missingKeywords: (input.job.keywords || []).filter(
+      (keyword) => !keywordCoverage.matched.includes(keyword)
+    ),
     strengths,
   };
 }

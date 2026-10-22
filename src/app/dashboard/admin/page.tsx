@@ -5,10 +5,13 @@ import { redirect } from "next/navigation";
 import { Users, GraduationCap, Building, Briefcase } from "lucide-react";
 import CertificateReviewList from "./certificate-review-list";
 import JobDeletionReviewList from "./job-deletion-review-list";
+import FeaturedJobControl from "./FeaturedJobControl";
+import { isPublicJobExpired } from "@/lib/public-jobs";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { isAdminRole } from "@/lib/profile-role";
 import Link from "next/link";
 import { buildNoIndexMetadata } from "@/lib/seo";
+import { formatDate } from "@/lib/date-format";
 
 export const metadata: Metadata = buildNoIndexMetadata(
   "Admin Control Center",
@@ -30,6 +33,8 @@ type AdminPostedJob = {
   is_active?: boolean | null;
   deletion_request_status?: string | null;
   deleted_at?: string | null;
+  featured_rank?: number | null;
+  expires_at?: string | null;
 };
 
 export default async function AdminDashboard() {
@@ -97,7 +102,7 @@ export default async function AdminDashboard() {
 
   const adminPostedJobsQuery = await adminSupabase
     .from("jobs")
-    .select("id, title, company, location, created_at, is_active, deletion_request_status, deleted_at, user_id")
+    .select("id, title, company, location, created_at, is_active, deletion_request_status, deleted_at, featured_rank, expires_at, user_id")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(8);
@@ -191,10 +196,15 @@ export default async function AdminDashboard() {
                       </div>
                       <p className="mt-1 text-sm text-zinc-600">{[job.company, job.location].filter(Boolean).join(" | ")}</p>
                       <p className="mt-2 text-xs text-zinc-500">
-                        Posted on {job.created_at ? new Date(job.created_at).toLocaleDateString() : "Unknown date"} | {applicantCountMap.get(job.id) || 0} applicant{(applicantCountMap.get(job.id) || 0) === 1 ? "" : "s"}
+                        Posted on {job.created_at ? formatDate(job.created_at) : "Unknown date"} | {applicantCountMap.get(job.id) || 0} applicant{(applicantCountMap.get(job.id) || 0) === 1 ? "" : "s"}
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
+                      <FeaturedJobControl
+                        jobId={job.id}
+                        featuredRank={job.featured_rank ?? null}
+                        canFeature={job.is_active !== false && !job.deleted_at && !isPublicJobExpired(job)}
+                      />
                       <Link
                         href={`/dashboard/employer/jobs/${job.id}/edit`}
                         className="inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"

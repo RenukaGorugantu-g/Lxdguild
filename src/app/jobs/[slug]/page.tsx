@@ -5,6 +5,7 @@ import { Building, Calendar, Clock3, MapPin } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getBaseRole, isCandidateRole, isVerifiedCandidateRole } from "@/lib/profile-role";
 import { getSiteUrl } from "@/lib/site-url";
+import { formatDate } from "@/lib/date-format";
 import { toJsonLdScriptProps } from "@/lib/seo";
 import {
   buildPublicJobHref,
@@ -12,10 +13,18 @@ import {
   getEmploymentTypeLabel,
   getJobPostedDate,
   getPublicJobById,
+  getPublicJobs,
+  isPublicJobExpired,
   getWorkModeLabel,
   parseJobIdFromSlug,
   stripJobHtml,
 } from "@/lib/public-jobs";
+import RoleLandingContent from "./RoleLandingContent";
+import {
+  getJobRoleLanding,
+  getJobsForRoleLanding,
+  MIN_INDEXABLE_LANDING_JOBS,
+} from "@/lib/job-seo-landings";
 
 function escapeHtml(value: string) {
   return value
@@ -115,9 +124,42 @@ export async function generateMetadata({
   const { slug } = await params;
   const jobId = parseJobIdFromSlug(slug);
   if (!jobId) {
+    const landing = getJobRoleLanding(slug);
+    if (!landing) {
+      return {
+        title: "Job Not Found",
+        robots: { index: false, follow: false },
+      };
+    }
+
+    const jobs = getJobsForRoleLanding(await getPublicJobs(), landing);
     return {
-      title: "Job Not Found",
-      robots: { index: false, follow: false },
+      title: landing.title,
+      description: landing.description,
+      keywords: [
+        `${landing.role} jobs`,
+        `${landing.role} jobs in India`,
+        "L&D jobs in India",
+        "learning and development careers",
+      ],
+      alternates: { canonical: `/jobs/${landing.slug}` },
+      robots: {
+        index: jobs.length >= MIN_INDEXABLE_LANDING_JOBS,
+        follow: true,
+        googleBot: {
+          index: jobs.length >= MIN_INDEXABLE_LANDING_JOBS,
+          follow: true,
+          "max-image-preview": "large",
+          "max-snippet": -1,
+        },
+      },
+      openGraph: {
+        title: landing.title,
+        description: landing.description,
+        url: `/jobs/${landing.slug}`,
+        type: "website",
+      },
+      twitter: { title: landing.title, description: landing.description },
     };
   }
 
@@ -129,7 +171,10 @@ export async function generateMetadata({
     };
   }
 
-  const title = `${job.title} at ${job.company || "LXD Guild Employer"} | L&D Jobs India`;
+  const isExpired = isPublicJobExpired(job);
+  const title = `${job.title} at ${job.company || "LXD Guild Employer"}${
+    job.location ? ` | ${job.location}` : ""
+  }`;
   const descriptionSource = stripJobHtml(job.description);
   const description = descriptionSource
     ? descriptionSource.length > 160
@@ -143,6 +188,7 @@ export async function generateMetadata({
     alternates: {
       canonical: buildPublicJobHref(job),
     },
+    robots: isExpired ? { index: false, follow: true } : { index: true, follow: true },
     openGraph: {
       title,
       description,
@@ -163,7 +209,12 @@ export default async function PublicJobDetailPage({
 }) {
   const { slug } = await params;
   const jobId = parseJobIdFromSlug(slug);
-  if (!jobId) notFound();
+  if (!jobId) {
+    const landing = getJobRoleLanding(slug);
+    if (!landing) notFound();
+    const jobs = getJobsForRoleLanding(await getPublicJobs(), landing);
+    return <RoleLandingContent landing={landing} jobs={jobs} />;
+  }
 
   const job = await getPublicJobById(jobId);
   if (!job) notFound();
@@ -173,6 +224,20 @@ export default async function PublicJobDetailPage({
     permanentRedirect(canonicalHref);
   }
 
+  const isExpired = isPublicJobExpired(job);
+  const similarJobs = (await getPublicJobs())
+    .filter((candidate) => candidate.id !== job.id)
+    .map((candidate) => ({
+      job: candidate,
+      sharedTitleTerms: job.title
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter((term) => term.length > 3 && candidate.title.toLowerCase().includes(term)).length,
+    }))
+    .sort((left, right) => right.sharedTitleTerms - left.sharedTitleTerms)
+    .slice(0, 3)
+    .map(({ job: candidate }) => candidate);
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -181,7 +246,10 @@ export default async function PublicJobDetailPage({
   let applyHref = "/candidate";
   let applyLabel = "Sign in to apply";
 
-  if (user) {
+  if (isExpired) {
+    applyHref = "/jobs";
+    applyLabel = "Browse current jobs";
+  } else if (user) {
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
     const baseRole = getBaseRole(profile);
     if (baseRole === "candidate" || isVerifiedCandidateRole(profile?.role) || isCandidateRole(profile?.role)) {
@@ -194,11 +262,11 @@ export default async function PublicJobDetailPage({
   }
 
   const siteUrl = getSiteUrl();
-  const postedDate = new Date(getJobPostedDate(job)).toLocaleDateString();
-  const expiryDate = job.expires_at ? new Date(job.expires_at).toLocaleDateString() : null;
+  const postedDate = formatDate(getJobPostedDate(job));
+  const expiryDate = job.expires_at ? formatDate(job.expires_at) : null;
   const descriptionText = stripJobHtml(job.description);
   const descriptionHtml = formatPublicJobDescriptionHtml(job.description);
-  const jobJsonLd = {
+  const jobJsonLd = isExpired ? null : {
     "@context": "https://schema.org",
     "@type": "JobPosting",
     title: job.title,
@@ -209,8 +277,6 @@ export default async function PublicJobDetailPage({
     hiringOrganization: {
       "@type": "Organization",
       name: job.company || "LXD Guild employer",
-      sameAs: siteUrl,
-      logo: `${siteUrl}/icon.png`,
     },
     jobLocationType: job.work_mode === "remote" ? "TELECOMMUTE" : undefined,
     jobLocation:
@@ -231,16 +297,37 @@ export default async function PublicJobDetailPage({
     directApply: false,
     url: buildPublicJobUrl(job),
   };
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: siteUrl },
+      { "@type": "ListItem", position: 2, name: "L&D Jobs in India", item: `${siteUrl}/jobs` },
+      { "@type": "ListItem", position: 3, name: job.title, item: buildPublicJobUrl(job) },
+    ],
+  };
 
   return (
     <div className="marketing-page">
       <main className="pt-22 sm:pt-24">
         <section className="marketing-section pb-14 pt-3">
           <div className="marketing-container">
-            <script type="application/ld+json" dangerouslySetInnerHTML={toJsonLdScriptProps(jobJsonLd)} />
+            {jobJsonLd ? (
+              <script type="application/ld+json" dangerouslySetInnerHTML={toJsonLdScriptProps(jobJsonLd)} />
+            ) : null}
+            <script type="application/ld+json" dangerouslySetInnerHTML={toJsonLdScriptProps(breadcrumbJsonLd)} />
             <Link href="/jobs" className="inline-flex items-center gap-2 text-sm text-[#5f6d6b] transition hover:text-[#138d1a]">
               Back to jobs
             </Link>
+
+            {isExpired ? (
+              <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-950">
+                <h2 className="font-semibold">This job is no longer accepting applications</h2>
+                <p className="mt-1 text-sm leading-6">
+                  This listing expired{expiryDate ? ` on ${expiryDate}` : ""}. Explore current L&amp;D opportunities below.
+                </p>
+              </div>
+            ) : null}
 
             <div className="mt-6 overflow-hidden rounded-3xl border border-[#dce6d7] bg-white shadow-[0_16px_40px_rgba(87,108,67,0.07)]">
               <div className="border-b border-[#e7eee2] bg-[linear-gradient(180deg,#f8fcf5_0%,#f4faef_100%)] p-8">
@@ -291,6 +378,29 @@ export default async function PublicJobDetailPage({
                       </Link>
                     </div>
                   </div>
+
+                  {similarJobs.length > 0 ? (
+                    <section className="mt-8 rounded-3xl border border-[#dce6d7] bg-white p-6">
+                      <h2 className="text-xl font-semibold text-[#111827]">
+                        {isExpired ? "Similar current jobs" : "Related L&D opportunities"}
+                      </h2>
+                      <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {similarJobs.map((similarJob) => (
+                          <li key={similarJob.id}>
+                            <Link
+                              href={buildPublicJobHref(similarJob)}
+                              className="block rounded-2xl border border-[#e7eee2] bg-[#f8fbf5] p-4 transition hover:border-[#8fd97e]"
+                            >
+                              <span className="font-semibold text-[#111827]">{similarJob.title}</span>
+                              <span className="mt-2 block text-sm text-[#5b6757]">
+                                {[similarJob.company, similarJob.location].filter(Boolean).join(" · ")}
+                              </span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  ) : null}
                 </div>
               </div>
 

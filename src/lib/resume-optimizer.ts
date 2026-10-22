@@ -1,4 +1,5 @@
 import type { ParsedResume } from "../../ats-module/types";
+import { buildJobInput } from "../../ats-module";
 
 type ResumeOptimizationInput = {
   parsedResume: ParsedResume;
@@ -9,6 +10,7 @@ type ResumeOptimizationInput = {
     experience_years?: number | null;
   };
   recommendedSkills: string[];
+  jobDescription?: string;
   academyCourseRecommendations: Array<{
     title: string;
     recommendedFor: string[];
@@ -88,7 +90,7 @@ async function generateWithOpenAI(input: ResumeOptimizationInput) {
 
   const prompt = [
     "You are an ATS resume optimization assistant for LXD Guild.",
-    "Rewrite the resume content to be clearer, stronger, and more ATS-friendly without inventing fake employers, fake metrics, or fake certifications.",
+    "Rewrite the resume content to be clearer, stronger, and more ATS-friendly without inventing employers, metrics, skills, or certifications. Use the target job description only to prioritize truthful experience already supported by the resume.",
     "Keep the tone professional and concise.",
     "Return strict JSON only with keys: summary, skillsSection, bulletPoints, atsFormattingTips, note.",
     "skillsSection must be an array of short skills.",
@@ -100,6 +102,11 @@ async function generateWithOpenAI(input: ResumeOptimizationInput) {
     `Detected resume skills: ${input.parsedResume.skills.join(", ") || "None detected"}`,
     `Detected resume roles: ${input.parsedResume.roles.join(", ") || "None detected"}`,
     `Recommended missing skills: ${input.recommendedSkills.join(", ") || "None"}`,
+    `Target job keywords: ${
+      input.jobDescription
+        ? buildJobInput("Target role", input.jobDescription).keywords?.join(", ") || "None detected"
+        : "No target job description supplied"
+    }`,
     `Recommended academy courses: ${
       input.academyCourseRecommendations.map((course) => course.title).join(", ") || "None"
     }`,
@@ -177,7 +184,9 @@ function buildTemplateOptimization(input: ResumeOptimizationInput): ResumeOptimi
     input.parsedResume.skills.length
       ? `Rework your strongest experience bullets to surface tools and methods like ${input.parsedResume.skills.slice(0, 3).join(", ")} in ATS-friendly wording.`
       : "Rewrite role bullets using clearer action verbs, project scope, and measurable outcomes where your resume already supports them.",
-    input.recommendedSkills.length
+    input.jobDescription
+      ? "Tailor the summary and experience emphasis to the target job description, but only use skills and achievements that the source resume supports."
+      : input.recommendedSkills.length
       ? `Where accurate, fold in missing but relevant capability language such as ${input.recommendedSkills.slice(0, 2).join(", ")} to better align with target job descriptions.`
       : "Align each experience bullet more closely to target job descriptions by mirroring the language of relevant L&D responsibilities.",
     "Keep each bullet focused on one outcome: what you designed, delivered, improved, or measured.",

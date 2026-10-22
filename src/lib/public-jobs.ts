@@ -61,6 +61,7 @@ async function sanitizeJobRows(jobs: PublicJobRecord[] | null | undefined) {
   return dedupePublicJobs(
     (jobs || [])
     .filter((job) => job.is_active !== false)
+    .filter((job) => !isPublicJobExpired(job))
     .filter((job) => !job.deleted_at)
     .filter((job) => shouldSurfaceMarketplaceJob(job, { adminUserIds }))
   );
@@ -98,6 +99,12 @@ export function parseJobIdFromSlug(slug: string) {
 
 export function getJobPostedDate(job: Pick<PublicJobRecord, "external_posted_at" | "imported_at" | "created_at">) {
   return job.external_posted_at || job.imported_at || job.created_at || new Date().toISOString();
+}
+
+export function isPublicJobExpired(job: Pick<PublicJobRecord, "expires_at">) {
+  if (!job.expires_at) return false;
+  const expiresAt = Date.parse(job.expires_at);
+  return !Number.isFinite(expiresAt) || expiresAt <= Date.now();
 }
 
 export function getEmploymentTypeLabel(value?: string | null) {
@@ -141,9 +148,31 @@ export const getPublicJobs = cache(async () => {
   return [] as PublicJobRecord[];
 });
 
-export const getPublicFeaturedJobs = cache(async (limit = 6) => {
-  const jobs = await getPublicJobs();
-  return jobs.filter((job) => job.featured_rank != null).slice(0, limit);
+export const getPublicFeaturedJobs = cache(async (limit?: number) => {
+  const jobsReader = await getJobsReader();
+  let query = jobsReader
+    .from("jobs")
+    .select(PRIMARY_SELECT)
+    .eq("is_active", true)
+    .not("featured_rank", "is", null)
+    .order("featured_rank", { ascending: true })
+    .order("external_posted_at", { ascending: false, nullsFirst: false })
+    .order("imported_at", { ascending: false, nullsFirst: false });
+
+  if (limit !== undefined) query = query.limit(limit);
+
+  const { data, error } = await query;
+  if (error) {
+    if (error.code !== "42703") {
+      console.error("[public-jobs] featured jobs query failed:", error.message);
+    }
+    return [] as PublicJobRecord[];
+  }
+
+  return ((data || []) as PublicJobRecord[])
+    .filter((job) => job.is_active !== false)
+    .filter((job) => !isPublicJobExpired(job))
+    .filter((job) => !job.deleted_at);
 });
 
 export const getPublicNonFeaturedJobs = cache(async (limit = 24) => {

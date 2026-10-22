@@ -19,6 +19,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { normalizeExternalApplyUrl } from "@/lib/job-apply";
+import { formatDate } from "@/lib/date-format";
 import { createClient } from "@/utils/supabase/client";
 
 type ApplyJob = {
@@ -713,7 +714,7 @@ function LinkCard({
           </div>
           {expiresAt && (
             <p className="text-[11px] text-amber-700 inline-flex items-center gap-1">
-              <Clock3 className="w-3.5 h-3.5" /> Expires {new Date(expiresAt).toLocaleDateString()}
+              <Clock3 className="w-3.5 h-3.5" /> Expires {formatDate(expiresAt)}
             </p>
           )}
         </div>

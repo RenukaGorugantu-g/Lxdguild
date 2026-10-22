@@ -7,13 +7,17 @@ export function calculateSkillMatch(job: JobInput, resume: ParsedResume) {
   const preferredSkills = job.preferredSkills || [];
   const resumeSet = new Set(resume.skills.map((item) => normalizeText(item)));
 
-  const matchedRequired = requiredSkills.filter((skill) => resumeSet.has(normalizeText(skill)));
-  const matchedPreferred = preferredSkills.filter((skill) => resumeSet.has(normalizeText(skill)));
-  const requiredPercentage = percent(matchedRequired.length, requiredSkills.length);
+  const matchedRequired = requiredSkills.filter((skill) => resumeHasSkill(skill, resumeSet, resume.text));
+  const matchedPreferred = preferredSkills.filter((skill) => resumeHasSkill(skill, resumeSet, resume.text));
+  const requiredPercentage = requiredSkills.length ? percent(matchedRequired.length, requiredSkills.length) : 0;
   const preferredPercentage = percent(matchedPreferred.length, preferredSkills.length);
   const weightedPreferredBoost = preferredSkills.length ? Math.round(preferredPercentage * 0.35) : 0;
-  const skillMatch = Math.min(100, requiredPercentage + weightedPreferredBoost);
-  const missingSkills = requiredSkills.filter((skill) => !resumeSet.has(normalizeText(skill)));
+  const skillMatch = requiredSkills.length
+    ? Math.min(100, requiredPercentage + weightedPreferredBoost)
+    : preferredSkills.length
+      ? preferredPercentage
+      : 0;
+  const missingSkills = requiredSkills.filter((skill) => !resumeHasSkill(skill, resumeSet, resume.text));
 
   return {
     skillMatch,
@@ -27,7 +31,7 @@ export function calculateExperienceMatch(job: JobInput, resume: ParsedResume) {
   const minimumYears = job.minimumYearsOfExperience || 0;
 
   if (minimumYears <= 0) {
-    return 100;
+    return 50;
   }
 
   if (resume.yearsOfExperience >= minimumYears) {
@@ -43,7 +47,14 @@ export function calculateKeywordMatch(job: JobInput, resume: ParsedResume) {
     ? explicitKeywords
     : [...job.requiredSkills, ...(job.preferredSkills || []), ...collectDescriptionKeywords(job.description)];
 
-  return compareKeywordCoverage(mergedKeywords, resume.keywords).percentage;
+  return mergedKeywords.length
+    ? compareKeywordCoverage(mergedKeywords, resume.keywords).percentage
+    : 0;
+}
+
+export function getKeywordCoverage(job: JobInput, resume: ParsedResume) {
+  const keywords = job.keywords || [];
+  return compareKeywordCoverage(keywords, resume.keywords);
 }
 
 export function calculateRoleAlignment(job: JobInput, resume: ParsedResume) {
@@ -87,4 +98,26 @@ function collectDescriptionKeywords(description: string) {
     .split(/\s+/)
     .filter((token) => token.length >= 5)
     .slice(0, 30);
+}
+
+function resumeHasSkill(skill: string, resumeSkills: Set<string>, resumeText: string) {
+  const normalizedSkill = normalizeText(skill);
+  if (resumeSkills.has(normalizedSkill)) return true;
+
+  const aliases: Record<string, string[]> = {
+    "articulate 360": ["articulate storyline", "storyline 360", "storyline"],
+    "articulate storyline": ["articulate 360", "storyline 360", "storyline"],
+    "articulate rise": ["rise 360", "rise"],
+    "rise 360": ["articulate rise", "rise"],
+    xapi: ["experience api", "tin can api"],
+    scorm: ["scorm 1.2", "scorm 2004"],
+  };
+  const variants = [normalizedSkill, ...(aliases[normalizedSkill] || [])];
+  const normalizedResumeText = normalizeText(resumeText);
+
+  return variants.some((variant) => {
+    if (resumeSkills.has(variant)) return true;
+    const escapedVariant = variant.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`(^|[^a-z0-9])${escapedVariant}([^a-z0-9]|$)`, "i").test(normalizedResumeText);
+  });
 }

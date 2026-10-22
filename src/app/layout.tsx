@@ -122,15 +122,28 @@ export default function RootLayout({
       "https://www.facebook.com/100648556092707/",
     ],
   };
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "LXD Guild Marketplace",
+    url: SITE_URL,
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${SITE_URL}/jobs?q={search_term_string}`,
+      "query-input": "required name=search_term_string",
+    },
+  };
 
   return (
     <html
       lang="en"
       className={`h-full antialiased ${manrope.variable} ${fraunces.variable}`}
       style={{ colorScheme: "light" }}
+      suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col bg-[var(--background)] font-sans text-[var(--foreground)]" style={{ colorScheme: "light" }}>
         <script type="application/ld+json" dangerouslySetInnerHTML={toJsonLdScriptProps(organizationJsonLd)} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={toJsonLdScriptProps(websiteJsonLd)} />
         <Script
           src={`https://www.googletagmanager.com/gtag/js?id=${GOOGLE_ANALYTICS_ID}`}
           strategy="afterInteractive"

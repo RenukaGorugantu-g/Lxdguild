@@ -7,7 +7,7 @@ import { ensureUserProfile } from '@/lib/ensure-user-profile'
 import { getSiteUrl } from '@/lib/site-url'
 import { selectMatchedJobs, type CandidateMatchJob } from '@/lib/candidate-job-matches'
 import { downloadResumeBuffer, decideApplicationStatus } from '@/lib/resume-analysis'
-import { extractKeywords, extractSkills, parseResumeFile, scoreCandidate } from '../../../../../ats-module'
+import { buildJobInput, parseResumeFile, scoreCandidate } from '../../../../../ats-module'
 import { shouldSendMapleEmployerEmail } from '@/lib/maple'
 
 export const runtime = 'nodejs'
@@ -139,25 +139,6 @@ async function insertJobApplication(
   return legacyInsert
 }
 
-function extractMinimumYearsOfExperience(description: string) {
-  const normalized = description.toLowerCase()
-  const patterns = [
-    /(\d{1,2})\+?\s+years? of experience/g,
-    /minimum of\s+(\d{1,2})\+?\s+years?/g,
-    /at least\s+(\d{1,2})\+?\s+years?/g,
-    /(\d{1,2})\+?\s+years? experience/g,
-  ]
-  const matches: number[] = []
-
-  for (const pattern of patterns) {
-    for (const match of normalized.matchAll(pattern)) {
-      matches.push(Number(match[1]))
-    }
-  }
-
-  return matches.length ? Math.max(...matches) : 0
-}
-
 function stripHtml(value: string | null | undefined) {
   return (value || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
 }
@@ -237,10 +218,6 @@ async function analyzeResumeForJob({
 }): Promise<AtsAnalysisResult> {
   const jobDescription = stripHtml(job.description)
   const jobTitle = job.title || 'Untitled role'
-  const scoringSource = `${jobTitle} ${jobDescription}`.trim()
-  const requiredSkills = extractSkills(scoringSource)
-  const keywordSeeds = extractKeywords(scoringSource, requiredSkills)
-  const minimumYearsOfExperience = extractMinimumYearsOfExperience(jobDescription)
   const downloadedResume = await downloadResumeBuffer({
     filePath: resumeRecord.file_path,
     fileUrl: resumeRecord.file_url,
@@ -255,26 +232,18 @@ async function analyzeResumeForJob({
   })
 
   const scoringResult = scoreCandidate({
-    job: {
-      title: jobTitle,
-      description: jobDescription,
-      requiredSkills,
-      preferredSkills: [],
-      minimumYearsOfExperience,
-      keywords: keywordSeeds,
-    },
+    job: buildJobInput(jobTitle, jobDescription),
     resume: parsedResume,
   })
 
   const decision = decideApplicationStatus(scoringResult.score)
-  const matchedKeywords = keywordSeeds.filter((keyword) => parsedResume.keywords.includes(keyword))
   const summary = buildAtsSummary(scoringResult)
 
   return {
     score: scoringResult.score,
     summary,
-    matchedKeywords,
-    missingKeywords: scoringResult.missingSkills,
+    matchedKeywords: scoringResult.matchedKeywords,
+    missingKeywords: [...scoringResult.missingSkills, ...scoringResult.missingKeywords],
     strengths: scoringResult.strengths,
     autoDecision: decision.autoDecision,
     applicationStatus: decision.applicationStatus,
