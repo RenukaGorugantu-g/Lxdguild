@@ -126,7 +126,6 @@ export async function POST(req: Request) {
     const normalizedEmploymentType =
       normalizedJobKind === "freelance" ? "contract" : normalizeEmploymentType(employment_type);
     const nowIso = new Date().toISOString();
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
     if (!title || !location || !description) {
       return NextResponse.json({ error: "Title, location, and description are required." }, { status: 400 });
@@ -191,7 +190,7 @@ export async function POST(req: Request) {
       imported_at: nowIso,
       last_seen_at: nowIso,
       external_posted_at: nowIso,
-      expires_at: expiresAt,
+      expires_at: null,
       ...(featuredRank !== null ? { featured_rank: featuredRank } : {}),
     };
 
@@ -255,7 +254,7 @@ export async function POST(req: Request) {
           imported_at: nowIso,
           last_seen_at: nowIso,
           external_posted_at: nowIso,
-          expires_at: expiresAt,
+          expires_at: null,
           ...(featuredRank !== null ? { featured_rank: featuredRank } : {}),
         }).select('id, title, company');
 

@@ -27,7 +27,6 @@ export async function generateMetadata({ params }: { params: PageParams }): Prom
   return {
     title,
     description,
-    keywords: [`${landing.role} jobs in ${location.name}`, `${landing.role} jobs`, "L&D jobs India"],
     alternates: { canonical: `/jobs/${landing.slug}/${location.slug}` },
     robots: {
       index: indexable,

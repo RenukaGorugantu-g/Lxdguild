@@ -16,39 +16,22 @@ import { buildFaqJsonLd, toJsonLdScriptProps } from "@/lib/seo";
 import { getSiteUrl } from "@/lib/site-url";
 
 export const metadata: Metadata = {
-  title: "L&D Membership: AI Tools & 180+ Premium Resources | ₹499/Year",
+  title: "L&D Membership, Resources & Career Tools",
   description:
-    "Access 180+ premium L&D resources, AI career tools, skill assessments, and exclusive networking. Join India's top learning design professional community for ₹499/year.",
-  keywords: [
-    "L&D membership benefits",
-    "Learning design professional membership",
-    "Instructional designer resources",
-    "eLearning professional community",
-    "L&D career development tools",
-    "AI-powered career pathmaker",
-    "Premium instructional design resources",
-    "LXD Guild membership",
-    "Learning and development networking",
-    "Skill validation for L&D professionals",
-    "Professional L&D community India",
-    "Instructional design templates",
-    "eLearning storyboard resources",
-    "L&D playbooks and frameworks",
-    "Career intelligence for instructional designers",
-  ],
+    "Explore L&D career tools, professional resources, skill assessments, and community benefits for instructional designers and eLearning professionals.",
   alternates: {
     canonical: "/membership",
   },
   openGraph: {
-    title: "L&D Membership: AI Tools & 180+ Premium Resources | ₹499/Year",
+    title: "L&D Membership, Resources & Career Tools",
     description:
-      "Access 180+ premium L&D resources, AI career tools, skill assessments, and exclusive networking. Join India's top learning design professional community for ₹499/year.",
+      "Explore L&D career tools, professional resources, skill assessments, and community benefits for instructional designers and eLearning professionals.",
     url: "/membership",
   },
   twitter: {
-    title: "L&D Membership: AI Tools & 180+ Premium Resources | ₹499/Year",
+    title: "L&D Membership, Resources & Career Tools",
     description:
-      "Access 180+ premium L&D resources, AI career tools, skill assessments, and exclusive networking. Join India's top learning design professional community for ₹499/year.",
+      "Explore L&D career tools, professional resources, skill assessments, and community benefits for instructional designers and eLearning professionals.",
   },
 };
 
@@ -156,10 +139,7 @@ export default async function PublicMembershipPage() {
                   Premium L&amp;D Membership: AI Tools, Resources &amp; Networking
                 </h1>
                 <p className="marketing-copy max-w-2xl text-base leading-8">
-                                    Join the LXD Marketplace membership for an L&amp;D professional network, Learning Experience Design
-                                    community, Instructional Design community, LXD resources, and practical L&amp;D resources.
-                  Access L&amp;D membership benefits built for instructional designers, eLearning developers, and
-                  learning professionals who want premium resources, AI career tools, networking, and stronger market visibility.
+                  Get practical career resources, assessments, and community access designed for instructional designers, eLearning developers, and other L&amp;D professionals.
                 </p>
                 <div className="flex flex-col gap-4 sm:flex-row">
                   <Link href={primaryHref} className="marketing-primary rounded-full px-6">

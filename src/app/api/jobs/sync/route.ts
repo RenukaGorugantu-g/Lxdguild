@@ -12,7 +12,10 @@ export async function GET(request: NextRequest) {
 
   try {
     const result = await syncJobFeed({ trigger: "cron" });
-    return NextResponse.json({ success: true, ...result });
+    return NextResponse.json(
+      { success: !result.skipped, ...result },
+      { status: result.skipped ? 503 : 200 }
+    );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Unknown sync error";
     return NextResponse.json({ error: message }, { status: 500 });

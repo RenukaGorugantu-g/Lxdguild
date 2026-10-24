@@ -8,39 +8,22 @@ import { buildFaqJsonLd, toJsonLdScriptProps } from "@/lib/seo";
 import { getSiteUrl } from "@/lib/site-url";
 
 export const metadata: Metadata = {
-  title: "Instructional Designer Career Growth | AI Tools & Job Matching",
+  title: "Instructional Designer Career Tools & L&D Jobs",
   description:
-    "Build your verified L&D profile with AI-powered resume analysis, ATS insights, and skill validation. Get matched with better-fit instructional design jobs. Join free.",
-  keywords: [
-    "Instructional designer career growth",
-    "L&D professional development",
-    "eLearning developer career path",
-    "Resume analyzer for instructional designers",
-    "ATS resume optimization L&D",
-    "Skill validation for learning professionals",
-    "Career pathmaker for instructional designers",
-    "L&D job search tools",
-    "Learning designer portfolio builder",
-    "Instructional design career coaching",
-    "eLearning professional assessment",
-    "L&D resume writing service",
-    "Career advancement learning designers",
-    "AI-powered career guidance L&D",
-    "Job matching instructional designers",
-  ],
+    "Build your instructional design profile, compare your resume with a target job, and discover relevant eLearning and L&D opportunities across India.",
   alternates: {
     canonical: "/candidate",
   },
   openGraph: {
-    title: "Instructional Designer Career Growth | AI Tools & Job Matching",
+    title: "Instructional Designer Career Tools & L&D Jobs",
     description:
-      "Build your verified L&D profile with AI-powered resume analysis, ATS insights, and skill validation. Get matched with better-fit instructional design jobs. Join free.",
+      "Build your instructional design profile, compare your resume with a target job, and discover relevant eLearning and L&D opportunities across India.",
     url: "/candidate",
   },
   twitter: {
-    title: "Instructional Designer Career Growth | AI Tools & Job Matching",
+    title: "Instructional Designer Career Tools & L&D Jobs",
     description:
-      "Build your verified L&D profile with AI-powered resume analysis, ATS insights, and skill validation. Get matched with better-fit instructional design jobs. Join free.",
+      "Build your instructional design profile, compare your resume with a target job, and discover relevant eLearning and L&D opportunities across India.",
   },
 };
 
@@ -149,12 +132,9 @@ export default async function CandidateLandingPage() {
   } = await supabase.auth.getUser();
 
   let baseRole: "candidate" | "employer" | "admin" | "visitor" = "visitor";
-  let profileName: string | null = null;
-
   if (user) {
-    const { data: profile } = await supabase.from("profiles").select("role, name").eq("id", user.id).single();
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
     baseRole = getBaseRole(profile);
-    profileName = profile?.name ?? null;
   }
 
   const isSignedInCandidate = baseRole === "candidate";
@@ -215,15 +195,10 @@ export default async function CandidateLandingPage() {
                   Candidate career system
                 </div>
                 <h1 className="marketing-title max-w-2xl text-[3.2rem] leading-[0.96] sm:text-[4.3rem]">
-                  {isSignedInCandidate
-                    ? `Accelerate your instructional design career with AI-powered tools${profileName ? `, ${profileName}` : ""}.`
-                    : "Accelerate your instructional design career with AI-powered tools."}
+                  Build your instructional design career.
                 </h1>
                 <p className="marketing-copy max-w-2xl text-base leading-8">
-                                    Create your L&amp;D professional profile, position yourself as a Learning Experience Designer or
-                                    Learning Designer, and discover L&amp;D jobs, Instructional Design careers, LXD careers, and eLearning careers.
-                  Build instructional designer career growth with resume analysis, ATS optimization, skill validation,
-                  and job matching designed for L&amp;D professionals and eLearning developers.
+                  Create a professional profile, compare your resume with a target job, and discover opportunities for instructional designers, eLearning developers, and other L&amp;D professionals.
                 </p>
                 <div className="flex flex-wrap gap-3 text-sm">
                                   <div className="flex flex-wrap gap-3 text-sm font-semibold">

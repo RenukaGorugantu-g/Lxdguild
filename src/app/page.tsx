@@ -24,50 +24,24 @@ import {
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "LXD Marketplace | L&D Jobs and Talent in India",
+  title: {
+    absolute: "L&D Jobs & Instructional Design Talent in India | LXD Guild",
+  },
   description:
-    "LXD Marketplace for instructional designers, learning experience designers, eLearning developers, and employers hiring L&D talent across India.",
-  keywords: [
-    "LXD Marketplace",
-    "Learning Experience Design Marketplace",
-    "Learning Experience Designer",
-    "Learning Experience Design",
-    "LXD professionals",
-    "L&D job marketplace India",
-    "Learning and development jobs India",
-    "L&D professionals India",
-    "Instructional designer jobs marketplace",
-    "Instructional Design Marketplace",
-    "Hire Instructional Designer",
-    "Hire Learning Experience Designer",
-    "Hire eLearning Developer",
-    "eLearning developer platform",
-    "eLearning Marketplace",
-    "Verified L&D professionals",
-    "Learning Designer jobs",
-    "L&D talent marketplace",
-    "Skill-validated instructional designers",
-    "AI-powered L&D job board",
-    "Corporate training jobs India",
-    "LXD Guild marketplace",
-    "Learning professional community",
-    "EdTech job platform India",
-    "L&D recruitment platform",
-    "Training and development careers",
-  ],
+    "Find instructional designer and eLearning jobs in India, or connect with verified Learning and Development talent. Search roles and explore the LXD Guild marketplace.",
   alternates: {
     canonical: "/",
   },
   openGraph: {
-    title: "LXD Marketplace | L&D Jobs and Talent in India",
+    title: "L&D Jobs & Instructional Design Talent in India | LXD Guild",
     description:
-      "Find instructional designers, learning experience designers, eLearning developers, and L&D jobs across India.",
+      "Find instructional designer and eLearning jobs in India, or connect with verified Learning and Development talent.",
     url: "/",
   },
   twitter: {
-    title: "LXD Marketplace | L&D Jobs and Talent in India",
+    title: "L&D Jobs & Instructional Design Talent in India | LXD Guild",
     description:
-      "Find instructional designers, learning experience designers, eLearning developers, and L&D jobs across India.",
+      "Find instructional designer and eLearning jobs in India, or connect with verified Learning and Development talent.",
   },
 };
 
@@ -272,10 +246,10 @@ export default async function LandingPage() {
                 </div>
                 <div className="space-y-5">
                   <h1 className="marketing-title max-w-3xl text-[3.2rem] leading-[0.95] sm:text-[4.25rem]">
-                    LXD Marketplace for your next L&amp;D job or hire.
+                    L&amp;D jobs and instructional design talent in India.
                   </h1>
                   <p className="max-w-2xl text-base leading-8 text-[#5b6757] sm:text-lg">
-                    India&apos;s only verified marketplace for instructional designers, eLearning developers, and learning professionals.
+                    Find instructional design and eLearning roles, or connect with L&amp;D talent through one India-focused marketplace.
                   </p>
                 </div>
 

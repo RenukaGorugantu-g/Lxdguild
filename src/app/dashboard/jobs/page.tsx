@@ -8,7 +8,7 @@ import { buildVisibleJobDedupKey } from "@/lib/job-dedupe";
 import { isAdminRole } from "@/lib/profile-role";
 import { ensureUserProfile } from "@/lib/ensure-user-profile";
 import { formatCount, getMarketplaceSeoCounts, toJsonLdScriptProps } from "@/lib/seo";
-import { buildPublicJobHref } from "@/lib/public-jobs";
+import { buildPublicJobHref, isPublicJobExpired } from "@/lib/public-jobs";
 import { formatDate } from "@/lib/date-format";
 import { getSiteUrl } from "@/lib/site-url";
 import { redirect } from "next/navigation";
@@ -219,10 +219,6 @@ function normalizeJobText(...values: Array<string | null | undefined>) {
   return values.filter(Boolean).join(" ").toLowerCase();
 }
 
-function isJobCurrent(job: JobListItem) {
-  return !job.expires_at || Date.parse(job.expires_at) > Date.now();
-}
-
 function matchesRemoteFilter(job: JobListItem, remote?: string) {
   if (remote !== "remote") return true;
   if (job.work_mode) return job.work_mode === "remote";
@@ -302,7 +298,7 @@ async function fetchJobsPage(
   const primaryResult = await primaryQuery;
 
   if (primaryResult.error?.code !== "42703") {
-    const currentJobs = (primaryResult.data || []).filter((job: JobListItem) => job.is_active !== false && isJobCurrent(job));
+    const currentJobs = (primaryResult.data || []).filter((job: JobListItem) => job.is_active !== false && !isPublicJobExpired(job));
     return {
       data: filters.view === "featured"
         ? currentJobs
@@ -328,7 +324,7 @@ async function fetchJobsPage(
 
   return {
     data: filterMarketplaceRelevantJobs(
-      (fallbackResult.data || []).filter((job: JobListItem) => job.is_active !== false && isJobCurrent(job)),
+      (fallbackResult.data || []).filter((job: JobListItem) => job.is_active !== false && !isPublicJobExpired(job)),
       { adminUserIds }
     ),
     count: fallbackResult.count || 0,
@@ -360,7 +356,7 @@ async function fetchFeaturedFreelanceJobs(
 
   if (primaryResult.error?.code !== "42703") {
     return filterMarketplaceRelevantJobs(
-      (primaryResult.data || []).filter((job: JobListItem) => job.is_active !== false && isJobCurrent(job)),
+      (primaryResult.data || []).filter((job: JobListItem) => job.is_active !== false && !isPublicJobExpired(job)),
       { adminUserIds }
     );
   }
@@ -375,7 +371,7 @@ async function fetchFeaturedFreelanceJobs(
 
   const fallbackResult = await fallbackQuery;
   return filterMarketplaceRelevantJobs(
-    (fallbackResult.data || []).filter((job: JobListItem) => job.is_active !== false && isJobCurrent(job)),
+    (fallbackResult.data || []).filter((job: JobListItem) => job.is_active !== false && !isPublicJobExpired(job)),
     { adminUserIds }
   );
 }
@@ -391,7 +387,7 @@ async function fetchFeaturedJobs(jobsReader: any): Promise<JobListItem[]> {
     .order("imported_at", { ascending: false });
 
   if (primaryQuery.error?.code !== "42703") {
-    return (primaryQuery.data || []).filter((job: JobListItem) => job.is_active !== false && isJobCurrent(job));
+    return (primaryQuery.data || []).filter((job: JobListItem) => job.is_active !== false && !isPublicJobExpired(job));
   }
 
   return [] as JobListItem[];

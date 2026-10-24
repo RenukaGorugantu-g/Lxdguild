@@ -47,36 +47,14 @@ export async function generateMetadata({
   const hasFilters = Boolean(category || q);
   const title = category
     ? `${category} Jobs in India`
-    : "L&D Jobs in India | Instructional Design & eLearning Roles";
+    : "Instructional Designer Jobs in India | eLearning & L&D";
   const description = category
-    ? `Browse ${category} jobs in India, including verified L&D, eLearning, and learning experience opportunities.`
-    : "Browse verified instructional designer jobs, eLearning developer roles, and learning & development careers across India.";
+    ? `Explore current ${category.toLowerCase()} openings in India. Compare role details, work arrangements, and employer information before applying.`
+    : "Find instructional designer, eLearning developer, and Learning & Development jobs in India. Explore current openings and available work arrangements.";
 
   return {
     title,
     description,
-    keywords: category
-      ? [
-          `${category} jobs`,
-          `${category} jobs India`,
-          `remote ${category} jobs`,
-          "L&D jobs",
-          "Learning and Development jobs",
-        ]
-      : [
-          "Instructional Design jobs",
-          "Instructional Designer jobs",
-          "Learning Experience Design jobs",
-          "LXD jobs",
-          "eLearning jobs",
-          "eLearning Developer jobs",
-          "L&D jobs",
-          "Learning Designer jobs",
-          "remote Instructional Design jobs",
-          "remote eLearning jobs",
-          "remote L&D jobs",
-          "Learning Technology jobs",
-        ],
     alternates: {
       canonical: "/jobs",
     },
@@ -123,9 +101,9 @@ export default async function PublicJobsPage({
   const jobsJsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    name: "L&D Jobs in India",
+    name: "Instructional Designer and L&D Jobs in India",
     description:
-      "Browse instructional designer jobs, eLearning developer roles, and learning & development opportunities across India.",
+      "Find current instructional designer, eLearning developer, and Learning & Development roles in India.",
     url: `${siteUrl}/jobs`,
     mainEntity: {
       "@type": "ItemList",
@@ -152,10 +130,10 @@ export default async function PublicJobsPage({
                   Public job board
                 </div>
                 <h1 className="marketing-title mt-3 max-w-2xl text-4xl">
-                  L&amp;D jobs in India
+                  Instructional Designer &amp; L&amp;D Jobs in India
                 </h1>
                 <p className="marketing-copy mt-3 max-w-xl text-sm leading-6 sm:text-base">
-                  Find current roles in instructional design, eLearning, and learning experience design.
+                  Explore current instructional design, eLearning, and learning experience roles, with remote, hybrid, and on-site options where available.
                 </p>
               </header>
 

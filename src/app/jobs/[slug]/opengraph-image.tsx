@@ -1,5 +1,5 @@
 import { buildSharePreview, shareImageContentType, shareImageSize } from "@/lib/share-preview";
-import { getPublicJobById, parseJobIdFromSlug, stripJobHtml } from "@/lib/public-jobs";
+import { getPublicJobById, isPublicJobExpired, parseJobIdFromSlug, stripJobHtml } from "@/lib/public-jobs";
 
 export const alt = "LXD Guild job preview";
 export const size = shareImageSize;
@@ -19,7 +19,7 @@ export default async function Image({ params }: JobImageProps) {
   const jobId = parseJobIdFromSlug(slug);
   const job = jobId ? await getPublicJobById(jobId) : null;
 
-  if (!job) {
+  if (!job || isPublicJobExpired(job)) {
     return buildSharePreview({
       eyebrow: "Job opening",
       title: "Explore verified L&D opportunities on LXD Guild.",

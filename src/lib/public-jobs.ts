@@ -24,6 +24,10 @@ export type PublicJobRecord = {
   user_id?: string | null;
 };
 
+const AUTOMATIC_JOB_MAX_AGE_DAYS = 15;
+const LEGACY_EMPLOYER_DEFAULT_EXPIRY_DAYS = 30;
+const EXPIRY_TOLERANCE_MS = 60 * 1000;
+
 const PRIMARY_SELECT =
   "id, title, description, company, location, work_mode, employment_type, external_posted_at, imported_at, created_at, expires_at, is_active, deleted_at, featured_rank, source, user_id";
 
@@ -101,9 +105,45 @@ export function getJobPostedDate(job: Pick<PublicJobRecord, "external_posted_at"
   return job.external_posted_at || job.imported_at || job.created_at || new Date().toISOString();
 }
 
-export function isPublicJobExpired(job: Pick<PublicJobRecord, "expires_at">) {
-  if (!job.expires_at) return false;
-  const expiresAt = Date.parse(job.expires_at);
+export function getPublicJobExpiration(
+  job: Pick<PublicJobRecord, "expires_at" | "source" | "external_posted_at" | "imported_at" | "created_at">
+) {
+  const explicitExpiry = job.expires_at ? Date.parse(job.expires_at) : null;
+  if (explicitExpiry !== null && !Number.isFinite(explicitExpiry)) return job.expires_at;
+
+  const postedDate = [job.external_posted_at, job.imported_at, job.created_at]
+    .map((value) => (value ? Date.parse(value) : Number.NaN))
+    .find(Number.isFinite);
+
+  // Employer posts used to receive an automatic 30-day expiry; don't treat that generated date as a manual close date.
+  if (
+    job.source === "employer" &&
+    explicitExpiry !== null &&
+    postedDate !== undefined &&
+    Math.abs(
+      explicitExpiry -
+        (postedDate + LEGACY_EMPLOYER_DEFAULT_EXPIRY_DAYS * 24 * 60 * 60 * 1000)
+    ) <= EXPIRY_TOLERANCE_MS
+  ) {
+    return null;
+  }
+
+  if (job.source && job.source !== "employer") {
+    if (postedDate !== undefined) {
+      const maxAgeExpiry = postedDate + AUTOMATIC_JOB_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
+      return new Date(explicitExpiry === null ? maxAgeExpiry : Math.min(explicitExpiry, maxAgeExpiry)).toISOString();
+    }
+  }
+
+  return job.expires_at || null;
+}
+
+export function isPublicJobExpired(
+  job: Pick<PublicJobRecord, "expires_at" | "source" | "external_posted_at" | "imported_at" | "created_at">
+) {
+  const expiration = getPublicJobExpiration(job);
+  if (!expiration) return false;
+  const expiresAt = Date.parse(expiration);
   return !Number.isFinite(expiresAt) || expiresAt <= Date.now();
 }
 

@@ -9,6 +9,7 @@ import { getJobBoardAccessForUser } from "@/lib/job-board-access";
 import { loadProfile } from "@/lib/load-profile";
 import { buildNoIndexMetadata } from "@/lib/seo";
 import { getVerifiedBadgeLabel, selectMatchedJobs, type CandidateMatchJob } from "@/lib/candidate-job-matches";
+import { isPublicJobExpired } from "@/lib/public-jobs";
 
 export const metadata: Metadata = buildNoIndexMetadata(
   "Welcome to Your Dashboard",
@@ -23,7 +24,7 @@ type WelcomeProfile = {
 };
 
 const JOB_SELECT =
-  "id, title, description, company, location, work_mode, employment_type, featured_rank, external_posted_at, imported_at, created_at, is_active, source, user_id";
+  "id, title, description, company, location, work_mode, employment_type, featured_rank, external_posted_at, imported_at, created_at, expires_at, is_active, source, user_id";
 
 export default async function CandidateWelcomePage(props: PageProps<"/dashboard/candidate/welcome">) {
   const searchParams = await props.searchParams;
@@ -75,7 +76,7 @@ export default async function CandidateWelcomePage(props: PageProps<"/dashboard/
   ]);
 
   const matchedJobs = selectMatchedJobs(
-    ((jobsResult.data || []) as CandidateMatchJob[]),
+    ((jobsResult.data || []) as CandidateMatchJob[]).filter((job) => !isPublicJobExpired(job)),
     profile.candidate_target_role,
     profile.candidate_designation,
     5

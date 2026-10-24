@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound, permanentRedirect } from "next/navigation";
+import { notFound, redirect, permanentRedirect } from "next/navigation";
 import { Building, Calendar, Clock3, MapPin } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getBaseRole, isCandidateRole, isVerifiedCandidateRole } from "@/lib/profile-role";
@@ -12,6 +12,7 @@ import {
   buildPublicJobUrl,
   getEmploymentTypeLabel,
   getJobPostedDate,
+  getPublicJobExpiration,
   getPublicJobById,
   getPublicJobs,
   isPublicJobExpired,
@@ -136,12 +137,6 @@ export async function generateMetadata({
     return {
       title: landing.title,
       description: landing.description,
-      keywords: [
-        `${landing.role} jobs`,
-        `${landing.role} jobs in India`,
-        "L&D jobs in India",
-        "learning and development careers",
-      ],
       alternates: { canonical: `/jobs/${landing.slug}` },
       robots: {
         index: jobs.length >= MIN_INDEXABLE_LANDING_JOBS,
@@ -182,6 +177,15 @@ export async function generateMetadata({
       : descriptionSource
     : `Apply for ${job.title} at ${job.company || "a verified employer"} on LXD Guild Marketplace.`;
 
+  if (isExpired) {
+    return {
+      title: "Job No Longer Available",
+      description: "This job is no longer available. Browse current Learning and Development openings on LXD Guild.",
+      alternates: { canonical: "/jobs" },
+      robots: { index: false, follow: true },
+    };
+  }
+
   return {
     title,
     description,
@@ -217,7 +221,9 @@ export default async function PublicJobDetailPage({
   }
 
   const job = await getPublicJobById(jobId);
-  if (!job) notFound();
+  if (!job) redirect("/jobs");
+
+  if (isPublicJobExpired(job)) redirect("/jobs");
 
   const canonicalHref = buildPublicJobHref(job);
   if (slug !== canonicalHref.split("/").pop()) {
@@ -263,7 +269,8 @@ export default async function PublicJobDetailPage({
 
   const siteUrl = getSiteUrl();
   const postedDate = formatDate(getJobPostedDate(job));
-  const expiryDate = job.expires_at ? formatDate(job.expires_at) : null;
+  const expiration = getPublicJobExpiration(job);
+  const expiryDate = expiration ? formatDate(expiration) : null;
   const descriptionText = stripJobHtml(job.description);
   const descriptionHtml = formatPublicJobDescriptionHtml(job.description);
   const jobJsonLd = isExpired ? null : {
@@ -272,7 +279,7 @@ export default async function PublicJobDetailPage({
     title: job.title,
     description: descriptionText,
     datePosted: getJobPostedDate(job),
-    validThrough: job.expires_at || undefined,
+    validThrough: expiration || undefined,
     employmentType: toEmploymentSchemaValue(job.employment_type),
     hiringOrganization: {
       "@type": "Organization",

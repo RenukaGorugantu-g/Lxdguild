@@ -12,6 +12,7 @@ export type CandidateMatchJob = {
   external_posted_at?: string | null;
   imported_at?: string | null;
   created_at?: string | null;
+  expires_at?: string | null;
   is_active?: boolean | null;
   source?: string | null;
   user_id?: string | null;

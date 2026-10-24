@@ -16,39 +16,22 @@ import { buildFaqJsonLd, toJsonLdScriptProps } from "@/lib/seo";
 import { getSiteUrl } from "@/lib/site-url";
 
 export const metadata: Metadata = {
-  title: "Hire Verified Instructional Designers & L&D Talent | India",
+  title: "Hire Instructional Designers & L&D Talent in India",
   description:
-    "Discover skill-validated L&D professionals with AI-powered hiring intelligence. Post jobs, evaluate candidates, and hire instructional designers faster with smart ATS workflows.",
-  keywords: [
-    "Hire instructional designers India",
-    "Recruit L&D professionals",
-    "Find eLearning developers",
-    "Hire learning experience designers",
-    "L&D talent recruitment platform",
-    "Instructional design staffing solutions",
-    "Verified L&D talent pool",
-    "AI-powered L&D recruitment",
-    "Hire curriculum developers",
-    "Corporate training recruitment",
-    "Learning consultant hiring",
-    "EdTech talent acquisition",
-    "Skill-validated instructional designers",
-    "ATS integration for L&D hiring",
-    "Employer hiring platform L&D",
-  ],
+    "Post an L&D job, review applicants, and connect with instructional designers, eLearning developers, and learning experience talent in India.",
   alternates: {
     canonical: "/employer",
   },
   openGraph: {
-    title: "Hire Verified Instructional Designers & L&D Talent | India",
+    title: "Hire Instructional Designers & L&D Talent in India",
     description:
-      "Discover skill-validated L&D professionals with AI-powered hiring intelligence. Post jobs, evaluate candidates, and hire instructional designers faster with smart ATS workflows.",
+      "Post an L&D job, review applicants, and connect with instructional designers, eLearning developers, and learning experience talent in India.",
     url: "/employer",
   },
   twitter: {
-    title: "Hire Verified Instructional Designers & L&D Talent | India",
+    title: "Hire Instructional Designers & L&D Talent in India",
     description:
-      "Discover skill-validated L&D professionals with AI-powered hiring intelligence. Post jobs, evaluate candidates, and hire instructional designers faster with smart ATS workflows.",
+      "Post an L&D job, review applicants, and connect with instructional designers, eLearning developers, and learning experience talent in India.",
   },
 };
 
@@ -120,12 +103,9 @@ export default async function EmployerLandingPage() {
   } = await supabase.auth.getUser();
 
   let baseRole: "candidate" | "employer" | "admin" | "visitor" = "visitor";
-  let profileName: string | null = null;
-
   if (user) {
-    const { data: profile } = await supabase.from("profiles").select("role, name").eq("id", user.id).single();
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
     baseRole = getBaseRole(profile);
-    profileName = profile?.name ?? null;
   }
 
   const isSignedInEmployer = baseRole === "employer";
@@ -173,15 +153,10 @@ export default async function EmployerLandingPage() {
                   Verified hiring intelligence
                 </div>
                 <h1 className="marketing-title max-w-2xl text-[3rem] leading-[0.96] sm:text-[4.2rem]">
-                  {isSignedInEmployer
-                    ? `Hire verified instructional designers and L&D professionals in India${profileName ? `, ${profileName}` : ""}.`
-                    : "Hire verified instructional designers and L&D professionals in India."}
+                  Hire Instructional Designers and L&amp;D Talent in India
                 </h1>
                 <p className="marketing-copy max-w-2xl text-base leading-8">
-                                    Hire an Instructional Designer, Learning Experience Designer, eLearning Developer, or Learning
-                                    Designer, and find L&amp;D talent with clearer proof across an Instructional Design talent and eLearning talent marketplace.
-                  Recruit L&amp;D professionals, find eLearning developers, and hire learning experience designers
-                  through an AI-powered recruitment platform built specifically for modern learning teams.
+                  Post roles and review applicants in one hiring workspace built for learning teams. Find instructional designers, eLearning developers, and learning experience talent across India.
                 </p>
                 <div className="flex flex-col gap-4 sm:flex-row">
                                   <div className="flex flex-wrap gap-3 text-sm font-semibold">

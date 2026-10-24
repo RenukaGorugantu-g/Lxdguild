@@ -5,12 +5,13 @@ import { buildVisibleJobDedupKey } from "@/lib/job-dedupe";
 const JOB_FEED_KEYWORDS = [...IMPORT_CATEGORY_ALLOWLIST];
 
 const JOOBLE_LOCATIONS = [
+  "India",
   "Remote",
 ];
 const ADZUNA_COUNTRIES = ["in", "us"];
 const STALE_AFTER_HOURS = 24;
 const DEACTIVATE_AFTER_DAYS = 30;
-const HARD_DELETE_AFTER_DAYS = 60;
+const DAILY_NEW_JOB_TARGET = 20;
 const MAX_SOURCE_PAGES = 1;
 const RESULTS_PER_PAGE = 50;
 const JSEARCH_RESULTS_PER_PAGE = 10;
@@ -20,11 +21,16 @@ const FREELANCE_SEARCH_QUERIES = [
   "elearning developer freelance remote",
 ];
 const JSEARCH_STANDARD_QUERIES = [
-  "Instructional Designer",
-  "eLearning Developer",
-  "Learning Experience Designer",
-  "Curriculum Developer",
+  "Instructional Designer in India",
+  "eLearning Developer in India",
+  "Learning Experience Designer in India",
+  "Curriculum Developer in India",
+  "Learning and Development Specialist in India",
+  "Training Specialist in India",
+  "Instructional Designer remote",
+  "Learning Designer India",
 ];
+const JSEARCH_FREELANCE_QUERIES = FREELANCE_SEARCH_QUERIES.map((query) => `${query} India`);
 type NormalizedJob = {
   title: string;
   description: string;
@@ -51,6 +57,9 @@ type SyncCounters = {
   hardDeleted: number;
   skipped: boolean;
   reason?: string;
+  dailyTarget?: number;
+  sourceStats?: Array<{ source: string; fetched: number; error?: string }>;
+  status?: "success" | "warning" | "failed" | "skipped";
 };
 
 type SyncTrigger = "cron" | "manual" | "stale" | "unknown";
@@ -547,7 +556,7 @@ async function fetchAdzunaJobs(
   for (let page = 1; page <= MAX_SOURCE_PAGES; page += 1) {
     const url = `https://api.adzuna.com/v1/api/jobs/${country}/search/${page}?app_id=${appId}&app_key=${appKey}&what=${encodeURIComponent(keyword)}&results_per_page=${RESULTS_PER_PAGE}&content-type=application/json&sort_by=date`;
     const resp = await fetchWithTimeout(url, { cache: "no-store" });
-    if (!resp.ok) continue;
+    if (!resp.ok) throw new Error(`Adzuna ${country} "${keyword}" returned HTTP ${resp.status}.`);
 
     const data = await resp.json();
     for (const job of data.results || []) {
@@ -605,7 +614,7 @@ async function fetchJoobleJobs(keyword: string, location: string, nowIso: string
       }),
     });
 
-    if (!resp.ok) continue;
+    if (!resp.ok) throw new Error(`Jooble "${keyword}" returned HTTP ${resp.status}.`);
 
     const data = await resp.json();
     for (const job of data.jobs || []) {
@@ -647,8 +656,7 @@ async function fetchJoobleJobs(keyword: string, location: string, nowIso: string
 async function fetchJSearchJobs(
   query: string,
   nowIso: string,
-  jobKind: "standard" | "freelance",
-  publisherFilter?: string
+  jobKind: "standard" | "freelance"
 ): Promise<NormalizedJob[]> {
   const rapidApiKey =
     process.env.RAPIDAPI_KEY ||
@@ -665,7 +673,7 @@ async function fetchJSearchJobs(
     cache: "no-store",
   });
 
-  if (!resp.ok) return [];
+  if (!resp.ok) throw new Error(`JSearch "${query}" returned HTTP ${resp.status}.`);
 
   const data = await resp.json();
   const jobs: Array<Record<string, unknown>> = Array.isArray(data.data)
@@ -676,11 +684,7 @@ async function fetchJSearchJobs(
     .filter((job) => {
       const title = String(job.job_title || "");
       const description = String(job.job_description || "");
-      const publisher = String(job.job_publisher || "");
-      const matchesPublisher = publisherFilter
-        ? publisher.toLowerCase().includes(publisherFilter.toLowerCase())
-        : true;
-      return title && matchesPublisher && isRelevantLndRole(title, description, query);
+      return title && isMarketplaceRelevantJob({ title, description, search_keyword: query });
     })
     .map((job) => {
       const applyUrl = String(job.job_apply_link || job.job_google_link || "");
@@ -732,8 +736,8 @@ async function fetchJSearchFreelanceJobs(query: string, nowIso: string): Promise
   return fetchJSearchJobs(query, nowIso, "freelance");
 }
 
-async function fetchJSearchIndeedJobs(query: string, nowIso: string): Promise<NormalizedJob[]> {
-  return fetchJSearchJobs(query, nowIso, "standard", "indeed");
+async function fetchJSearchStandardJobs(query: string, nowIso: string): Promise<NormalizedJob[]> {
+  return fetchJSearchJobs(query, nowIso, "standard");
 }
 
 export async function syncJobFeed(options?: { trigger?: SyncTrigger }) {
@@ -764,26 +768,44 @@ export async function syncJobFeed(options?: { trigger?: SyncTrigger }) {
     const adzunaRequests = JOB_FEED_KEYWORDS.flatMap((keyword) =>
       ADZUNA_COUNTRIES.map((country) => fetchAdzunaJobs(keyword, country, nowIso))
     );
-    const joobleRequests = JOB_FEED_KEYWORDS
-      .slice(0, 4)
-      .flatMap((keyword) => JOOBLE_LOCATIONS.map((location) => fetchJoobleJobs(keyword, location, nowIso)));
-    const jsearchRequests = [
-      ...FREELANCE_SEARCH_QUERIES.map((query) => fetchJSearchFreelanceJobs(query, nowIso)),
-      ...JSEARCH_STANDARD_QUERIES.map((query) => fetchJSearchIndeedJobs(query, nowIso)),
+    const joobleRequests = JOB_FEED_KEYWORDS.slice(0, 4).flatMap((keyword) =>
+      JOOBLE_LOCATIONS.map((location) => fetchJoobleJobs(keyword, location, nowIso))
+    );
+    const sourceRequests = [
+      ...adzunaRequests.map((request, index) => ({
+        source: `adzuna:${JOB_FEED_KEYWORDS[Math.floor(index / ADZUNA_COUNTRIES.length)]}:${ADZUNA_COUNTRIES[index % ADZUNA_COUNTRIES.length]}`,
+        request,
+      })),
+      ...(process.env.JOOBLE_API_KEY
+        ? joobleRequests.map((request, index) => ({
+            source: `jooble:${JOB_FEED_KEYWORDS.slice(0, 4)[Math.floor(index / JOOBLE_LOCATIONS.length)]}:${JOOBLE_LOCATIONS[index % JOOBLE_LOCATIONS.length]}`,
+            request,
+          }))
+        : []),
+      ...(process.env.RAPIDAPI_KEY || process.env.RAPID_API_KEY || process.env.X_RAPIDAPI_KEY
+        ? [
+            ...JSEARCH_FREELANCE_QUERIES.map((query) => ({
+              source: `jsearch:freelance:${query}`,
+              request: fetchJSearchFreelanceJobs(query, nowIso),
+            })),
+            ...JSEARCH_STANDARD_QUERIES.map((query) => ({
+              source: `jsearch:${query}`,
+              request: fetchJSearchStandardJobs(query, nowIso),
+            })),
+          ]
+        : []),
     ];
 
-    const sourceSettled = await Promise.allSettled([
-      ...adzunaRequests,
-      ...joobleRequests,
-      ...jsearchRequests,
-    ]);
+    const sourceSettled = await Promise.allSettled(sourceRequests.map(({ request }) => request));
 
     const sourceWarnings: string[] = [];
     const sourceResults: NormalizedJob[][] = [];
+    const sourceStats: NonNullable<SyncCounters["sourceStats"]> = [];
 
-    for (const result of sourceSettled) {
+    for (const [index, result] of sourceSettled.entries()) {
       if (result.status === "fulfilled") {
         sourceResults.push(result.value);
+        sourceStats.push({ source: sourceRequests[index].source, fetched: result.value.length });
         continue;
       }
 
@@ -792,7 +814,21 @@ export async function syncJobFeed(options?: { trigger?: SyncTrigger }) {
           ? result.reason.message
           : "Unknown provider failure";
       sourceWarnings.push(message);
+      sourceStats.push({ source: sourceRequests[index].source, fetched: 0, error: message });
     }
+
+    if (!process.env.JOOBLE_API_KEY) {
+      sourceStats.push({ source: "jooble", fetched: 0, error: "JOOBLE_API_KEY is not configured." });
+      sourceWarnings.push("JOOBLE_API_KEY is not configured.");
+    }
+    if (!(process.env.RAPIDAPI_KEY || process.env.RAPID_API_KEY || process.env.X_RAPIDAPI_KEY)) {
+      sourceStats.push({ source: "jsearch", fetched: 0, error: "RapidAPI JSearch key is not configured." });
+      sourceWarnings.push("RapidAPI JSearch key is not configured.");
+    }
+
+    const sourceSummary = sourceStats
+      .map(({ source, fetched, error }) => `${source}: ${error || `${fetched} fetched`}`)
+      .join("; ");
 
     for (const jobs of sourceResults) {
       for (const job of jobs) {
@@ -811,8 +847,11 @@ export async function syncJobFeed(options?: { trigger?: SyncTrigger }) {
         skipped: true,
         reason:
           sourceWarnings.length > 0
-            ? `No jobs were returned from the configured sources. Provider issues: ${sourceWarnings.slice(0, 3).join(" | ")}`
-            : "No jobs were returned from any configured source, so existing listings were left unchanged.",
+            ? `No jobs were returned from configured sources. Provider issues: ${sourceWarnings.slice(0, 3).join(" | ")} Source results: ${sourceSummary}`
+            : `No jobs were returned from any configured source, so existing listings were left unchanged. Source results: ${sourceSummary}`,
+        dailyTarget: DAILY_NEW_JOB_TARGET,
+        sourceStats,
+        status: "warning" as const,
       } satisfies SyncCounters;
 
       if (supportsLifecycle) {
@@ -846,35 +885,43 @@ export async function syncJobFeed(options?: { trigger?: SyncTrigger }) {
       ? await upsertLifecycleJobs(dedupedCollected, nowIso)
       : await upsertLegacyJobs(dedupedCollected);
 
+    const belowDailyTarget = result.imported < DAILY_NEW_JOB_TARGET;
+    const targetWarning = belowDailyTarget
+      ? `Daily new-job target not met: imported ${result.imported} of ${DAILY_NEW_JOB_TARGET}.`
+      : undefined;
+    const warningMessages = [...sourceWarnings, ...(targetWarning ? [targetWarning] : [])];
+    const runStatus = warningMessages.length > 0 ? "warning" : "success";
+
     if (supportsLifecycle) {
       await supabase
         .from("job_feed_sync_state")
         .upsert({
           id: 1,
           last_synced_at: nowIso,
-          last_sync_status: "success",
-          last_sync_message: `Imported ${result.imported}, refreshed ${result.refreshed}, expired ${result.expired}.${sourceWarnings.length ? ` Warnings: ${sourceWarnings.slice(0, 3).join(" | ")}` : ""}`,
+          last_sync_status: runStatus,
+          last_sync_message: `Imported ${result.imported}, refreshed ${result.refreshed}, expired ${result.expired}. ${warningMessages.slice(0, 3).join(" ")} Source results: ${sourceSummary}`,
           updated_at: nowIso,
         });
     }
 
     await finishSyncRun(syncRun?.id, {
-      status: result.skipped ? "skipped" : "success",
+      status: result.skipped ? "skipped" : runStatus,
       imported: result.imported,
       refreshed: result.refreshed,
       expired: result.expired,
       hardDeleted: result.hardDeleted,
       message:
         result.reason ??
-        `Imported ${result.imported}, refreshed ${result.refreshed}, expired ${result.expired}, deleted ${result.hardDeleted}.${sourceWarnings.length ? ` Warnings: ${sourceWarnings.slice(0, 3).join(" | ")}` : ""}`,
+        `Imported ${result.imported}, refreshed ${result.refreshed}, expired ${result.expired}. ${warningMessages.slice(0, 3).join(" ")} Source results: ${sourceSummary}`,
       supportsLifecycle,
     });
 
     return {
       ...result,
-      reason:
-        result.reason ??
-        (sourceWarnings.length ? `Completed with provider warnings: ${sourceWarnings.slice(0, 3).join(" | ")}` : undefined),
+      dailyTarget: DAILY_NEW_JOB_TARGET,
+      sourceStats,
+      status: runStatus,
+      reason: warningMessages.length ? warningMessages.slice(0, 3).join(" ") : result.reason,
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown sync error";
@@ -981,21 +1028,6 @@ async function upsertLegacyJobs(collected: Map<string, NormalizedJob>): Promise<
       refreshed += 1;
       const { error: updateError } = await supabase.from("jobs").update(payload).eq("id", primaryMatch.id);
       if (updateError) throw updateError;
-
-      const duplicateIds = matches.slice(1).map((match) => match.id);
-      if (duplicateIds.length) {
-        const { data: appliedRows } = await supabase
-          .from("job_applications")
-          .select("job_id")
-          .in("job_id", duplicateIds);
-
-        const appliedIds = new Set((appliedRows || []).map((row) => row.job_id));
-        const safeToDelete = duplicateIds.filter((id) => !appliedIds.has(id));
-        if (safeToDelete.length) {
-          const { error: deleteError } = await supabase.from("jobs").delete().in("id", safeToDelete);
-          if (deleteError) throw deleteError;
-        }
-      }
     } else {
       imported += 1;
       const { error: insertError } = await supabase.from("jobs").insert(payload);
@@ -1090,39 +1122,8 @@ async function upsertLifecycleJobs(collected: Map<string, NormalizedJob>, nowIso
       .in("id", staleJobIds);
   }
 
-  const deleteThreshold = new Date();
-  deleteThreshold.setUTCDate(deleteThreshold.getUTCDate() - HARD_DELETE_AFTER_DAYS);
-
-  const { data: deletableJobs } = await supabase
-    .from("jobs")
-    .select("id")
-    .eq("is_active", false)
-    .neq("source", "employer")
-    .lt("last_seen_at", deleteThreshold.toISOString());
-
-  const deletableJobIds = (deletableJobs || []).map((job) => job.id);
-
-  let hardDeleted = 0;
-  if (deletableJobIds.length) {
-    const { data: appliedRows } = await supabase
-      .from("job_applications")
-      .select("job_id")
-      .in("job_id", deletableJobIds);
-
-    const appliedJobIds = new Set((appliedRows || []).map((row) => row.job_id));
-    const safeToDelete = deletableJobIds.filter((jobId) => !appliedJobIds.has(jobId));
-
-    if (safeToDelete.length) {
-      hardDeleted = safeToDelete.length;
-      await supabase
-        .from("jobs")
-        .delete()
-        .in("id", safeToDelete);
-    }
-  }
-
   expired += await deactivateIrrelevantImportedJobs(nowIso);
   expired += await deactivateDuplicateImportedJobs(nowIso);
 
-  return { imported, refreshed, expired, hardDeleted, skipped: false };
+  return { imported, refreshed, expired, hardDeleted: 0, skipped: false };
 }
