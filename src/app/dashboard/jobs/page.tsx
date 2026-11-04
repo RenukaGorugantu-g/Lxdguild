@@ -682,12 +682,12 @@ export default async function JobsDashboard({
             </div>
           </section>
 
-          <section className="flex flex-col gap-8 lg:flex-row">
+          <section className="flex min-w-0 flex-col gap-8 lg:flex-row">
             <div className="hidden lg:block">
               <JobSidebar categories={categories} />
             </div>
 
-            <div className="flex-1 space-y-4">
+            <div className="min-w-0 flex-1 space-y-4">
               {view !== "freelance" && view !== "featured" && featuredJobs.length > 0 && (
                 <div className="marketing-grid-card border-[#d7ead2] bg-[linear-gradient(180deg,#fbfff8_0%,#f3fbef_100%)] p-5">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -878,12 +878,12 @@ function JobCard({
 
   return (
     <div
-      className={`marketing-grid-card ${compact ? "p-4" : "p-6"} transition-shadow hover:shadow-[0_18px_36px_rgba(15,23,42,0.08)] ${
+      className={`marketing-grid-card w-full min-w-0 overflow-hidden ${compact ? "p-4" : "p-6"} transition-shadow hover:shadow-[0_18px_36px_rgba(15,23,42,0.08)] ${
         featured ? "border-[#cfe6c8] bg-[linear-gradient(180deg,#ffffff_0%,#f7fcf4_100%)]" : ""
       }`}
     >
-      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
-        <div className="min-w-0 space-y-3">
+      <div className="flex min-w-0 flex-col justify-between gap-4 md:flex-row md:items-start">
+        <div className="min-w-0 flex-1 space-y-3 break-words">
           <div className="space-y-3">
             <h2 className={`${compact ? "text-base" : "text-xl"} break-words leading-tight font-bold text-[#111827]`}>
               {job.title}
@@ -906,12 +906,12 @@ function JobCard({
               )}
             </div>
           </div>
-          <div className="flex flex-wrap items-start gap-4 text-sm text-[#5b6757]">
-            <div className="flex items-start gap-1.5">
+          <div className="flex min-w-0 flex-wrap items-start gap-x-4 gap-y-2 text-sm text-[#5b6757]">
+            <div className="flex min-w-0 items-start gap-1.5 break-words">
               <Building className="mt-0.5 h-4 w-4 shrink-0" />
               {job.company}
             </div>
-            <div className="flex items-start gap-1.5">
+            <div className="flex min-w-0 items-start gap-1.5 break-words">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
               {job.location}
             </div>
@@ -954,9 +954,12 @@ function JobCard({
           )}
         </div>
 
-        <div className="flex flex-col items-start gap-2 md:items-end">
-          <Link href={detailHref} className="marketing-secondary whitespace-nowrap">
-            {canApplyToJobs ? "View Details" : "View Role"}
+        <div className="flex w-full shrink-0 flex-col items-stretch gap-2 md:w-auto md:items-end">
+          <Link
+            href={detailHref}
+            className={`${canApplyToJobs ? "marketing-primary" : "marketing-secondary"} w-full whitespace-nowrap md:w-auto`}
+          >
+            {canApplyToJobs ? "View job & apply" : "View role"}
           </Link>
           {!canApplyToJobs && (
           <div className="relative z-20 flex flex-col items-end gap-2">
